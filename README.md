@@ -1,6 +1,6 @@
 SNOMED CT DATABASE 
 ===============
-MYSQL SQL Scripts to create and populate a MYSQL database with a SNOMED CT terminology releases
+MYSQL SQL Scripts to create and populate a MYSQL database with a SNOMED CT terminology release
 
 
 Minimum Specification
