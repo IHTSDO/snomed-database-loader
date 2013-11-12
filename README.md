@@ -13,9 +13,6 @@ Installation
 1. Download the SNOMED CT terminology release from the IHTSDO web site
 2. Create the database using environment.sql
 3. Edit the load.sql script with the correct location of the SNOMED CT release files
-4. Load the database created using the edited load.sql script from the mysql command prompt:
-mysql> source load.sql
-
-or via the relevant management tool (tested in both phpmyadmin and mysqlworkbench).
+4. Load the database created using the edited load.sql script from the mysql command prompt, `mysql> source load.sql`, or via the relevant management tool (tested in both phpmyadmin and mysqlworkbench).
 
 That should be it.
