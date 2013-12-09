@@ -1,4 +1,3 @@
-
 /* create the database */
 drop database if exists snomedct;
 create database if not exists snomedct;
@@ -61,7 +60,7 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
+key idx_term(term(255)),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
