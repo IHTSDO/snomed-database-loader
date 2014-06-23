@@ -1,7 +1,7 @@
 /* create the database */
-drop database if exists snomedct;
-create database if not exists snomedct;
-use snomedct;
+drop schema if exists snomedct;
+create schema if not exists snomedct;
+set schema 'snomedct';
 
 /* create the Full S-CT data tables */
 
@@ -17,7 +17,7 @@ key idx_effectivetime(effectivetime),
 key idx_active(active),
 key idx_moduleid(moduleid),
 key idx_definitionstatusid(definitionstatusid)
-)  default charset=utf8;
+);
 
 
 drop table if exists curr_description_f;
@@ -40,7 +40,7 @@ key idx_languagecode(languagecode),
 key idx_typeid(typeid),
 key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_textdefinition_f;
 create table curr_textdefinition_f(
@@ -62,7 +62,7 @@ key idx_languagecode(languagecode),
 key idx_typeid(typeid),
 key idx_term(term(255)),
 key idx_casesignificanceid(casesignificanceid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_relationship_f;
 create table curr_relationship_f(
@@ -86,7 +86,7 @@ key idx_relationshipgroup(relationshipgroup),
 key idx_typeid(typeid),
 key idx_characteristictypeid(characteristictypeid),
 key idx_modifierid(modifierid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_stated_relationship_f;
 create table curr_stated_relationship_f(
@@ -110,7 +110,7 @@ key idx_relationshipgroup(relationshipgroup),
 key idx_typeid(typeid),
 key idx_characteristictypeid(characteristictypeid),
 key idx_modifierid(modifierid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_langrefset_f;
 create table curr_langrefset_f(
@@ -128,7 +128,7 @@ key idx_moduleid(moduleid),
 key idx_refsetid(refsetid),
 key idx_referencedcomponentid(referencedcomponentid),
 key idx_acceptabilityid(acceptabilityid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_associationrefset_d;
 create table curr_associationrefset_d(
@@ -146,7 +146,7 @@ key idx_moduleid(moduleid),
 key idx_refsetid(refsetid),
 key idx_referencedcomponentid(referencedcomponentid),
 key idx_targetcomponentid(targetcomponentid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_attributevaluerefset_f;
 create table curr_attributevaluerefset_f(
@@ -164,7 +164,7 @@ key idx_moduleid(moduleid),
 key idx_refsetid(refsetid),
 key idx_referencedcomponentid(referencedcomponentid),
 key idx_valueid(valueid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_simplemaprefset_f;
 create table curr_simplemaprefset_f(
@@ -182,7 +182,7 @@ key idx_moduleid(moduleid),
 key idx_refsetid(refsetid),
 key idx_referencedcomponentid(referencedcomponentid),
 key idx_maptarget(maptarget)
-)  default charset=utf8;
+);
 
 drop table if exists curr_simplerefset_f;
 create table curr_simplerefset_f(
@@ -198,7 +198,7 @@ create table curr_simplerefset_f(
 	key idx_moduleid(moduleid),
 	key idx_refsetid(refsetid),
 	key idx_referencedcomponentid(referencedcomponentid)
-)  default charset=utf8;
+);
 
 drop table if exists curr_complexmaprefset_f;
 create table curr_complexmaprefset_f(
@@ -221,4 +221,4 @@ create table curr_complexmaprefset_f(
 	key idx_refsetid(refsetid),
 	key idx_referencedcomponentid(referencedcomponentid),
 	key idx_mapTarget(mapTarget)
-)  default charset=utf8;
+);
