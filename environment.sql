@@ -5,7 +5,7 @@ set schema 'snomedct';
 
 /* create the Full S-CT data tables */
 
-drop table if exists curr_concept_f;
+drop table if exists curr_concept_f cascade;
 create table curr_concept_f(
   id varchar(18) not null primary key,
   effectivetime char(8) not null unique,
@@ -14,7 +14,7 @@ create table curr_concept_f(
   definitionstatusid varchar(18) not null unique 
 );
 
-drop table if exists curr_description_f;
+drop table if exists curr_description_f cascade;
 create table curr_description_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
@@ -27,7 +27,7 @@ create table curr_description_f(
   casesignificanceid varchar(18) not null unique 
 );
 
-drop table if exists curr_textdefinition_f;
+drop table if exists curr_textdefinition_f cascade;
 create table curr_textdefinition_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null references curr_concept_f(effectivetime),
@@ -40,7 +40,7 @@ create table curr_textdefinition_f(
   casesignificanceid varchar(18) not null references curr_description_f(conceptid)
 );
 
-drop table if exists curr_relationship_f;
+drop table if exists curr_relationship_f cascade;
 create table curr_relationship_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null references curr_concept_f(effectivetime),
@@ -54,7 +54,7 @@ create table curr_relationship_f(
   modifierid varchar(18) not null unique 
 );
 
-drop table if exists curr_stated_relationship_f;
+drop table if exists curr_stated_relationship_f cascade;
 create table curr_stated_relationship_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
@@ -62,13 +62,13 @@ create table curr_stated_relationship_f(
   moduleid varchar(18) not null  references curr_concept_f(moduleid),
   sourceid varchar(18) not null references curr_relationship(source_id),
   destinationid varchar(18) not null references curr_relationship(destinationid),
-  relationshipgroup varchar(18) not null references curr_relationship(relationshipgroup),
+  relationshipgroup varchar(18) not null references curr_relationship_f(relationshipgroup),
   typeid varchar(18) not null references curr_relationship_f(typeid),
-  characteristictypeid varchar(18) not null references curr_relationship(characteristictypeid),
-  modifierid varchar(18) not null references curr_relationship(modifierid)
+  characteristictypeid varchar(18) not null references curr_relationship_f(characteristictypeid),
+  modifierid varchar(18) not null references curr_relationship_f(modifierid)
 );
 
-drop table if exists curr_langrefset_f;
+drop table if exists curr_langrefset_f cascade;
 create table curr_langrefset_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
@@ -79,7 +79,7 @@ create table curr_langrefset_f(
   acceptabilityid varchar(18) not null unique 
 );
 
-drop table if exists curr_associationrefset_d;
+drop table if exists curr_associationrefset_d cascade;
 create table curr_associationrefset_d(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
@@ -90,7 +90,7 @@ create table curr_associationrefset_d(
   targetcomponentid varchar(18) not null unique 
 );
 
-drop table if exists curr_attributevaluerefset_f;
+drop table if exists curr_attributevaluerefset_f cascade;
 create table curr_attributevaluerefset_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
@@ -101,7 +101,7 @@ create table curr_attributevaluerefset_f(
   valueid varchar(18) not null unique 
 );
 
-drop table if exists curr_simplemaprefset_f;
+drop table if exists curr_simplemaprefset_f cascade;
 create table curr_simplemaprefset_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
@@ -112,17 +112,17 @@ create table curr_simplemaprefset_f(
   maptarget varchar(32) not null unique 
 );
 
-drop table if exists curr_simplerefset_f;
+drop table if exists curr_simplerefset_f cascade;
 create table curr_simplerefset_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
   active char(1) not null  references curr_concept_f(active),
   moduleid varchar(18) not null  references curr_concept_f(moduleid),
   refsetid varchar(18) not null references curr_langrefset_f(refsetid),
-  referencedcomponentid varchar(18) not null references curr_langrefset_f(referencedcomponentid),
+  referencedcomponentid varchar(18) not null references curr_langrefset_f(referencedcomponentid)
 );
 
-drop table if exists curr_complexmaprefset_f;
+drop table if exists curr_complexmaprefset_f cascade;
 create table curr_complexmaprefset_f(
   id varchar(18) not null references curr_concept_f(id),
   effectivetime char(8) not null  references curr_concept_f(effectivetime),
