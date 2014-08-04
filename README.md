@@ -1,12 +1,12 @@
 SNOMED CT DATABASE 
 ===============
-MYSQL SQL Scripts to create and populate a MYSQL or POSTGRES database with a SNOMED CT terminology release
+MYSQL SQL Scripts to create and populate a MYSQL or PostgreSQL database with a SNOMED CT terminology release
 
 
 Minimum Specification
 ---------------------
 - MYSQL v5.5.x
-- POSTGRES v.x
+- PostgreSQL v.x
 
 
 Installation
