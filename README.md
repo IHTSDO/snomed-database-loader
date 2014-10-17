@@ -19,4 +19,4 @@ Installation
 5. Load the database created using the edited load.sql script from the relevant command prompt, e.g. <code>mysql> source load.sql</code> or via the relevant management tool (tested in both phpmyadmin and mysqlworkbench).
  - again by default for full, snapshot and delta unless you only want the full version.
 
-NB If you're using mysql 5.5 or above then you'll need to start that with the following command in order to allow local files to be loaded: <code>mysql -u <your_user> -p --local-infile</code>
+NB If you're using mysql 5.5 or above then you'll need to start that with the following command in order to allow local files to be loaded: <code>mysql -u &#91;your_user&#93; -p --local-infile</code>
