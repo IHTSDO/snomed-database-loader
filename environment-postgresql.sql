@@ -1,8 +1,3 @@
-/* Create the database */
-drop schema if exists snomedct;
-create schema if not exists snomedct;
-set schema 'snomedct';
-
 /* create the Full S-CT data tables */
 
 drop table if exists curr_concept_f cascade;
