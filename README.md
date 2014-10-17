@@ -17,3 +17,6 @@ Installation
 4. Load the database created using the edited load.sql script from the relevant command prompt, e.g. `mysql> source load.sql`, or via the relevant management tool (tested in both phpmyadmin and mysqlworkbench).
 
 That should be it.
+
+NB If you're using mysql 5.5 or above then you'll need to start that with the following command in order to allow local files to be loaded:
+mysql -u <your_user> -p --local-infile
