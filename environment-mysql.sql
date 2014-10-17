@@ -34,7 +34,6 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
@@ -56,7 +55,6 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
@@ -254,7 +252,6 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
@@ -276,7 +273,6 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
@@ -475,7 +471,6 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
@@ -497,7 +492,6 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
