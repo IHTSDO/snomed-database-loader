@@ -1,6 +1,6 @@
 /* loads the SNOMED CT 'Full', 'Snapshot' and 'Delta' release - replace filenames with relevant locations of base SNOMED CT release files*/
 
-/* Filenames may need to change depending on the release you wish to upload, currently set to July 2014 release */
+/* Filenames may need to change depending on the release you wish to upload, currently set to January 2015 release */
 
 /* * * * *  FULL * * * * */
 load data local 
