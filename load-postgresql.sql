@@ -1,7 +1,7 @@
 /* loads the SNOMED CT 'Full' release - replace filenames with relevant locations of base SNOMED CT release files*/
 /* Filenames may need to change depending on the release you wish to upload, currently set to July 2014 release */
 
-use snomedct;
+set schema 'snomedct';
 
 COPY curr_concept_f(id, effectivetime, active, moduleid, definitionstatusid) 
 FROM 'RF2Release/Full/Terminology/sct2_Concept_Full_INT_20140731.txt' 
