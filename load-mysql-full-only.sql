@@ -4,77 +4,77 @@
 
 load data local 
 	infile 'RF2Release/Full/Terminology/sct2_Concept_Full_INT_20140731.txt' 
-	into table curr_concept_f
+	into table concept_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Terminology/sct2_Description_Full-en_INT_20140731.txt' 
-	into table curr_description_f
+	into table description_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Terminology/sct2_TextDefinition_Full-en_INT_20140731.txt' 
-	into table curr_textdefinition_f
+	into table textdefinition_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Terminology/sct2_Relationship_Full_INT_20140731.txt' 
-	into table curr_relationship_f
+	into table relationship_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Terminology/sct2_StatedRelationship_Full_INT_20140731.txt' 
-	into table curr_stated_relationship_f
+	into table stated_relationship_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Refset/Language/der2_cRefset_LanguageFull-en_INT_20140731.txt' 
-	into table curr_langrefset_f
+	into table langrefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Refset/Content/der2_cRefset_AssociationReferenceFull_INT_20140731.txt' 
-	into table curr_associationrefset_f
+	into table associationrefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_20140731.txt' 
-	into table curr_attributevaluerefset_f
+	into table attributevaluerefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_20140731.txt' 
-	into table curr_simplemaprefset_f
+	into table simplemaprefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Refset/Content/der2_Refset_SimpleFull_INT_20140731.txt' 
-	into table curr_simplerefset_f
+	into table simplerefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
 
 load data local 
 	infile 'RF2Release/Full/Refset/Map/der2_iissscRefset_ComplexMapFull_INT_20140731.txt' 
-	into table curr_complexmaprefset_f
+	into table complexmaprefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
 	ignore 1 lines;
