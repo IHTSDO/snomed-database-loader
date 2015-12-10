@@ -40,23 +40,33 @@ function addLoadScript() {
 	echo "\tlines terminated by '\\\r\\\n'" >> ${generatedScript}
 	echo "\tignore 1 lines;" >> ${generatedScript}
 	echo ""  >> ${generatedScript}
+	echo "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedScript}
+	echo ""  >> ${generatedScript}
 }
 
 echo "Generating RF1 loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedScript}
-addLoadScript sct1_Concepts_Core_INT_DATE.txt rf1_concepts
-addLoadScript sct1_Descriptions_en_INT_DATE.txt rf1_descriptions
-addLoadScript sct1_References_Core_INT_DATE.txt rf1_references
-addLoadScript sct1_Relationships_Core_INT_DATE.txt rf1_relationships
-addLoadScript sct1_TextDefinitions_en-US_INT_DATE.txt rf1_textdefinitions
+addLoadScript sct1_Concepts_Core_INT_DATE.txt rf1_concept
+addLoadScript sct1_Descriptions_en_INT_DATE.txt rf1_description
+addLoadScript sct1_References_Core_INT_DATE.txt rf1_reference
+addLoadScript sct1_Relationships_Core_INT_DATE.txt rf1_relationship
+addLoadScript sct1_TextDefinitions_en-US_INT_DATE.txt rf1_textdefinition
 
-addLoadScript der1_CrossMapSets_ICDO_INT_DATE.txt rf1_crossmapsets
-addLoadScript der1_CrossMapTargets_ICDO_INT_DATE.txt rf1_crossmaptargets
-addLoadScript der1_CrossMaps_ICDO_INT_DATE.txt rf1_crossmaps
-# addLoadScript der1_SubsetMembers_en-GB_INT_DATE.txt rf1_
-# addLoadScript der1_SubsetMembers_en-US_INT_DATE.txt rf1_
-addLoadScript der1_Subsets_en-GB_INT_DATE.txt rf1_subsets
-addLoadScript der1_Subsets_en-US_INT_DATE.txt rf1_subsets
+#ICD-O Cross Maps
+addLoadScript der1_CrossMapSets_ICDO_INT_DATE.txt rf1_xmapset
+addLoadScript der1_CrossMapTargets_ICDO_INT_DATE.txt rf1_xmaptarget
+addLoadScript der1_CrossMaps_ICDO_INT_DATE.txt rf1_xmap
+
+#ICD-9 Cross Maps
+addLoadScript der1_CrossMapSets_ICD9_INT_DATE.txt rf1_xmapset
+addLoadScript der1_CrossMapTargets_ICD9_INT_DATE.txt rf1_xmaptarget
+addLoadScript der1_CrossMaps_ICD9_INT_DATE.txt rf1_xmap
+
+addLoadScript der1_Subsets_en-GB_INT_DATE.txt rf1_subset
+addLoadScript der1_Subsets_en-US_INT_DATE.txt rf1_subset
+addLoadScript der1_SubsetMembers_en-GB_INT_DATE.txt rf1_subsetmember
+addLoadScript der1_SubsetMembers_en-US_INT_DATE.txt rf1_subsetmember
+
 addLoadScript res1_StatedRelationships_Core_INT_DATE.txt rf1_stated_relationship
 addLoadScript sct1_ComponentHistory_Core_INT_DATE.txt rf1_componenthistory
 
