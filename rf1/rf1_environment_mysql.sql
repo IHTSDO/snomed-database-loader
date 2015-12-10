@@ -63,28 +63,28 @@ create table rf1_stated_relationship(
 	key idx_id(RELATIONSHIPID)
 ) engine=myisam default charset=utf8;
 
-DROP TABLE IF EXISTS rf1_subsetlist;
-CREATE TABLE rf1_subsetlist (
-	SubsetId		 VARBINARY (18) NOT NULL,
-	SubsetOriginalID VARBINARY (18) NOT NULL,
-	SubsetVersion	VARBINARY(4) NOT NULL,
-	SubsetName		VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
-	SubsetType		TINYINT (1) UNSIGNED NOT NULL,
-	LanguageCode	 VARBINARY(5),
-	SubsetRealmID	VARBINARY (10) NOT NULL,
-	ContextID		TINYINT (1) UNSIGNED NOT NULL
+DROP TABLE IF EXISTS rf1_subset;
+CREATE TABLE rf1_subset (
+	SubsetId			VARBINARY (18) NOT NULL,
+	SubsetOriginalID	VARBINARY (18) NOT NULL,
+	SubsetVersion		VARBINARY(4) NOT NULL,
+	SubsetName			VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+	SubsetType			TINYINT (1) UNSIGNED NOT NULL,
+	LanguageCode		VARBINARY(5),
+	SubsetRealmID		VARBINARY (10) NOT NULL,
+	ContextID			TINYINT (1) UNSIGNED NOT NULL
 );
 
-DROP TABLE IF EXISTS rf1_subsets;
-CREATE TABLE rf1_SUBSETS (
-	SubsetId	VARBINARY (18) NOT NULL,
-	MemberID	VARBINARY (18) NOT NULL,
-	MemberStatusTINYINT (1) UNSIGNED NOT NULL,
-	LinkedID	VARCHAR(18) CHARACTER SET latin1 COLLATE latin1_general_ci
+DROP TABLE IF EXISTS rf1_subsetmember;
+CREATE TABLE rf1_subsetmember (
+	SubsetId			VARBINARY (18) NOT NULL,
+	MemberID			VARBINARY (18) NOT NULL,
+	MemberStatus		TINYINT (1) UNSIGNED NOT NULL,
+	LinkedID			VARCHAR(18) CHARACTER SET latin1 COLLATE latin1_general_ci
 );
 
-DROP TABLE IF EXISTS rf1_xmaplist;
-CREATE TABLE rf1_xmaplist (
+DROP TABLE IF EXISTS rf1_xmapset;
+CREATE TABLE rf1_xmapset (
 	MapSetId			VARBINARY (18) NOT NULL,
 	MapSetName			VARCHAR (255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
 	MapSetType			BINARY (1) NOT NULL,
@@ -96,32 +96,32 @@ CREATE TABLE rf1_xmaplist (
 	MapSetRuleType		VARBINARY (2) NOT NULL
 );
 
-DROP TABLE IF EXISTS rf1_xmaps;
-CREATE TABLE rf1_xmaps (
-	MapSetID		VARBINARY (18) NOT NULL,
-	MapConceptID	VARBINARY (18) NOT NULL,
-	MapOption		INTEGER UNSIGNED,
-	MapPriority		TINYINT (1) UNSIGNED,
-	MapTargetID		VARBINARY (18) NOT NULL,
-	MapRule			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	MapAdvice		VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL
+DROP TABLE IF EXISTS rf1_xmap;
+CREATE TABLE rf1_xmap (
+	MapSetID			VARBINARY (18) NOT NULL,
+	MapConceptID		VARBINARY (18) NOT NULL,
+	MapOption			INTEGER UNSIGNED,
+	MapPriority			TINYINT (1) UNSIGNED,
+	MapTargetID			VARBINARY (18) NOT NULL,
+	MapRule				VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+	MapAdvice			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL
 );
 
 DROP TABLE IF EXISTS rf1_xmaptarget;
 CREATE TABLE rf1_xmaptarget (
-	TargetID		VARBINARY (18) NOT NULL,
-	TargetSchemeID	VARCHAR (64) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	TargetCodes		VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci,
-	TargetRule		VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	TargetAdvice	VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL
+	TargetID			VARBINARY (18) NOT NULL,
+	TargetSchemeID		VARCHAR (64) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+	TargetCodes			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci,
+	TargetRule			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+	TargetAdvice		VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL
 );
 
 DROP TABLE IF EXISTS rf1_reference;
 CREATE TABLE rf1_reference(
-	COMPONENTID		VARBINARY (18) NOT NULL,
-	REFERENCETYPE	TINYINT (1) NOT NULL,
-	REFERENCEDID	VARBINARY (18) NOT NULL,
-	SOURCE			BINARY (4) NOT NULL
+	COMPONENTID			VARBINARY (18) NOT NULL,
+	REFERENCETYPE		TINYINT (1) NOT NULL,
+	REFERENCEDID		VARBINARY (18) NOT NULL,
+	SOURCE				BINARY (4) NOT NULL
 );
 
 DROP TABLE IF EXISTS rf1_componenthistory;
