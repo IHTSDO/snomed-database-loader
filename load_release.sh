@@ -12,6 +12,7 @@ fi
 
 #Unzip the files here, junking the structure
 localExtract="tmp_extracted"
+rm -rf $localExtract
 generatedScript="tmp_loader.sql"
 unzip -j ${releasePath} -d ${localExtract}
 
@@ -24,6 +25,17 @@ function addLoadScript() {
 		echo "load data local" >> ${generatedScript}
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
+
+		#Check file exists - try beta version if not
+		if [ ! -f ${localExtract}/${fileName} ]; then
+			origFilename=${fileName}
+			fileName="x${fileName}"
+			if [ ! -f ${localExtract}/${fileName} ]; then
+				echo "Unable to find ${origFilename} or beta version"
+				exit -1
+			fi
+		fi
+
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 
 		echo "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedScript}
@@ -43,6 +55,7 @@ addLoadScript sct2_Concept_TYPE_INT_DATE.txt concept
 addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_INT_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_INT_DATE.txt relationship
+addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
 
 echo "Passing $generatedScript to MYSQL"
 
