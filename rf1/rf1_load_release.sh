@@ -80,3 +80,5 @@ mysql -u root  << EOF
 	source rf1_environment_mysql.sql
 	source ${generatedScript};
 EOF
+
+rm -rf ${localExtract}
