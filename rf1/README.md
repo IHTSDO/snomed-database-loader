@@ -12,7 +12,6 @@ eg  <code>
 
 ### Example output
 <code>
-	
 	...
 	
 	...
