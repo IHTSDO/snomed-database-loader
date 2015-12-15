@@ -102,17 +102,6 @@ create table curr_attributevaluerefset_f(
   valueid varchar(18) not null 
 );
 
-drop table if exists curr_simplemaprefset_f cascade;
-create table curr_simplemaprefset_f(
-  id uuid not null primary key,
-  effectivetime char(8) not null,
-  active char(1) not null,
-  moduleid varchar(18) not null,
-  refsetid varchar(18) not null,
-  referencedcomponentid varchar(18) not null,
-  maptarget varchar(32) not null 
-);
-
 drop table if exists curr_simplerefset_f cascade;
 create table curr_simplerefset_f(
   id uuid not null primary key,
@@ -121,6 +110,17 @@ create table curr_simplerefset_f(
   moduleid varchar(18) not null,
   refsetid varchar(18) not null,
   referencedcomponentid varchar(18) not null
+);
+
+drop table if exists curr_simplemaprefset_f cascade;
+create table curr_simplemaprefset_f(
+  id uuid not null primary key,
+  effectivetime char(8) not null,
+  active char(1) not null,
+  moduleid varchar(18) not null,
+  refsetid varchar(18) not null,
+  referencedcomponentid varchar(18) not null,
+  maptarget text not null 
 );
 
 drop table if exists curr_complexmaprefset_f cascade;
@@ -133,8 +133,25 @@ create table curr_complexmaprefset_f(
   referencedcomponentid varchar(18) not null,
   mapGroup smallint not null,
   mapPriority smallint not null,
-  mapRule varchar(18),
-  mapAdvice varchar(18),
-  mapTarget varchar(18),
+  mapRule text,
+  mapAdvice text,
+  mapTarget text,
   correlationId varchar(18) not null 
 );
+
+drop table if exists curr_extendedmaprefset_f cascade;
+create table curr_extendedmaprefset_f(
+  id uuid not null primary key,
+  effectivetime char(8) not null,
+  active char(1) not null,
+  moduleid varchar(18) not null,
+  refsetid varchar(18) not null,
+  referencedcomponentid varchar(18) not null,
+  mapGroup smallint not null,
+  mapPriority smallint not null,
+  mapRule text,
+  mapAdvice text,
+  mapTarget text,
+  correlationId varchar(18),
+  mapCategoryId varchar(18)
+)
