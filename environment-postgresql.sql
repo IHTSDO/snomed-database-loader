@@ -20,7 +20,7 @@ create table curr_description_f(
   conceptid varchar(18) not null,
   languagecode varchar(2) not null,
   typeid varchar(18) not null,
-  term varchar(255) not null,
+  term text not null,
   casesignificanceid varchar(18) not null,
   CONSTRAINT curr_description_f_pkey PRIMARY KEY(id, effectivetime, active)
 );
