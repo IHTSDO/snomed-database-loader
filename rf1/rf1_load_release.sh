@@ -52,16 +52,6 @@ addLoadScript sct1_References_Core_INT_DATE.txt rf1_reference
 addLoadScript sct1_Relationships_Core_INT_DATE.txt rf1_relationship
 addLoadScript sct1_TextDefinitions_en-US_INT_DATE.txt rf1_textdefinition
 
-#ICD-O Cross Maps
-addLoadScript der1_CrossMapSets_ICDO_INT_DATE.txt rf1_xmapset
-addLoadScript der1_CrossMapTargets_ICDO_INT_DATE.txt rf1_xmaptarget
-addLoadScript der1_CrossMaps_ICDO_INT_DATE.txt rf1_xmap
-
-#ICD-9 Cross Maps
-addLoadScript der1_CrossMapSets_ICD9_INT_DATE.txt rf1_xmapset
-addLoadScript der1_CrossMapTargets_ICD9_INT_DATE.txt rf1_xmaptarget
-addLoadScript der1_CrossMaps_ICD9_INT_DATE.txt rf1_xmap
-
 addLoadScript der1_Subsets_en-GB_INT_DATE.txt rf1_subset
 addLoadScript der1_Subsets_en-US_INT_DATE.txt rf1_subset
 addLoadScript der1_SubsetMembers_en-GB_INT_DATE.txt rf1_subsetmember

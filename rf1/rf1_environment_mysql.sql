@@ -83,39 +83,6 @@ CREATE TABLE rf1_subsetmember (
 	LinkedID			VARCHAR(18) CHARACTER SET latin1 COLLATE latin1_general_ci
 );
 
-DROP TABLE IF EXISTS rf1_xmapset;
-CREATE TABLE rf1_xmapset (
-	MapSetId			VARCHAR (18) NOT NULL,
-	MapSetName			VARCHAR (255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	MapSetType			BINARY (1) NOT NULL,
-	MapSetSchemeID		VARBINARY (64) NOT NULL,
-	MapSetSchemeName	VARCHAR (255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	MapSetSchemeVersion	VARBINARY(10) NOT NULL,
-	MapSetRealmID		VARCHAR (18) NOT NULL,
-	MapSetSeparator		BINARY (1) NOT NULL,
-	MapSetRuleType		VARBINARY (2) NOT NULL
-);
-
-DROP TABLE IF EXISTS rf1_xmap;
-CREATE TABLE rf1_xmap (
-	MapSetID			VARCHAR (18) NOT NULL,
-	MapConceptID		VARCHAR (18) NOT NULL,
-	MapOption			INTEGER UNSIGNED,
-	MapPriority			TINYINT (1) UNSIGNED,
-	MapTargetID			VARCHAR (18) NOT NULL,
-	MapRule				VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	MapAdvice			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL
-);
-
-DROP TABLE IF EXISTS rf1_xmaptarget;
-CREATE TABLE rf1_xmaptarget (
-	TargetID			VARCHAR (18) NOT NULL,
-	TargetSchemeID		VARCHAR (64) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	TargetCodes			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci,
-	TargetRule			VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
-	TargetAdvice		VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL
-);
-
 DROP TABLE IF EXISTS rf1_reference;
 CREATE TABLE rf1_reference(
 	COMPONENTID			VARCHAR (18) NOT NULL,
