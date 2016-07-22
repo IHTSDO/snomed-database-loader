@@ -88,8 +88,10 @@ addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_INT_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_INT_DATE.txt relationship
 addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
+addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
+addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
 
-mysql -u root  << EOF
+mysql -u root  --local-infile << EOF
 	select 'Ensuring schema ${dbName} exists' as '  ';
 	create database IF NOT EXISTS ${dbName};
 	use ${dbName};
