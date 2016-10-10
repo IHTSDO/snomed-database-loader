@@ -26,3 +26,16 @@ Manual Installation
  - again by default for full, snapshot and delta unless you only want the full version.
 
 NB If you're using mysql 5.5 or above then you'll need to start that with the following command in order to allow local files to be loaded: <code>mysql -u &#91;your_user&#93; -p --local-infile</code>
+
+### Issues
+
+If you see the following error:
+ERROR 1148 (42000) at line 2 in file: 'tmp_rf1_loader.sql': The used command is not allowed with this MySQL version
+
+This is a security feature of MYSQL to prevent local files being loaded.   The load script script includes an argument of "--local-infile" when starting the client application, but this must also be permitted in the server configuration (eg /usr/local/etc/my.cnf  which you may need to create.   Type mysql --help for a list of expected config locations).   Add the following block to your mysql config file:
+<code>
+[mysql]
+local-infile=1
+</code>
+
+See http://stackoverflow.com/questions/10762239/mysql-enable-load-data-local-infile

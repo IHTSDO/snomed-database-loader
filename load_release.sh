@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e;
 
 releasePath=$1
@@ -70,14 +70,14 @@ function addLoadScript() {
 
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 
-		echo "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
-		echo "\tinto table ${tableName}" >> ${generatedLoadScript}
-		echo "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
-		echo "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
-		echo "\tignore 1 lines;" >> ${generatedLoadScript}
-		echo ""  >> ${generatedLoadScript}
-		echo "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
-		echo ""  >> ${generatedLoadScript}
+		echo -e "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
+		echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
+		echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
+		echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
+		echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
+		echo -e ""  >> ${generatedLoadScript}
+		echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
+		echo -e ""  >> ${generatedLoadScript}
 	done
 }
 
@@ -88,8 +88,10 @@ addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_INT_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_INT_DATE.txt relationship
 addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
+addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
+addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
 
-mysql -u root  << EOF
+mysql -u root  --local-infile << EOF
 	select 'Ensuring schema ${dbName} exists' as '  ';
 	create database IF NOT EXISTS ${dbName};
 	use ${dbName};
