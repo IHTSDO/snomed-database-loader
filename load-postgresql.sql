@@ -3,8 +3,8 @@
 
 set schema 'snomedct';
 
-COPY curr_concept_f(id, effectivetime, active, moduleid, definitionstatusid) 
-FROM 'RF2Release/Full/Terminology/sct2_Concept_Full_INT_20150731.txt'
+COPY curr_concept_f(id, effectivetime, active, moduleid, definitionstatusid)
+FROM 'RF2Release/Full/Terminology/sct2_Concept_Full_INT_20150731.txt' 
 WITH (FORMAT csv, HEADER true, DELIMITER '	');
 
 COPY curr_description_f(id, effectivetime, active, moduleid, conceptid, languagecode, typeid, term, casesignificanceid)
@@ -31,18 +31,22 @@ COPY curr_associationrefset_d(id, effectivetime, active, moduleid, refsetid, ref
 FROM 'RF2Release/Full/Refset/Content/der2_cRefset_AssociationReferenceFull_INT_20150731.txt'
 WITH (FORMAT csv, HEADER true, DELIMITER '	');
 
+COPY curr_simplerefset_f(id, effectivetime, active, moduleid, refsetid, referencedcomponentid)
+FROM 'RF2Release/Full/Refset/Content/der2_Refset_SimpleFull_INT_20150731.txt'
+WITH (FORMAT csv, HEADER true, DELIMITER '	');
+
 COPY curr_attributevaluerefset_f(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, valueid)
 FROM 'RF2Release/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_20150731.txt'
 WITH (FORMAT csv, HEADER true, DELIMITER '	');
 
 COPY curr_simplemaprefset_f(id, effectivetime, active, moduleid, refsetid,  referencedcomponentid, maptarget);
-FROM 'RF2Release/Full/Refset/Crossmap/der2_sRefset_SimpleMapFull_INT_20150731.txt'
+FROM 'RF2Release/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_20150731.txt'
 WITH (FORMAT csv, HEADER true, DELIMITER '	');
 
-COPY curr_simplerefset_f(id, effectivetime, active, moduleid, refsetid, referencedcomponentid)
-FROM 'RF2Release/Full/Refset/Content/der2_Refset_SimpleFull_INT_20150731.txt'
-WITH (FORMAT csv, HEADER true, DELIMITER '	');
-
-COPY curr_complexmaprefset_f(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, mapGroup, mapPriority, mapRule,  mapAdvice, mapTarget, correlationId)
+COPY curr_complexmaprefset_f(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, mapGroup, mapPriority, mapRule, mapAdvice, mapTarget, correlationId)
 FROM 'RF2Release/Full/Refset/Map/der2_iissscRefset_ComplexMapFull_INT_20150731.txt'
+WITH (FORMAT csv, HEADER true, DELIMITER '	');
+
+COPY curr_extendedmaprefset_f(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, mapGroup, mapPriority, mapRule, mapAdvice, mapTarget, correlationId, mapCategoryId)
+FROM 'RF2Release/Full/Refset/Map/der2_iisssccRefset_ExtendedMapFull_INT_20150731.txt'
 WITH (FORMAT csv, HEADER true, DELIMITER '	');

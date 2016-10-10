@@ -8,8 +8,13 @@ Minimum Specification
 - MYSQL v5.5.x
 - PostgreSQL v.9
 
+Scripted Installation (Mac & Unix)
+----------------------------------
+run load_release.sh <rf2 archive location> <schemaName> <loadType - DELTA|SNAP|FULL|ALL>
 
-Installation
+eg ./load_release.sh ~/Backup/SnomedCT_RF2Release_INT_20150731.zip SCT_20150731 SNAP
+
+Manual Installation
 ------------
 1. Download the SNOMED CT terminology release from the IHTSDO web site
 2. Create the database using the db appropriate create-database.sql script or skip/perform this action manually if you'd like the data to be loaded into a existing/different database.
