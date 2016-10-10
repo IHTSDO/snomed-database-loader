@@ -70,14 +70,14 @@ function addLoadScript() {
 
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 
-		echo "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
-		echo "\tinto table ${tableName}" >> ${generatedLoadScript}
-		echo "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
-		echo "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
-		echo "\tignore 1 lines;" >> ${generatedLoadScript}
-		echo ""  >> ${generatedLoadScript}
-		echo "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
-		echo ""  >> ${generatedLoadScript}
+		echo -e "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
+		echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
+		echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
+		echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
+		echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
+		echo -e ""  >> ${generatedLoadScript}
+		echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
+		echo -e ""  >> ${generatedLoadScript}
 	done
 }
 
