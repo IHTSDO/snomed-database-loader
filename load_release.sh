@@ -11,6 +11,22 @@ then
 	exit -1
 fi
 
+dbUsername=root
+echo "Enter database username [$dbUsername]:"
+read newDbUsername
+if [ -n "$newDbUsername" ]
+then
+	dbUsername=$newDbUsername
+fi
+
+dbUserPassword=""
+echo "Enter database password (or return for none):"
+read newDbPassword
+if [ -n "$newDbPassword" ]
+then
+	dbUserPassword="-p${newDbPassword}"
+fi
+
 #Unzip the files here, junking the structure
 localExtract="tmp_extracted"
 generatedLoadScript="tmp_loader.sql"
@@ -42,7 +58,7 @@ releaseDate=`ls -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`
 #Generate the environemnt script by running through the template as 
 #many times as required
 now=`date +"%Y%m%d_%H%M%S"`
-echo "\nGenerating Environment script for ${loadType} type(s)"
+echo -e "\nGenerating Environment script for ${loadType} type(s)"
 echo "/* Script Generated Automatically by load_release.sh ${now} */" > ${generatedEnvScript}
 for fileType in ${fileTypes[@]}; do
 	fileTypeLetter=`echo "${fileType}" | head -c 1 | tr '[:upper:]' '[:lower:]'`
@@ -81,7 +97,7 @@ function addLoadScript() {
 	done
 }
 
-echo "\nGenerating loading script for $releaseDate"
+echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
 addLoadScript sct2_Concept_TYPE_INT_DATE.txt concept
 addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
@@ -91,7 +107,7 @@ addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
 
-mysql -u root  --local-infile << EOF
+mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
 	select 'Ensuring schema ${dbName} exists' as '  ';
 	create database IF NOT EXISTS ${dbName};
 	use ${dbName};
