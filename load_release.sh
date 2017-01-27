@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e;
-
+set -x;
 releasePath=$1
 dbName=$2
 loadType=$3
@@ -25,6 +25,15 @@ read newDbPassword
 if [ -n "$newDbPassword" ]
 then
 	dbUserPassword="-p${newDbPassword}"
+fi
+
+includeTransitiveClosure=false
+echo "Calculate and store transitive closure? [Y/N]:"
+read tcResponse
+if [[ "${tcResponse}" == "Y"  ||  "${tcResponse}" == "y" ]]
+then
+	echo "Including transitive closure table - transclos"
+	includeTransitiveClosure=true
 fi
 
 #Unzip the files here, junking the structure
@@ -73,20 +82,25 @@ function addLoadScript() {
 		echo "load data local" >> ${generatedLoadScript}
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
+		parentPath="${localExtract}/"
+		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 
-		#Check file exists - try beta version if not
-		if [ ! -f ${localExtract}/${fileName} ]; then
+		#Check file exists - try beta version, or filepath directly if not
+		if [ ! -f ${parentPath}${fileName} ]; then
 			origFilename=${fileName}
 			fileName="x${fileName}"
-			if [ ! -f ${localExtract}/${fileName} ]; then
-				echo "Unable to find ${origFilename} or beta version"
-				exit -1
+			if [ ! -f ${parentPath}${fileName} ]; then
+  				parentPath=""
+				fileName=${origFilename}
+				tableName=${2} #Files loaded outside of extract directory use own names for table
+				if [ ! -f ${parentPath}${fileName} ]; then
+				  echo "Unable to find ${origFilename} or beta version"
+				  exit -1
+				fi
 			fi
 		fi
 
-		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
-
-		echo -e "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
+		echo -e "\tinfile '"${parentPath}${fileName}"'" >> ${generatedLoadScript}
 		echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
 		echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
 		echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
@@ -109,11 +123,31 @@ addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
-	select 'Ensuring schema ${dbName} exists' as '  ';
-	create database IF NOT EXISTS ${dbName};
-	use ${dbName};
-	select '(re)Creating Schema using ${generatedEnvScript}' as '  ';
-	source ${generatedEnvScript};
+        select 'Ensuring schema ${dbName} exists' as '  ';
+        create database IF NOT EXISTS ${dbName};
+        use ${dbName};
+        select '(re)Creating Schema using ${generatedEnvScript}' as '  ';
+        source ${generatedEnvScript};
+EOF
+
+if [ "${includeTransitiveClosure}" = true ]
+then
+	echo "Generating Transitive Closure file..."
+	tempFile=$(mktemp)
+	./transitiveClosureRf2Snap.pl ${localExtract}/sct2_StatedRelationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
+	mysql -u ${dbUsername} -p${dbUserPassword} ${dbName} << EOF
+DROP TABLE IF EXISTS transclos;
+CREATE TABLE transclos (
+  sourceid varchar(18) DEFAULT NULL,
+  destinationid varchar(18) DEFAULT NULL,
+  KEY idx_tc_source (sourceid),
+  KEY idx_tc_destination (destinationid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+EOF
+addLoadScript ${tempFile} transclos
+fi
+
+mysql -u ${dbUsername} -p${dbUserPassword} ${dbName}  --local-infile << EOF
 	select 'Loading RF2 Data using ${generatedLoadScript}' as '  ';
 	source ${generatedLoadScript};
 EOF
