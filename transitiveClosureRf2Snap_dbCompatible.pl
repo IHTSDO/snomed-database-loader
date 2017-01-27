@@ -112,11 +112,11 @@ sub transClos { # recursively depth-first traverse the graph.
 sub printRels {
    local($descendants,$argn)=@_;
    open(OUTF,">$ARGV[$argn]") || die "can't open $ARGV[$argn]";
+   printf OUTF "sourceid\tdestinationid\r\n";
    for $startnode (keys %$descendants) {
       for $endnode ( keys %{ $$descendants{$startnode} }) {
-         print OUTF "$endnode\t$startnode\n";
+         print OUTF "$endnode\t$startnode\r\n";
       }
-#      print OUTF "\n";
    }
 }
 

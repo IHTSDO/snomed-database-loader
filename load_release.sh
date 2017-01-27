@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e;
-set -x;
+
 releasePath=$1
 dbName=$2
 loadType=$3
@@ -134,7 +134,7 @@ if [ "${includeTransitiveClosure}" = true ]
 then
 	echo "Generating Transitive Closure file..."
 	tempFile=$(mktemp)
-	./transitiveClosureRf2Snap.pl ${localExtract}/sct2_StatedRelationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
+	./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
 	mysql -u ${dbUsername} -p${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS transclos;
 CREATE TABLE transclos (
