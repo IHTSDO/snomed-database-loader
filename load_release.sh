@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e;
-
 releasePath=$1
 dbName=$2
 loadType=$3
@@ -134,8 +133,8 @@ if [ "${includeTransitiveClosure}" = true ]
 then
 	echo "Generating Transitive Closure file..."
 	tempFile=$(mktemp)
-	./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
-	mysql -u ${dbUsername} -p${dbUserPassword} ${dbName} << EOF
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_Relationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
+	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS transclos;
 CREATE TABLE transclos (
   sourceid varchar(18) DEFAULT NULL,
@@ -147,7 +146,7 @@ EOF
 addLoadScript ${tempFile} transclos
 fi
 
-mysql -u ${dbUsername} -p${dbUserPassword} ${dbName}  --local-infile << EOF
+mysql -u ${dbUsername} ${dbUserPassword} ${dbName}  --local-infile << EOF
 	select 'Loading RF2 Data using ${generatedLoadScript}' as '  ';
 	source ${generatedLoadScript};
 EOF
