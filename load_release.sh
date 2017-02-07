@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e;
+
 releasePath=$1
 dbName=$2
 loadType=$3
@@ -78,12 +79,11 @@ done
 
 function addLoadScript() {
 	for fileType in ${fileTypes[@]}; do
-		echo "load data local" >> ${generatedLoadScript}
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
 		parentPath="${localExtract}/"
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
-
+		snapshotOnly=false
 		#Check file exists - try beta version, or filepath directly if not
 		if [ ! -f ${parentPath}${fileName} ]; then
 			origFilename=${fileName}
@@ -92,6 +92,7 @@ function addLoadScript() {
   				parentPath=""
 				fileName=${origFilename}
 				tableName=${2} #Files loaded outside of extract directory use own names for table
+				snapshotOnly=true
 				if [ ! -f ${parentPath}${fileName} ]; then
 				  echo "Unable to find ${origFilename} or beta version"
 				  exit -1
@@ -99,15 +100,19 @@ function addLoadScript() {
 			fi
 		fi
 
-		echo -e "\tinfile '"${parentPath}${fileName}"'" >> ${generatedLoadScript}
-		echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
-		echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
-		echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
-		echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
-		echo -e ""  >> ${generatedLoadScript}
-		echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
-		echo -e ""  >> ${generatedLoadScript}
-	done
+		if [[ $snapshotOnly = false || ($snapshotOnly = true && "$fileType" = "Snapshot") ]]
+		then 
+			echo "load data local" >> ${generatedLoadScript}
+			echo -e "\tinfile '"${parentPath}${fileName}"'" >> ${generatedLoadScript}
+			echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
+			echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
+			echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
+			echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
+			echo -e ""  >> ${generatedLoadScript}
+			echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
+			echo -e ""  >> ${generatedLoadScript}
+		fi
+	done 
 }
 
 echo -e "\nGenerating loading script for $releaseDate"
