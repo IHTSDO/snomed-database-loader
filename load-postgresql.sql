@@ -39,7 +39,7 @@ COPY curr_attributevaluerefset_f(id, effectivetime, active, moduleid, refsetid, 
 FROM 'RF2Release/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_20150731.txt'
 WITH (FORMAT csv, HEADER true, DELIMITER '	');
 
-COPY curr_simplemaprefset_f(id, effectivetime, active, moduleid, refsetid,  referencedcomponentid, maptarget);
+COPY curr_simplemaprefset_f(id, effectivetime, active, moduleid, refsetid,  referencedcomponentid, maptarget)
 FROM 'RF2Release/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_20150731.txt'
 WITH (FORMAT csv, HEADER true, DELIMITER '	');
 
