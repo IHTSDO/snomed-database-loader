@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e;
 
+cd "`dirname "$0"`"
+basedir="$(pwd)"
 releasePath=$1
 dbName=$2
 loadType=$3
@@ -11,26 +13,26 @@ then
 	exit -1
 fi
 
-dbUsername=root
-echo "Enter database username [$dbUsername]:"
+dbUsername=postgres
+echo "Enter postgres username [$dbUsername]:"
 read newDbUsername
 if [ -n "$newDbUsername" ]
 then
 	dbUsername=$newDbUsername
 fi
 
-dbUserPassword=""
-echo "Enter database password (or return for none):"
-read newDbPassword
-if [ -n "$newDbPassword" ]
+dbPortNumber=5432
+echo "Enter postgres port number [$dbPortNumber|:"
+read newDbPortNumber
+if [ -n "$newDbPortNumber" ]
 then
-	dbUserPassword="-p${newDbPassword}"
+	dbPortNumber=$newDbPortNumber
 fi
 
 #Unzip the files here, junking the structure
 localExtract="tmp_extracted"
 generatedLoadScript="tmp_loader.sql"
-generatedEnvScript="tmp_environment-mysql.sql"
+generatedEnvScript="tmp_environment-postgresql.sql"
 
 #What types of files are we loading - delta, snapshot, full or all?
 case "${loadType}" in 
@@ -57,20 +59,19 @@ releaseDate=`ls -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`
 
 #Generate the environemnt script by running through the template as 
 #many times as required
-now=`date +"%Y%m%d_%H%M%S"`
-echo -e "\nGenerating Environment script for ${loadType} type(s)"
-echo "/* Script Generated Automatically by load_release.sh ${now} */" > ${generatedEnvScript}
-for fileType in ${fileTypes[@]}; do
-	fileTypeLetter=`echo "${fileType}" | head -c 1 | tr '[:upper:]' '[:lower:]'`
-	tail -n +2 environment-mysql-template.sql | while read thisLine
-	do
-		echo "${thisLine/TYPE/${fileTypeLetter}}" >> ${generatedEnvScript}
-	done
-done
+#now=`date +"%Y%m%d_%H%M%S"`
+#echo -e "\nGenerating Environment script for ${loadType} type(s)"
+#echo "/* Script Generated Automatically by load_release.sh ${now} */" > ${generatedEnvScript}
+#for fileType in ${fileTypes[@]}; do
+#	fileTypeLetter=`echo "${fileType}" | head -c 1 | tr '[:upper:]' '[:lower:]'`
+#	tail -n +2 environment-postgresql-mysql.sql | while read thisLine
+#	do
+#		echo "${thisLine/TYPE/${fileTypeLetter}}" >> ${generatedEnvScript}
+#	done
+#done
 
 function addLoadScript() {
 	for fileType in ${fileTypes[@]}; do
-		echo "load data local" >> ${generatedLoadScript}
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
 
@@ -86,19 +87,18 @@ function addLoadScript() {
 
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 
-		echo -e "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
-		echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
-		echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
-		echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
-		echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
-		echo -e ""  >> ${generatedLoadScript}
-		echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
+		echo -e "COPY curr_${tableName}" >> ${generatedLoadScript}
+		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
+		echo -e "WITH (FORMAT csv, HEADER true, DELIMITER E'	', QUOTE E'\b');" >> ${generatedLoadScript}
 		echo -e ""  >> ${generatedLoadScript}
 	done
 }
 
 echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
+echo "" >> ${generatedLoadScript}
+echo "set schema 'snomedct';" >> ${generatedLoadScript}
+echo "" >> ${generatedLoadScript}
 addLoadScript sct2_Concept_TYPE_INT_DATE.txt concept
 addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_INT_DATE.txt stated_relationship
@@ -108,14 +108,10 @@ addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
 
-mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
-	select 'Ensuring schema ${dbName} exists' as '  ';
-	create database IF NOT EXISTS ${dbName};
-	use ${dbName};
-	select '(re)Creating Schema using ${generatedEnvScript}' as '  ';
-	source ${generatedEnvScript};
-	select 'Loading RF2 Data using ${generatedLoadScript}' as '  ';
-	source ${generatedLoadScript};
+psql -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
+	\ir create-database-postgres.sql;
+	\ir environment-postgresql.sql;
+	\ir ${generatedLoadScript};
 EOF
 
 rm -rf $localExtract
