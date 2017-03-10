@@ -28,12 +28,21 @@ then
 fi
 
 includeTransitiveClosure=false
-echo "Calculate and store transitive closure? [Y/N]:"
+echo "Calculate and store inferred transitive closure? [Y/N]:"
 read tcResponse
 if [[ "${tcResponse}" == "Y"  ||  "${tcResponse}" == "y" ]]
 then
 	echo "Including transitive closure table - transclos"
 	includeTransitiveClosure=true
+fi
+
+includeStatedTransitiveClosure=false
+echo "Calculate and store stated transitive closure? [Y/N]:"
+read tcResponse
+if [[ "${tcResponse}" == "Y"  ||  "${tcResponse}" == "y" ]]
+then
+	echo "Including stated transitive closure table - stated_transclos"
+	includeStatedTransitiveClosure=true
 fi
 
 #Unzip the files here, junking the structure
@@ -151,6 +160,23 @@ CREATE TABLE transclos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 EOF
 addLoadScript ${tempFile} transclos
+fi
+
+if [ "${includeStatedTransitiveClosure}" = true ]
+then
+	echo "Generating Stated Transitive Closure file..."
+	tempFile=$(mktemp)
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
+	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
+DROP TABLE IF EXISTS stated_transclos;
+CREATE TABLE stated_transclos (
+  sourceid varchar(18) DEFAULT NULL,
+  destinationid varchar(18) DEFAULT NULL,
+  KEY idx_tc_source (sourceid),
+  KEY idx_tc_destination (destinationid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+EOF
+addLoadScript ${tempFile} stated_transclos
 fi
 
 mysql -u ${dbUsername} ${dbUserPassword} ${dbName}  --local-infile << EOF
