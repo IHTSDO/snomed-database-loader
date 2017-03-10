@@ -99,9 +99,10 @@ function addLoadScript() {
 				fi
 			fi
 		fi
-
+		
 		if [[ $snapshotOnly = false || ($snapshotOnly = true && "$fileType" = "Snapshot") ]]
 		then 
+			echo "alter table ${tableName} disable keys;" >> ${generatedLoadScript}
 			echo "load data local" >> ${generatedLoadScript}
 			echo -e "\tinfile '"${parentPath}${fileName}"'" >> ${generatedLoadScript}
 			echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
@@ -109,6 +110,7 @@ function addLoadScript() {
 			echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
 			echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
 			echo -e ""  >> ${generatedLoadScript}
+			echo "alter table ${tableName} enable keys;" >> ${generatedLoadScript}
 			echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
 			echo -e ""  >> ${generatedLoadScript}
 		fi
