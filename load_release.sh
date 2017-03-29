@@ -11,6 +11,14 @@ then
 	exit -1
 fi
 
+moduleStr=INT
+echo "Enter module string used in filenames [$moduleStr]:"
+read newModuleStr
+if [ -n "$newModuleStr" ]
+then
+	moduleStr=$newModuleStr
+fi
+
 dbUsername=root
 echo "Enter database username [$dbUsername]:"
 read newDbUsername
@@ -25,6 +33,24 @@ read newDbPassword
 if [ -n "$newDbPassword" ]
 then
 	dbUserPassword="-p${newDbPassword}"
+fi
+
+includeTransitiveClosure=false
+echo "Calculate and store inferred transitive closure? [Y/N]:"
+read tcResponse
+if [[ "${tcResponse}" == "Y"  ||  "${tcResponse}" == "y" ]]
+then
+	echo "Including transitive closure table - transclos"
+	includeTransitiveClosure=true
+fi
+
+includeStatedTransitiveClosure=false
+echo "Calculate and store stated transitive closure? [Y/N]:"
+read tcResponse
+if [[ "${tcResponse}" == "Y"  ||  "${tcResponse}" == "y" ]]
+then
+	echo "Including stated transitive closure table - stated_transclos"
+	includeStatedTransitiveClosure=true
 fi
 
 #Unzip the files here, junking the structure
@@ -70,50 +96,99 @@ done
 
 function addLoadScript() {
 	for fileType in ${fileTypes[@]}; do
-		echo "load data local" >> ${generatedLoadScript}
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
-
-		#Check file exists - try beta version if not
-		if [ ! -f ${localExtract}/${fileName} ]; then
+		fileName=${fileName/MOD/${moduleStr}}
+		parentPath="${localExtract}/"
+		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+		snapshotOnly=false
+		#Check file exists - try beta version, or filepath directly if not
+		if [ ! -f ${parentPath}${fileName} ]; then
 			origFilename=${fileName}
 			fileName="x${fileName}"
-			if [ ! -f ${localExtract}/${fileName} ]; then
-				echo "Unable to find ${origFilename} or beta version"
-				exit -1
+			if [ ! -f ${parentPath}${fileName} ]; then
+  				parentPath=""
+				fileName=${origFilename}
+				tableName=${2} #Files loaded outside of extract directory use own names for table
+				snapshotOnly=true
+				if [ ! -f ${parentPath}${fileName} ]; then
+				  echo "Unable to find ${origFilename} or beta version"
+				  exit -1
+				fi
 			fi
 		fi
-
-		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
-
-		echo -e "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedLoadScript}
-		echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
-		echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
-		echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
-		echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
-		echo -e ""  >> ${generatedLoadScript}
-		echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
-		echo -e ""  >> ${generatedLoadScript}
-	done
+		
+		if [[ $snapshotOnly = false || ($snapshotOnly = true && "$fileType" = "Snapshot") ]]
+		then 
+			echo "alter table ${tableName} disable keys;" >> ${generatedLoadScript}
+			echo "load data local" >> ${generatedLoadScript}
+			echo -e "\tinfile '"${parentPath}${fileName}"'" >> ${generatedLoadScript}
+			echo -e "\tinto table ${tableName}" >> ${generatedLoadScript}
+			echo -e "\tcolumns terminated by '\\\t'" >> ${generatedLoadScript}
+			echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedLoadScript}
+			echo -e "\tignore 1 lines;" >> ${generatedLoadScript}
+			echo -e ""  >> ${generatedLoadScript}
+			echo "alter table ${tableName} enable keys;" >> ${generatedLoadScript}
+			echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedLoadScript}
+			echo -e ""  >> ${generatedLoadScript}
+		fi
+	done 
 }
 
 echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
-addLoadScript sct2_Concept_TYPE_INT_DATE.txt concept
-addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
-addLoadScript sct2_StatedRelationship_TYPE_INT_DATE.txt stated_relationship
-addLoadScript sct2_Relationship_TYPE_INT_DATE.txt relationship
-addLoadScript sct2_TextDefinition_TYPE-en_INT_DATE.txt textdefinition
-addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
-addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
-addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
+addLoadScript sct2_Concept_TYPE_MOD_DATE.txt concept
+addLoadScript sct2_Description_TYPE-en_MOD_DATE.txt description
+addLoadScript sct2_StatedRelationship_TYPE_MOD_DATE.txt stated_relationship
+addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
+addLoadScript sct2_TextDefinition_TYPE-en_MOD_DATE.txt textdefinition
+addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
+addLoadScript der2_cRefset_LanguageTYPE-en_MOD_DATE.txt langrefset
+addLoadScript der2_cRefset_AssociationReferenceTYPE_MOD_DATE.txt associationrefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
-	select 'Ensuring schema ${dbName} exists' as '  ';
-	create database IF NOT EXISTS ${dbName};
-	use ${dbName};
-	select '(re)Creating Schema using ${generatedEnvScript}' as '  ';
-	source ${generatedEnvScript};
+        select 'Ensuring schema ${dbName} exists' as '  ';
+        create database IF NOT EXISTS ${dbName};
+        use ${dbName};
+        select '(re)Creating Schema using ${generatedEnvScript}' as '  ';
+        source ${generatedEnvScript};
+EOF
+
+if [ "${includeTransitiveClosure}" = true ]
+then
+	echo "Generating Transitive Closure file..."
+	tempFile=$(mktemp)
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
+	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
+DROP TABLE IF EXISTS transclos;
+CREATE TABLE transclos (
+  sourceid varchar(18) DEFAULT NULL,
+  destinationid varchar(18) DEFAULT NULL,
+  KEY idx_tc_source (sourceid),
+  KEY idx_tc_destination (destinationid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+EOF
+addLoadScript ${tempFile} transclos
+fi
+
+if [ "${includeStatedTransitiveClosure}" = true ]
+then
+	echo "Generating Stated Transitive Closure file..."
+	tempFile=$(mktemp)
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
+	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
+DROP TABLE IF EXISTS stated_transclos;
+CREATE TABLE stated_transclos (
+  sourceid varchar(18) DEFAULT NULL,
+  destinationid varchar(18) DEFAULT NULL,
+  KEY idx_tc_source (sourceid),
+  KEY idx_tc_destination (destinationid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+EOF
+addLoadScript ${tempFile} stated_transclos
+fi
+
+mysql -u ${dbUsername} ${dbUserPassword} ${dbName}  --local-infile << EOF
 	select 'Loading RF2 Data using ${generatedLoadScript}' as '  ';
 	source ${generatedLoadScript};
 EOF

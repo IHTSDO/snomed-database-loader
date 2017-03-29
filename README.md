@@ -14,6 +14,12 @@ run load_release.sh <rf2 archive location> <schemaName> <loadType - DELTA|SNAP|F
 
 eg ./load_release.sh ~/Backup/SnomedCT_RF2Release_INT_20150731.zip SCT_20150731 SNAP
 
+Note that the scripted installation will now support loading other Editions.  The script asks for a module identifier, which is INT by default, for the international edition.   Loading the US Edition, for example, would work as follows:
+<code>
+Enter module string used in filenames [INT]:
+US1000124
+</code>
+
 Manual Installation
 ------------
 1. Download the SNOMED CT terminology release from the IHTSDO web site
