@@ -11,6 +11,14 @@ then
 	exit -1
 fi
 
+moduleStr=INT
+echo "Enter module string used in filenames [$moduleStr]:"
+read newModuleStr
+if [ -n "$newModuleStr" ]
+then
+	moduleStr=$newModuleStr
+fi
+
 dbUsername=root
 echo "Enter database username [$dbUsername]:"
 read newDbUsername
@@ -90,6 +98,7 @@ function addLoadScript() {
 	for fileType in ${fileTypes[@]}; do
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
+		fileName=${fileName/MOD/${moduleStr}}
 		parentPath="${localExtract}/"
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 		snapshotOnly=false
@@ -128,14 +137,14 @@ function addLoadScript() {
 
 echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
-addLoadScript sct2_Concept_TYPE_INT_DATE.txt concept
-addLoadScript sct2_Description_TYPE-en_INT_DATE.txt description
-addLoadScript sct2_StatedRelationship_TYPE_INT_DATE.txt stated_relationship
-addLoadScript sct2_Relationship_TYPE_INT_DATE.txt relationship
-addLoadScript sct2_TextDefinition_TYPE-en_INT_DATE.txt textdefinition
-addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
-addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
-addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
+addLoadScript sct2_Concept_TYPE_MOD_DATE.txt concept
+addLoadScript sct2_Description_TYPE-en_MOD_DATE.txt description
+addLoadScript sct2_StatedRelationship_TYPE_MOD_DATE.txt stated_relationship
+addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
+addLoadScript sct2_TextDefinition_TYPE-en_MOD_DATE.txt textdefinition
+addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
+addLoadScript der2_cRefset_LanguageTYPE-en_MOD_DATE.txt langrefset
+addLoadScript der2_cRefset_AssociationReferenceTYPE_MOD_DATE.txt associationrefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
         select 'Ensuring schema ${dbName} exists' as '  ';
@@ -149,7 +158,7 @@ if [ "${includeTransitiveClosure}" = true ]
 then
 	echo "Generating Transitive Closure file..."
 	tempFile=$(mktemp)
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_Relationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
 	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS transclos;
 CREATE TABLE transclos (
@@ -166,7 +175,7 @@ if [ "${includeStatedTransitiveClosure}" = true ]
 then
 	echo "Generating Stated Transitive Closure file..."
 	tempFile=$(mktemp)
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_INT_${releaseDate}.txt ${tempFile}
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
 	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS stated_transclos;
 CREATE TABLE stated_transclos (
