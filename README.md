@@ -6,7 +6,7 @@ MYSQL SQL Scripts to create and populate a MYSQL or PostgreSQL database with a S
 Minimum Specification
 ---------------------
 - MYSQL v5.5.x
-- PostgreSQL v.x
+- PostgreSQL v.9
 
 Scripted Installation (Mac & Unix)
 ----------------------------------
