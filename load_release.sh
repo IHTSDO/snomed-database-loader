@@ -160,7 +160,11 @@ if [ "${includeTransitiveClosure}" = true ]
 then
 	echo "Generating Transitive Closure file..."
 	tempFile=$(mktemp)
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
+        infRelFile=${localExtract}/sct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt
+        if [ ! -f ${infRelFile} ]; then
+                infRelFile=${localExtract}/xsct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt
+        fi
+        perl ./transitiveClosureRf2Snap_dbCompatible.pl ${infRelFile} ${tempFile}
 	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS transclos;
 CREATE TABLE transclos (
@@ -177,7 +181,11 @@ if [ "${includeStatedTransitiveClosure}" = true ]
 then
 	echo "Generating Stated Transitive Closure file..."
 	tempFile=$(mktemp)
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
+	statedRelFile=${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt
+	if [ ! -f ${statedRelFile} ]; then
+		statedRelFile=${localExtract}/xsct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt
+	fi
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${statedRelFile} ${tempFile}
 	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS stated_transclos;
 CREATE TABLE stated_transclos (
