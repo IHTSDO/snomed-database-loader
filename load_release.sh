@@ -145,6 +145,8 @@ addLoadScript sct2_TextDefinition_TYPE-en_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-en_MOD_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationReferenceTYPE_MOD_DATE.txt associationrefset
+addLoadScript der2_iissscRefset_ComplexMapSnapshot_MOD_DATE.txt complexmaprefset
+addLoadScript der2_iisssccRefset_ExtendedMapSnapshot_MOD_DATE.txt extendedmaprefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
         select 'Ensuring schema ${dbName} exists' as '  ';
