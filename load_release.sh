@@ -112,8 +112,8 @@ function addLoadScript() {
 				tableName=${2} #Files loaded outside of extract directory use own names for table
 				snapshotOnly=true
 				if [ ! -f ${parentPath}${fileName} ]; then
-				  echo "Unable to find ${origFilename} or beta version"
-				  exit -1
+					echo "Unable to find ${origFilename} or beta version, skipping..."
+					return
 				fi
 			fi
 		fi
