@@ -1,11 +1,11 @@
-# SNOMED CT DATABASE
+# SNOMED CT Database Scripts
 
-Scripts to create and populate a MYSQL, PostgreSQL of NEO4J database with a SNOMED CT terminology release distributed in RF2 format.
+The scripts in this repository can be used to create and populate a MYSQL, PostgreSQL of NEO4J database with a SNOMED CT terminology release distributed in the **RF2 distribution format**.
 
-## Minimum Specification
+Please see the relevant sub-directories for each of the different database load scripts for the three database types:
 
-- MYSQL v5.5.x
-- PostgreSQL v. ?
-- NEO4J v. ?
+- [MYSQL](MySQL/README.md)
+- [NEO4J](NEO4J/README.md)
+- [PostgreSQL](PostgreSQL/README.md)
 
-Please see the relevant sub-directories for each of the different database load scripts.
+If you have any scripts for other databases, please fork this repository and create the pull request to submit any contributions.
