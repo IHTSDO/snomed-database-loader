@@ -4,8 +4,8 @@ The scripts in this repository can be used to create and populate a MYSQL, Postg
 
 Please see the relevant sub-directories for each of the different database load scripts for the three database types:
 
-- [MYSQL](MySQL/README.md)
-- [NEO4J](NEO4J/README.md)
-- [PostgreSQL](PostgreSQL/README.md)
+- [MYSQL](MySQL/)
+- [NEO4J](NEO4J/)
+- [PostgreSQL](PostgreSQL/)
 
 If you have any scripts for other databases, please fork this repository and create the pull request to submit any contributions.
