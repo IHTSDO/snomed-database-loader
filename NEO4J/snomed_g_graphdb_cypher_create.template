@@ -1,0 +1,117 @@
+// -----------------------------------------------------------------------------------------
+// Module:  snomed_g_graphdb_create.cypher
+// Author: Jay Pedersen, University of Nebraska, August 2015
+// Concept: Update a SNOMED_G Graph Database from input CSV files which describe the changes
+//          to concepts, descriptions, ISA relationships and defining relationships.
+// Input Files:
+//          concept_new.csv
+//          descrip_new.csv
+//          isa_rel_new.csv
+//          defining_rel_new.csv
+
+// NEXT STEP -- create INDEXES
+
+CREATE CONSTRAINT ON (c:ObjectConcept) ASSERT c.id IS UNIQUE;
+CREATE CONSTRAINT ON (c:ObjectConcept) ASSERT c.sctid IS UNIQUE;
+  // id,sctid index created, requiring uniqueness
+  // Note: Can't have "FSN is UNIQUE"" constraint, can have dups (inactive concepts)
+  //       for example -- "retired procedure" is FSN of multiple inactive concepts
+CREATE CONSTRAINT ON (c:Description) ASSERT c.id IS UNIQUE;
+CREATE INDEX ON :Description(sctid);
+  // need index so setting HAS_DESCRIPTION edges doesn't stall
+  // there can be more than one description for the same sctid, sctid not unique, but id is unique
+
+// ROLE_GROUP nodes.  Index needed for defining relationship assignment.
+CREATE INDEX ON :RoleGroup(sctid);
+
+// NEXT STEP -- create CONCEPT nodes
+
+RETURN 'Creating NEW ObjectConcept nodes';
+USING PERIODIC COMMIT 200
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>concept_new.csv" as line
+with line
+CREATE (:ObjectConcept
+        { nodetype:           'concept',
+          id:                 line.id,
+          sctid:              line.id,
+          active:             line.active,
+          effectiveTime:      line.effectiveTime,
+          moduleId:           line.moduleId,
+          definitionStatusId: line.definitionStatusId,
+          FSN:                line.FSN,
+          history:            line.history} );
+
+// NEXT STEP -- create DESCRIPTION nodes (info from Language+Description file)
+RETURN 'Creating NEW Description nodes';
+USING PERIODIC COMMIT 200
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_new.csv" as line
+with line
+CREATE (:Description
+        { nodetype:'description',
+          id: line.id,
+          sctid: line.sctid,
+          active: line.active,
+          typeId: line.typeId,
+          moduleId: line.moduleId,
+          descriptionType: line.descriptionType,
+          id128bit: line.id128bit,
+          term: line.term,
+          effectiveTime: line.effectiveTime,
+          acceptabilityId: line.acceptabilityId,
+          refsetId: line.refsetId,
+          caseSignificanceId: line.caseSignificanceId,
+          languageCode: line.languageCode,
+          history: line.history} );
+
+// NEXT STEP - create DESCRIPTION edges
+RETURN 'Creating HAS_DESCRIPTION edges for new Description nodes related to ObjectConcept nodes';
+USING PERIODIC COMMIT 200
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_new.csv" as line
+with line
+MATCH (c:ObjectConcept { sctid: line.sctid }), (f:Description { id: line.id })
+CREATE UNIQUE (c)-[:HAS_DESCRIPTION]->(f);
+
+// --------------------------------------------------------------------------------------
+// NEXT STEP -- create ISA relationships
+// --------------------------------------------------------------------------------------
+
+RETURN 'Creating NEW ISA edges';
+USING PERIODIC COMMIT 200
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>isa_rel_new.csv" as line
+with line
+MATCH (c1:ObjectConcept { id: line.sourceId }), (c2:ObjectConcept { id: line.destinationId })
+CREATE UNIQUE (c1)-[:ISA { id: line.id,
+                           active: line.active,
+                           effectiveTime: line.effectiveTime,
+                           moduleId: line.moduleId,
+                           relationshipGroup: line.relationshipGroup,
+                           typeId: line.typeId,
+                           characteristicTypeId: line.characteristicTypeId,
+                           sourceId: line.sourceId,
+                           destinationId: line.destinationId,
+                           history: line.history  }]->(c2);
+
+// --------------------------------------------------------------------------------------
+// NEXT STEP -- create RoleGroup nodes
+// --------------------------------------------------------------------------------------
+RETURN 'Creating RoleGroup nodes';
+USING PERIODIC COMMIT 500
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>rolegroups.csv" as line
+with line
+MERGE (rg:RoleGroup
+        { nodetype:'rolegroup',
+          sctid: line.sctid,
+          rolegroup: line.rolegroup});
+
+// Add edge in 2nd step, Java memory issue
+RETURN 'Creating HAS_ROLE_GROUP edges';
+USING PERIODIC COMMIT 500
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>rolegroups.csv" as line
+with line
+MATCH (c:ObjectConcept { sctid: line.sctid }), (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })
+CREATE UNIQUE (c)-[:HAS_ROLE_GROUP]->(rg);
+
+// --------------------------------------------------------------------------------------
+// NEXT STEP -- create Defining relationships
+// --------------------------------------------------------------------------------------
+

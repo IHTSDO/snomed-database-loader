@@ -218,3 +218,27 @@ key idx_referencedcomponentid(referencedcomponentid),
 key idx_mapTarget(mapTarget)
 ) engine=myisam default charset=utf8;
 
+drop table if exists extendedmaprefset_TYPE;
+create table extendedmaprefset_TYPE(
+id varchar(36) not null,
+effectivetime char(8) not null,
+active char(1) not null,
+moduleid varchar(18) not null,
+refsetid varchar(18) not null,
+referencedcomponentid varchar(18) not null,
+mapGroup smallint not null,
+mapPriority smallint not null,
+mapRule varchar(18),
+mapAdvice varchar(18),
+mapTarget varchar(18),
+correlationId varchar(18) not null,
+mapCategoryId varchar(18),
+key idx_id(id),
+key idx_effectivetime(effectivetime),
+key idx_active(active),
+key idx_moduleid(moduleid),
+key idx_refsetid(refsetid),
+key idx_referencedcomponentid(referencedcomponentid),
+key idx_mapTarget(mapTarget)
+) engine=myisam default charset=utf8;
+
