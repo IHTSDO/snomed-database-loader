@@ -112,8 +112,8 @@ function addLoadScript() {
 				tableName=${2} #Files loaded outside of extract directory use own names for table
 				snapshotOnly=true
 				if [ ! -f ${parentPath}${fileName} ]; then
-				  echo "Unable to find ${origFilename} or beta version"
-				  exit -1
+					echo "Unable to find ${origFilename} or beta version, skipping..."
+					return
 				fi
 			fi
 		fi
@@ -145,6 +145,8 @@ addLoadScript sct2_TextDefinition_TYPE-en_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-en_MOD_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationReferenceTYPE_MOD_DATE.txt associationrefset
+addLoadScript der2_iissscRefset_ComplexMapSnapshot_MOD_DATE.txt complexmaprefset
+addLoadScript der2_iisssccRefset_ExtendedMapSnapshot_MOD_DATE.txt extendedmaprefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
         select 'Ensuring schema ${dbName} exists' as '  ';
@@ -158,7 +160,11 @@ if [ "${includeTransitiveClosure}" = true ]
 then
 	echo "Generating Transitive Closure file..."
 	tempFile=$(mktemp)
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
+        infRelFile=${localExtract}/sct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt
+        if [ ! -f ${infRelFile} ]; then
+                infRelFile=${localExtract}/xsct2_Relationship_Snapshot_${moduleStr}_${releaseDate}.txt
+        fi
+        perl ./transitiveClosureRf2Snap_dbCompatible.pl ${infRelFile} ${tempFile}
 	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS transclos;
 CREATE TABLE transclos (
@@ -175,7 +181,11 @@ if [ "${includeStatedTransitiveClosure}" = true ]
 then
 	echo "Generating Stated Transitive Closure file..."
 	tempFile=$(mktemp)
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt ${tempFile}
+	statedRelFile=${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt
+	if [ ! -f ${statedRelFile} ]; then
+		statedRelFile=${localExtract}/xsct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt
+	fi
+	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${statedRelFile} ${tempFile}
 	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
 DROP TABLE IF EXISTS stated_transclos;
 CREATE TABLE stated_transclos (
