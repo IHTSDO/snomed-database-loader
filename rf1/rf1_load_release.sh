@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e;
 
 releasePath=$1
@@ -8,6 +8,22 @@ if [ -z ${dbName} ]
 then
 	echo "Usage <rf1 release location> <db schema name>"
 	exit -1
+fi
+
+dbUsername=root
+echo "Enter database username [$dbUsername]:"
+read newDbUsername
+if [ -n "$newDbUsername" ]
+then
+	dbUsername=$newDbUsername
+fi
+
+dbUserPassword=""
+echo "Enter database password (or return for none):"
+read newDbPassword
+if [ -n "$newDbPassword" ]
+then
+	dbUserPassword="-p${newDbPassword}"
 fi
 
 #Unzip the files here, junking the structure
@@ -64,7 +80,7 @@ addLoadScript sct1_ComponentHistory_Core_INT_DATE.txt rf1_componenthistory
 echo "Passing $generatedScript to MYSQL"
 
 #Unlike the RF2 script, we will not wipe the database by default
-mysql -u root  << EOF
+mysql -u ${dbUsername} ${dbUserPassword} --local-infile << EOF
 	create database IF NOT EXISTS ${dbName};
 	use ${dbName}
 	source rf1_environment_mysql.sql
