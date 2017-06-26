@@ -30,7 +30,7 @@ fi
 localExtract="tmp_rf1_extracted"
 rm -rf $localExtract
 generatedScript="tmp_rf1_loader.sql"
-unzip -j ${releasePath} -d ${localExtract}
+unzip -j ${releasePath} -d ${localExtract} || true
 
 #Determine the release date from the filenames
 releaseDate=`ls -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`
@@ -50,13 +50,13 @@ function addLoadScript() {
 	fi
 	
 	echo "load data local" >> ${generatedScript}
-	echo "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedScript}
-	echo "\tinto table ${tableName}" >> ${generatedScript}
-	echo "\tcolumns terminated by '\\\t'" >> ${generatedScript}
-	echo "\tlines terminated by '\\\r\\\n'" >> ${generatedScript}
-	echo "\tignore 1 lines;" >> ${generatedScript}
+	echo -e "\tinfile '"${localExtract}/${fileName}"'" >> ${generatedScript}
+	echo -e "\tinto table ${tableName}" >> ${generatedScript}
+	echo -e "\tcolumns terminated by '\\\t'" >> ${generatedScript}
+	echo -e "\tlines terminated by '\\\r\\\n'" >> ${generatedScript}
+	echo -e "\tignore 1 lines;" >> ${generatedScript}
 	echo ""  >> ${generatedScript}
-	echo "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedScript}
+	echo -e "select 'Loaded ${fileName} into ${tableName}' as '  ';" >> ${generatedScript}
 	echo ""  >> ${generatedScript}
 }
 
@@ -80,10 +80,9 @@ addLoadScript sct1_ComponentHistory_Core_INT_DATE.txt rf1_componenthistory
 echo "Passing $generatedScript to MYSQL"
 
 #Unlike the RF2 script, we will not wipe the database by default
-mysql -u ${dbUsername} ${dbUserPassword} --local-infile << EOF
+mysql -u ${dbUsername} ${dbUserPassword} ${dbName} --local-infile << EOF
 	create database IF NOT EXISTS ${dbName};
-	use ${dbName}
-	source rf1_environment_mysql.sql
+	source rf1_environment_mysql.sql;
 	source ${generatedScript};
 EOF
 
