@@ -1,0 +1,23 @@
+1.05
+
+2017/05/10 Added compare_concept_sets and extract_concept_sets to the rf2_tools.
+           Added CompareRF2s and WalkRF2 classes to lib_rf2.
+
+1.04
+
+2017/05/05  Improved reporting in Transitive Closure file comparison, with the --verbose option.
+
+1.03
+
+2017/04/30 1.03:  #1. Added CHECK_RESULT step to Graph Database update.
+                  #2. Handle case where source and destination nodes for an edge
+		      differs between the Graph and the update RF2.  Remove
+		      such edges and fail the update -- requiring a 2nd pass which adds them
+		      with the new source and destination and completes the update.
+	
+		      NOTE: it is not possible to repoint the source or destination of
+		            an edge in NEO4J 3.0.  Removal and re-addition of the edge is required.
+
+		      The plan is to later detect this in the graph vs RF2
+		      comparison and perform the same edge removal and re-add,
+		      but in a single pass instead of 2 passes.

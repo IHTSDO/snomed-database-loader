@@ -1,8 +1,9 @@
+/* Template for creating the S-CT RF2 data tables - TYPE replaced with d, s and f at runtime*/
 
-/* create the Full S-CT data tables */
+/* Section for type : TYPE */
 
-drop table if exists curr_concept_f;
-create table curr_concept_f(
+drop table if exists concept_TYPE;
+create table concept_TYPE(
 id varchar(18) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -16,8 +17,8 @@ key idx_definitionstatusid(definitionstatusid)
 ) engine=myisam default charset=utf8;
 
 
-drop table if exists curr_description_f;
-create table curr_description_f(
+drop table if exists description_TYPE;
+create table description_TYPE(
 id varchar(18) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -34,12 +35,11 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_textdefinition_f;
-create table curr_textdefinition_f(
+drop table if exists textdefinition_TYPE;
+create table textdefinition_TYPE(
 id varchar(18) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -56,12 +56,11 @@ key idx_moduleid(moduleid),
 key idx_conceptid(conceptid),
 key idx_languagecode(languagecode),
 key idx_typeid(typeid),
-key idx_term(term),
 key idx_casesignificanceid(casesignificanceid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_relationship_f;
-create table curr_relationship_f(
+drop table if exists relationship_TYPE;
+create table relationship_TYPE(
 id varchar(18) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -84,8 +83,8 @@ key idx_characteristictypeid(characteristictypeid),
 key idx_modifierid(modifierid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_stated_relationship_f;
-create table curr_stated_relationship_f(
+drop table if exists stated_relationship_TYPE;
+create table stated_relationship_TYPE(
 id varchar(18) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -108,8 +107,8 @@ key idx_characteristictypeid(characteristictypeid),
 key idx_modifierid(modifierid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_langrefset_f;
-create table curr_langrefset_f(
+drop table if exists langrefset_TYPE;
+create table langrefset_TYPE(
 id varchar(36) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -126,8 +125,8 @@ key idx_referencedcomponentid(referencedcomponentid),
 key idx_acceptabilityid(acceptabilityid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_associationrefset_f;
-create table curr_associationrefset_f(
+drop table if exists associationrefset_TYPE;
+create table associationrefset_TYPE(
 id varchar(36) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -144,8 +143,8 @@ key idx_referencedcomponentid(referencedcomponentid),
 key idx_targetcomponentid(targetcomponentid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_attributevaluerefset_f;
-create table curr_attributevaluerefset_f(
+drop table if exists attributevaluerefset_TYPE;
+create table attributevaluerefset_TYPE(
 id varchar(36) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -162,8 +161,8 @@ key idx_referencedcomponentid(referencedcomponentid),
 key idx_valueid(valueid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_simplemaprefset_f;
-create table curr_simplemaprefset_f(
+drop table if exists simplemaprefset_TYPE;
+create table simplemaprefset_TYPE(
 id varchar(36) not null,
 effectivetime char(8) not null,
 active char(1) not null,
@@ -180,41 +179,66 @@ key idx_referencedcomponentid(referencedcomponentid),
 key idx_maptarget(maptarget)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_simplerefset_f;
-create table curr_simplerefset_f(
-	id varchar(36) not null,
-	effectivetime char(8) not null,
-	active char(1) not null,
-	moduleid varchar(18) not null,
-	refsetid varchar(18) not null,
-	referencedcomponentid varchar(18) not null,
-	key idx_id(id),
-	key idx_effectivetime(effectivetime),
-	key idx_active(active),
-	key idx_moduleid(moduleid),
-	key idx_refsetid(refsetid),
-	key idx_referencedcomponentid(referencedcomponentid)
+drop table if exists simplerefset_TYPE;
+create table simplerefset_TYPE(
+id varchar(36) not null,
+effectivetime char(8) not null,
+active char(1) not null,
+moduleid varchar(18) not null,
+refsetid varchar(18) not null,
+referencedcomponentid varchar(18) not null,
+key idx_id(id),
+key idx_effectivetime(effectivetime),
+key idx_active(active),
+key idx_moduleid(moduleid),
+key idx_refsetid(refsetid),
+key idx_referencedcomponentid(referencedcomponentid)
 ) engine=myisam default charset=utf8;
 
-drop table if exists curr_complexmaprefset_f;
-create table curr_complexmaprefset_f(
-	id varchar(36) not null,
-	effectivetime char(8) not null,
-	active char(1) not null,
-	moduleid varchar(18) not null,
-	refsetid varchar(18) not null,
-	referencedcomponentid varchar(18) not null,
-	mapGroup smallint not null,
-	mapPriority smallint not null,
-	mapRule varchar(18),
-	mapAdvice varchar(18),
-	mapTarget varchar(18),
-	correlationId varchar(18) not null,
-	key idx_id(id),
-	key idx_effectivetime(effectivetime),
-	key idx_active(active),
-	key idx_moduleid(moduleid),
-	key idx_refsetid(refsetid),
-	key idx_referencedcomponentid(referencedcomponentid),
-	key idx_mapTarget(mapTarget)
+drop table if exists complexmaprefset_TYPE;
+create table complexmaprefset_TYPE(
+id varchar(36) not null,
+effectivetime char(8) not null,
+active char(1) not null,
+moduleid varchar(18) not null,
+refsetid varchar(18) not null,
+referencedcomponentid varchar(18) not null,
+mapGroup smallint not null,
+mapPriority smallint not null,
+mapRule varchar(18),
+mapAdvice varchar(18),
+mapTarget varchar(18),
+correlationId varchar(18) not null,
+key idx_id(id),
+key idx_effectivetime(effectivetime),
+key idx_active(active),
+key idx_moduleid(moduleid),
+key idx_refsetid(refsetid),
+key idx_referencedcomponentid(referencedcomponentid),
+key idx_mapTarget(mapTarget)
 ) engine=myisam default charset=utf8;
+
+drop table if exists extendedmaprefset_TYPE;
+create table extendedmaprefset_TYPE(
+id varchar(36) not null,
+effectivetime char(8) not null,
+active char(1) not null,
+moduleid varchar(18) not null,
+refsetid varchar(18) not null,
+referencedcomponentid varchar(18) not null,
+mapGroup smallint not null,
+mapPriority smallint not null,
+mapRule varchar(18),
+mapAdvice varchar(18),
+mapTarget varchar(18),
+correlationId varchar(18) not null,
+mapCategoryId varchar(18),
+key idx_id(id),
+key idx_effectivetime(effectivetime),
+key idx_active(active),
+key idx_moduleid(moduleid),
+key idx_refsetid(refsetid),
+key idx_referencedcomponentid(referencedcomponentid),
+key idx_mapTarget(mapTarget)
+) engine=myisam default charset=utf8;
+
