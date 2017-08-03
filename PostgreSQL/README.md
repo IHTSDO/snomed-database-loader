@@ -1,28 +1,40 @@
 # SNOMED CT DATABASE
 
-MSSQL SQL Scripts to create and populate a MSSQL database with a SNOMED CT terminology release
+PostgreSQL SQL Scripts to create and populate a PostgreSQL database with a SNOMED CT terminology release
 
 ## Minimum Specification
 
-- MSSQL 2008
+- PostgreSQL v.9
 
-# Creating the SNOMED CT DB schema on MS SQL
+# Creating the SNOMED CT schema on PostgreSQL
 
-- Create an empty DB and execute manually script create-database-mssql.sql against it
+PostgreSQL is an [`ORDBMS`](http://en.wikipedia.org/wiki/ORDBMS) therefore every Database is self-contained object. A _"database"_ contains logins, one or more schemas, groups, etc. and every conection is related to a sigle database.
 
-## Diffences from the PostgreSQL version
+## Diffences from the MySQL version
 
-- TSQL check for table presentse
-- Changes `uniqueidentifier` for `uuid`
+- PostgreSQL does not need `engine=myisam` which by itself is a bit strange as `myisam` does not support foreign keys.
+- Changes `database` for `schema`
+- using the `unique` constraint instead of `key`
+
+## Scripted Installation (Mac & Unix)
+
+run load_release-postgresql.sh
+
+<rf2 archive="" location="">
+  <schemaname>
+  <loadtype -="" delta|snap|full|all="">
+</loadtype>
+</schemaname>
+</rf2>
+
+eg ./load_release-postgresql.sh ~/Backup/SnomedCT_RF2Release_INT_20150731.zip SCT_20150731 SNAP
+
+Note that the scripted installation will now support loading other Editions. The script asks for a module identifier, which is INT by default, for the international edition. Loading the US Edition, for example, would work as follows: `Enter module string used in filenames [INT]: US1000124`
 
 ## Manual Installation
 
-- Unpack Full version of SNOMED CT files
-- Copy import.bat into root folder where Full SNOMED CR files were updacked (the root has "Documentation" and "Full" folders only)
-- execute import.bat
-- import.sql script will be generated. Execute it againt desired MS SQL DB 
-
-You may use sqlcmd to execute import.sql
-sqlcmd -b -I -S [server IP/name, port] -d [DB name] -U [User] -P [Password] -i import.sql
-
-Note: If you recieve message that "... Operating system error code 5(Access is denied.)" - please follow https://stackoverflow.com/questions/14555262/cannot-bulk-load-operating-system-error-code-5-access-is-denied
+1. Download the SNOMED CT terminology release from the IHTSDO web site
+2. Create the database using the db create-database-postgres.sql script or skip/perform this action manually if you'd like the data to be loaded into a existing/different database.
+3. Create the tables using the db appropriate environment.sql script. The default file creates tables for full, snapshot and delta files and there's also a -full-only version.
+4. Edit the db appropriate load.sql script with the correct location of the SNOMED CT release files An alternative under unix or mac would be to create a symlink to the appropriate directory eg `ln -s /your/snomed/directory RF2Release`
+5. Load the database created using the edited load.sql script from the relevant command prompt, again by default for full, snapshot and delta unless you only want the full version.
