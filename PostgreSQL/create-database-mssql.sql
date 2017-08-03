@@ -1,7 +1,7 @@
 /* create the Full S-CT data tables */
-set schema 'snomedct';
 
-drop table if exists curr_concept_f cascade;
+
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_concept_f') DROP TABLE curr_concept_f;
 create table curr_concept_f(
   id varchar(18) not null,
   effectivetime char(8) not null,
@@ -11,7 +11,7 @@ create table curr_concept_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_description_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_description_f') DROP TABLE curr_description_f;
 create table curr_description_f(
   id varchar(18) not null,
   effectivetime char(8) not null,
@@ -25,7 +25,7 @@ create table curr_description_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_textdefinition_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_textdefinition_f') DROP TABLE curr_textdefinition_f;
 create table curr_textdefinition_f(
   id varchar(18) not null,
   effectivetime char(8) not null,
@@ -39,7 +39,7 @@ create table curr_textdefinition_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_relationship_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_relationship_f') DROP TABLE curr_relationship_f;
 create table curr_relationship_f(
   id varchar(18) not null,
   effectivetime char(8) not null,
@@ -54,7 +54,7 @@ create table curr_relationship_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_stated_relationship_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_stated_relationship_f') DROP TABLE curr_stated_relationship_f;
 create table curr_stated_relationship_f(
   id varchar(18) not null,
   effectivetime char(8) not null,
@@ -69,9 +69,9 @@ create table curr_stated_relationship_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_langrefset_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_langrefset_f') DROP TABLE curr_langrefset_f;
 create table curr_langrefset_f(
-  id uuid not null,
+  id uniqueidentifier  not null,
   effectivetime char(8) not null,
   active char(1) not null,
   moduleid varchar(18) not null,
@@ -81,9 +81,9 @@ create table curr_langrefset_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_associationrefset_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_associationrefset_f') DROP TABLE curr_associationrefset_f;
 create table curr_associationrefset_f(
-  id uuid not null,
+  id uniqueidentifier not null,
   effectivetime char(8) not null,
   active char(1) not null,
   moduleid varchar(18) not null,
@@ -93,9 +93,9 @@ create table curr_associationrefset_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_attributevaluerefset_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_attributevaluerefset_f') DROP TABLE curr_attributevaluerefset_f;
 create table curr_attributevaluerefset_f(
-  id uuid not null,
+  id uniqueidentifier not null,
   effectivetime char(8) not null,
   active char(1) not null,
   moduleid varchar(18) not null,
@@ -105,9 +105,9 @@ create table curr_attributevaluerefset_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_simplerefset_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_simplerefset_f') DROP TABLE curr_simplerefset_f;
 create table curr_simplerefset_f(
-  id uuid not null,
+  id uniqueidentifier not null,
   effectivetime char(8) not null,
   active char(1) not null,
   moduleid varchar(18) not null,
@@ -116,9 +116,9 @@ create table curr_simplerefset_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_simplemaprefset_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_simplemaprefset_f') DROP TABLE curr_simplemaprefset_f;
 create table curr_simplemaprefset_f(
-  id uuid not null,
+  id uniqueidentifier not null,
   effectivetime char(8) not null,
   active char(1) not null,
   moduleid varchar(18) not null,
@@ -128,26 +128,9 @@ create table curr_simplemaprefset_f(
   PRIMARY KEY(id, effectivetime)
 );
 
-drop table if exists curr_complexmaprefset_f cascade;
-create table curr_complexmaprefset_f(
-  id uuid not null,
-  effectivetime char(8) not null,
-  active char(1) not null,
-  moduleid varchar(18) not null,
-  refsetid varchar(18) not null,
-  referencedcomponentid varchar(18) not null,
-  mapGroup smallint not null,
-  mapPriority smallint not null,
-  mapRule text,
-  mapAdvice text,
-  mapTarget text,
-  correlationId varchar(18) not null,
-  PRIMARY KEY(id, effectivetime)
-);
-
-drop table if exists curr_extendedmaprefset_f cascade;
+IF EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'curr_extendedmaprefset_f') DROP TABLE curr_extendedmaprefset_f;
 create table curr_extendedmaprefset_f(
-  id uuid not null,
+  id uniqueidentifier not null,
   effectivetime char(8) not null,
   active char(1) not null,
   moduleid varchar(18) not null,
