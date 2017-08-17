@@ -1,0 +1,79 @@
+/* Create functions to calculate Verhoeff check sum */
+
+CREATE OR REPLACE FUNCTION snomedct.reverse (
+  input text
+)
+RETURNS text AS $$
+DECLARE
+  RESULT text = '';
+  i INT;
+BEGIN
+  FOR i IN 1..LENGTH(INPUT) BY 2 LOOP
+    RESULT = substr(INPUT,i+1,1) || substr(INPUT,i,1) || RESULT;
+  END LOOP;
+  RETURN RESULT;
+END; $$
+LANGUAGE 'plpgsql'
+IMMUTABLE
+RETURNS NULL ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION snomedct.generateverhoeff (
+  input numeric = NULL::numeric
+)
+RETURNS smallint AS $$
+DECLARE
+  _c SMALLINT := 0;
+  _m SMALLINT;
+  _i SMALLINT := 0;
+  _n VARCHAR(255);
+  -- Delcare array
+  _d CHAR(100) := '0123456789123406789523401789563401289567401239567859876043216598710432765982104387659321049876543210';
+  _p CHAR(80) := '01234567891576283094580379614289160435279453126870428657390127938064157046913258';
+  _v CHAR(10) := '0432156789';
+BEGIN
+  _n := REVERSE(input::TEXT);
+  WHILE _i<length(_n) LOOP
+    _m := CAST(SUBSTRING(_p,(((_i + 1)%8)*10) + CAST(SUBSTRING(_n, _i+1, 1) AS SMALLINT) + 1, 1) AS SMALLINT);
+    
+    _c := CAST (substring(_d, (_c *10 + _m + 1), 1) AS SMALLINT);
+    _i := _i + 1;
+  END LOOP;
+  
+  RETURN CAST(substring(_v,_c+1,1) as SMALLINT);
+END; $$
+LANGUAGE 'plpgsql'
+IMMUTABLE
+RETURNS NULL ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION snomedct.checkverhoeff (
+  input numeric = NULL::numeric
+)
+RETURNS boolean AS $$
+DECLARE
+  _c SMALLINT := 0;
+  _m SMALLINT;
+  _i SMALLINT := 0;
+  _n VARCHAR(255);
+  -- Delcare array
+  _d CHAR(100) := '0123456789123406789523401789563401289567401239567859876043216598710432765982104387659321049876543210';
+  _p CHAR(80) := '01234567891576283094580379614289160435279453126870428657390127938064157046913258';
+  _v CHAR(10) := '0432156789';
+BEGIN
+  _n := REVERSE(input::TEXT);
+  WHILE _i<length(_n) LOOP
+    _m := CAST(SUBSTRING(_p,((_i%8)*10) + CAST(SUBSTRING(_n, _i+1, 1) AS SMALLINT) + 1, 1) AS SMALLINT);
+    
+    _c := CAST (substring(_d, (_c *10 + _m + 1), 1) AS SMALLINT);
+    _i := _i + 1;
+  END LOOP;
+  
+  CASE (CAST(substring(_v,_c+1,1) as SMALLINT))
+    WHEN 0 THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+  END CASE;
+END; $$
+LANGUAGE 'plpgsql'
+IMMUTABLE
+RETURNS NULL ON NULL INPUT;
