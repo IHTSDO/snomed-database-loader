@@ -1,0 +1,25 @@
+// --------------------------------------------------------------------
+// Module:  snomed_g_graphdb_cypher_rmv_problem_edges.cypher
+// Author: Jay Pedersen, University of Nebraska, August 2015
+// Concept: Remove ISA and defining-relationship edges which were not
+//          appropriately updated after an update.
+//          The issue is caused by MATCH failure due to the source or
+//          destination of the edge changing.
+//          The idea is that removal of these problem edges, will allow
+//          the next update attempt to work.
+// Input Files:
+//          concept_chg.csv
+//          defining_rel_chg.csv
+// --------------------------------------------------------------------
+
+RETURN 'Removing defining-relationships (DRs) that changed source/destination';'
+USING PERIODIC COMMIT 200
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>defining_rel_chg.csv" as line
+MATCH (rg:RoleGroup)-[r {id: line.id}]->(c:ObjectConcept)
+DELETE r;
+
+RETURN 'Removing ISA relationships that changed the source or destination.';
+USING PERIODIC COMMIT 200
+LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>defining_rel_chg.csv" as line
+MATCH (b:ObjectConcept)-[r {id: line.id}]->(c:ObjectConcept)
+DELETE r;
