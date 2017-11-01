@@ -97,6 +97,10 @@ def instantiate(arglist):
       if idx==0: continue # typeId,rolename
       typeId, rolename = line.split(',')
       # create CYPHER to load the file and add the relationships to ROLE_GROUP nodes
+      # JGP 2017-10-31.  Use a 2-step procedure for creating the defining relationships,
+      #   to support systems with smaller amounts of memory (use smaller transactions).
+      #   The first step creates any necessary role groups, and the second step creates
+      #   the defining relationship edges from role groups to the specified target concepts.
       print('// %s defining relationships' % rolename,file=fout)
       print('''RETURN 'NEW Defining relationships of type %s';''' % rolename,file=fout)
       print(file=fout)
@@ -104,7 +108,14 @@ def instantiate(arglist):
       load_csv_line = ('LOAD CSV with headers from "%s%sDR_%s_new.csv" as line' % (('file:///' if sys.platform in ['cygwin','win32','darwin'] else 'file:'),output_dir,typeId)).replace('file:////','file:///')
       print(load_csv_line,file=fout)
       print('with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id',file=fout)
-      print('MERGE (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id })',file=fout)
+      print('MERGE (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id };)',file=fout)
+      print(file=fout)
+      print('// Add defining relationship edge in 2nd step, Java memory issue',file=fout)
+      print('USING PERIODIC COMMIT 200',file=fout)
+      load_csv_line = ('LOAD CSV with headers from "%s%sDR_%s_new.csv" as line' % (('file:///' if sys.platform in ['cygwin','win32','darwin'] else 'file:'),output_dir,typeId)).replace('file:////','file:///')
+      print(load_csv_line,file=fout)
+      print('with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id',file=fout)
+      print('MATCH (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id })',file=fout)
       print('WITH line,rg,source_id,dest_id,rolegroup_id',file=fout)
       print('MATCH (c:ObjectConcept { sctid: dest_id })',file=fout)
       print('CREATE UNIQUE (rg)-[:%s { id: line.id, active: line.active, sctid: source_id,' % rolename,file=fout)
