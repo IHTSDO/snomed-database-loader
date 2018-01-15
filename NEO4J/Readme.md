@@ -22,6 +22,23 @@ General syntax:
 
 `python <path-to-snomed_g-bin>/snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw64 <base64-password> --output_dir <output-directory-path>`
 
+Mac syntax for for en-GB
+
+Assuming you download desktop version of neo4j, create a database, then find neo4j.conf for that database by clicking on open folder, then select configuration
+
+Comment out import directory variable
+
+`#dbms.directories.import=import`
+
+Configure it so that it has at least 4g memory
+
+`dbms.memory.heap.max_size=4G`
+
+
+`cd <path-to-snomed_g-bin>`
+
+`python snomed_g_graphdb_build_tools.py db_build --release_type full  --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw64 <base64-password> --language_code 'en-GB'  --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z `
+
 By default, the language designation is "en" and the language is simply "Language", which is used in the filename of the Description file and the Language files.
 
 If that is not what was used, the following parameters need to be specified (assume "en-us" and "USEnglish" values should be used):
