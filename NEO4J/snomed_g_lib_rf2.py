@@ -16,7 +16,7 @@ class Rf2_Folders:
     global snomedct_terminology_dir, relationship_config,release_format, config_file_suffix
     if rel_config not in ['Relationship','StatedRelationship']:
       raise ValueError('rel_config invalid [%s} -- must be Relationship or StatedRelationship' % rel_config)
-    supported_language_codes = ['en','en-us']
+    supported_language_codes = ['en','en-us', 'en-GB']
     if language_code not in supported_language_codes:
       raise ValueError('language_code invalid [%s] -- supported list is %s' % (language_code, str(supported_language_codes)))
     self.language_code = language_code

@@ -222,7 +222,7 @@ def db_build(arglist):
       'mode':['build','prep','make_csvs','validate']},
     {'stepname':'TEMPLATE_PROCESSING',    'cmd':'python %s/snomed_g_template_tools.py instantiate %s/snomed_g_graphdb_cypher_%s.template build.cypher --rf2 %s --release_type %s' % (snomed_g_bin,snomed_g_bin,('create' if opts.action=='create' else 'update'),opts.rf2,opts.release_type),
       'mode':['build','prep']},
-    {'stepname':'CYPHER_EXECUTION',       'cmd':'python %s/snomed_g_neo4j_tools.py run_cypher build.cypher --verbose --neopw64 %s' % (snomed_g_bin, opts.neopw64), 'mode':['build','run_cypher']},
+    {'stepname':'CYPHER_EXECUTION',       'cmd':'python %s/snomed_g_neo4j_tools.py run_cypher %s/build.cypher --verbose --neopw64 %s' % (snomed_g_bin, snomed_g_bin, opts.neopw64), 'mode':['build','run_cypher']},
     {'stepname':'CHECK_RESULT',           'cmd':'python %s/snomed_g_neo4j_tools.py run_cypher %s/snomed_g_graphdb_update_failure_check.cypher --verbose --neopw64 %s' % (snomed_g_bin, snomed_g_bin, opts.neopw64), 'mode':['build','run_cypher']},
     {'stepname':'JOB_END',                'log':'JOB-END'}
   ]
