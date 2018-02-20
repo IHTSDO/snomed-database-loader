@@ -19,6 +19,14 @@ then
 	moduleStr=$newModuleStr
 fi
 
+langCode=en
+echo "Enter the language code string used in filenames [$langCode]:"
+read newLangCode
+if [ -n "$newLangCode" ]
+then
+	langCode=$newLangCode
+fi
+
 dbUsername=root
 echo "Enter database username [$dbUsername]:"
 read newDbUsername
@@ -99,6 +107,7 @@ function addLoadScript() {
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
 		fileName=${fileName/MOD/${moduleStr}}
+		fileName=${fileName/LANG/${langCode}}
 		parentPath="${localExtract}/"
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 		snapshotOnly=false
@@ -138,12 +147,12 @@ function addLoadScript() {
 echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
 addLoadScript sct2_Concept_TYPE_MOD_DATE.txt concept
-addLoadScript sct2_Description_TYPE-en_MOD_DATE.txt description
+addLoadScript sct2_Description_TYPE-LANG_MOD_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_MOD_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
-addLoadScript sct2_TextDefinition_TYPE-en_MOD_DATE.txt textdefinition
+addLoadScript sct2_TextDefinition_TYPE-LANG_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
-addLoadScript der2_cRefset_LanguageTYPE-en_MOD_DATE.txt langrefset
+addLoadScript der2_cRefset_LanguageTYPE-LANG_MOD_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationReferenceTYPE_MOD_DATE.txt associationrefset
 addLoadScript der2_iissscRefset_ComplexMapSnapshot_MOD_DATE.txt complexmaprefset
 addLoadScript der2_iisssccRefset_ExtendedMapSnapshot_MOD_DATE.txt extendedmaprefset
