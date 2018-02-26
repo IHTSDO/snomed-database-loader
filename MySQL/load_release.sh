@@ -153,9 +153,9 @@ addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
 addLoadScript sct2_TextDefinition_TYPE-LANG_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-LANG_MOD_DATE.txt langrefset
-addLoadScript der2_cRefset_AssociationReferenceTYPE_MOD_DATE.txt associationrefset
-addLoadScript der2_iissscRefset_ComplexMapSnapshot_MOD_DATE.txt complexmaprefset
-addLoadScript der2_iisssccRefset_ExtendedMapSnapshot_MOD_DATE.txt extendedmaprefset
+addLoadScript der2_cRefset_AssociationTYPE_MOD_DATE.txt associationrefset
+addLoadScript der2_iissscRefset_ComplexMapTYPE_MOD_DATE.txt complexmaprefset
+addLoadScript der2_iisssccRefset_ExtendedMapTYPE_MOD_DATE.txt extendedmaprefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
         select 'Ensuring schema ${dbName} exists' as '  ';
