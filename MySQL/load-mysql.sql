@@ -46,7 +46,7 @@ load data local
 	ignore 1 lines;
 
 load data local 
-	infile 'RF2Release/Full/Refset/Content/der2_cRefset_AssociationReferenceFull_INT_20180131.txt' 
+	infile 'RF2Release/Full/Refset/Content/der2_cRefset_AssociationFull_INT_20180131.txt' 
 	into table associationrefset_f
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
@@ -131,7 +131,7 @@ load data local
 	ignore 1 lines;
 
 load data local 
-	infile 'RF2Release/Snapshot/Refset/Content/der2_cRefset_AssociationReferenceSnapshot_INT_20180131.txt' 
+	infile 'RF2Release/Snapshot/Refset/Content/der2_cRefset_AssociationSnapshot_INT_20180131.txt' 
 	into table associationrefset_s
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
@@ -216,7 +216,7 @@ load data local
 	ignore 1 lines;
 
 load data local 
-	infile 'RF2Release/Delta/Refset/Content/der2_cRefset_AssociationReferenceDelta_INT_20180131.txt' 
+	infile 'RF2Release/Delta/Refset/Content/der2_cRefset_AssociationDelta_INT_20180131.txt' 
 	into table associationrefset_d
 	columns terminated by '\t' 
 	lines terminated by '\r\n' 
