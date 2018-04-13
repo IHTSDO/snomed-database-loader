@@ -2,9 +2,11 @@
 
 This upload script has been kindly donated by Scott Campbell from the University of Nebraska Medical Center, Omaha, NE. This script is not directly supported by SNOMED International and is provided for reference.
 
+Version 1.1, 2018-04-13, Fix FSN issue in some ObjectConcept nodes -- require that the description have the active='1' attribute value.
+
 ## For attribution:
 
-**Pedersen JP, Campbell WS**. Graph database build of SNOMED CT files. University of Nebraska Medical Center, Omaha, NE. 2017
+**Pedersen JG, Campbell WS**. Graph database build of SNOMED CT files. University of Nebraska Medical Center, Omaha, NE. 2017
 
 **Full manuscript:** Campbell WS, Pedersen J, McClay JC, Rao P, Bastola D, Campbell JR. [An alternative database approach for management of SNOMED CT and improved patient data queries](https://www.ncbi.nlm.nih.gov/pubmed/26305513). J Biomed Inform. 2015 Oct;57:350-7\. doi: 10.1016/j.jbi.2015.08.016\. Epub 2015 Aug 21\. PubMed PMID: 26305513.
 
