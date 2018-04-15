@@ -277,7 +277,7 @@ def db_build(arglist):
         subprocess.check_call(cmd_as_list, stdout=logfile, stderr=logfile)
         if opts.output_dir !='.': os.chdir(saved_pwd) # get back (popd)
         status = 0 # if no exception -- status is zero
-      except subprocess.CalledProcessError, e:
+      except subprocess.CalledProcessError as e:
         status = e.returncode
         results_d[stepname]['status'] = status
         if status != expected_status:
