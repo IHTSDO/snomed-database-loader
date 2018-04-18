@@ -2,6 +2,7 @@
 
 This upload script has been kindly donated by Scott Campbell from the University of Nebraska Medical Center, Omaha, NE. This script is not directly supported by SNOMED International and is provided for reference.
 
+Version 1.2, 2018-04-18, Support python 3.  Tested with python 3.6 and python 2.7.
 Version 1.1, 2018-04-13, Fix FSN issue in some ObjectConcept nodes -- require that the description have the active='1' attribute value.
 
 ## For attribution:
