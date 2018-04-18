@@ -16,7 +16,7 @@ class Rf2_Folders:
     global snomedct_terminology_dir, relationship_config,release_format, config_file_suffix
     if rel_config not in ['Relationship','StatedRelationship']:
       raise ValueError('rel_config invalid [%s} -- must be Relationship or StatedRelationship' % rel_config)
-    supported_language_codes = ['en','en-us', 'en-GB']
+    supported_language_codes = ['en','en-us', 'en-GB', 'en-US']
     if language_code not in supported_language_codes:
       raise ValueError('language_code invalid [%s] -- supported list is %s' % (language_code, str(supported_language_codes)))
     self.language_code = language_code
@@ -157,7 +157,7 @@ class Process_Rf2_Release_File: # Delta or Snapshot or Full
 
   def __init__(self, filename):
     self.filename = filename
-    self.f = open(self.filename)
+    self.f = io.open(self.filename, 'r', encoding='utf-8')
     # read header line ==> determine field name to field index mapping and vice-versa
     header = self.f.readline().rstrip('\n').rstrip('\r') # deal with windows,linux line-separators
     self.field_names = header.split('\t') # field number to field name
