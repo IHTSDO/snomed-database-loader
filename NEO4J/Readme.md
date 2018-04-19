@@ -1,6 +1,8 @@
 # Neo4j Graph Database
 
-This upload script has been kindly donated by Scott Campbell from the University of Nebraska Medical Center, Omaha, NE. This script is not directly supported by SNOMED International and is provided for reference.
+This upload script has been kindly donated by Scott Campbell and his team from the University of Nebraska Medical Center, Omaha, NE.
+
+**NOTE:** This script is not directly supported by SNOMED International and has not been tested by the SNOMED International team.
 
 Version 1.2, 2018-04-18,
     (a) Support python 3 in addition to python 2.7.  (Tested with python 3.6 and python 2.7).

@@ -40,10 +40,10 @@ As currently configured the script imports the FULL release from folder:
 Also refers to individual release file using $YYYYMMDD$ as the release date. Therefore, before you use the script you need to create copies of these files with the $PATH$ and $YYYYMMDD$ replaced with the correct values
 
 1. Make copies of the two template files (rf2_import_full_template.sql and rf2_import_tc_template.sql).
-    - Include the release date in the names of the copied templates (e.g rf2_import_full_20170731.sql)
+    - Include the release date in the names of the copied templates (e.g rf2_import_full_20180131.sql)
 2. In your copies make the following global replacements using a suitable text editor:
     1. Adjust source folder by $PATH$ with the path in which the release file is present (e.g. '/User/name/snomed_release_files' or 'C:\mypath\snomed_release_files')
-    2. Adjust release date by replacing all instances of $YYYYMMDD$ with appropriate Release Date (eg. 20170731)
+    2. Adjust release date by replacing all instances of $YYYYMMDD$ with appropriate Release Date (eg. 20180131)
     
 3. In the full import file you will find lines that look like this. Make sure there are two lines for the date of your current release. If not add copies of these lines with the relevant release date added.
 

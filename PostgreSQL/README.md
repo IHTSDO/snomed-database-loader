@@ -1,6 +1,8 @@
 # SNOMED CT DATABASE
 
-PostgreSQL SQL Scripts to create and populate a PostgreSQL database with a SNOMED CT terminology release
+PostgreSQL SQL Scripts to create and populate a PostgreSQL database with a SNOMED CT terminology release.
+
+**NOTE:** This script is not directly supported by SNOMED International and has not been fully tested by the SNOMED International team. It has been kindly donated by others in the SNOMED CT community.
 
 ## Minimum Specification
 
@@ -27,7 +29,7 @@ run load_release-postgresql.sh
 </schemaname>
 </rf2>
 
-eg ./load_release-postgresql.sh ~/Backup/SnomedCT_RF2Release_INT_20150731.zip SCT_20150731 SNAP
+eg ./load_release-postgresql.sh ~/Backup/SnomedCT_RF2Release_INT_20180131.zip SCT_20180131 SNAP
 
 Note that the scripted installation will now support loading other Editions. The script asks for a module identifier, which is INT by default, for the international edition. Loading the US Edition, for example, would work as follows: `Enter module string used in filenames [INT]: US1000124`
 
