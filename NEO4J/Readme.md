@@ -16,13 +16,30 @@ Version 1.1, 2018-04-13, Fix FSN issue in some ObjectConcept nodes -- require th
 
 ## Create a Neo4j Graph from a FULL RF2
 
-This is a Linux or Windows command-line operation requiring Python 2.7 and the SNOMED_G software.
+This is a Linux or Windows command-line operation requiring a Python 2.7 or Python 3.5 (or above) interpreter and the SNOMED_G software.
 
 Requirements:
 
-- This requires a FULL format RF2 release, which includes historical SNOMED CT codes and full change history.
-- This requires Neo4j to be running, with an empty database on the machine where this code is being executed
-- This requires the directory specified by `--output_dir` to be empty.
+1. Requires python 2.7 or python 3.5 (or above)
+ - NOTE: has been tested with python 2.7 and python 3.6
+ - Requires the py2neo python library to be installed
+2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
+ * Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
+3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
+4. Requires Java version 8 or above, as needed by NEO4J version 3 installations
+5. Requires NEO4J version 3.2 or above to be installed and running (preferable with an empty NEO4J database)
+  5.1 Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
+   * That is controlled by the following NEO4J configuration option
+     dbms.directories.import=import
+     * That option should be commented out, at least for the duration of the database load
+      #dbms.directories.import=import
+  5.2 Requires 4GB of Java heap memory be configured in the NEO4J configuration
+   * A system with 16GB of memory or above will probably not have to explicitly configure this.
+   * See NEO4J operations documentation for configuring memory parameters.
+    * This currently exists at:
+     https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
+
+NOTE: the database load will fail if these requirements are not met.
 
 General syntax:
 
@@ -65,9 +82,26 @@ This is a Linux or Windows command-line operation requiring Python 2.7 and the S
 
 Requirements:
 
-- This requires Neo4j to be running, and holding the database that is to be updated.
-- This requires a FULL format RF2 release, which includes historical SNOMED CT codes and full change history.
-- This requires the directory specified by `--output_dir` to be empty.
+1. Requires python 2.7 or python 3.5 (or above)
+ - NOTE: has been tested with python 2.7 and python 3.6
+ - Requires the py2neo python library to be installed
+2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
+ * Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
+3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
+4. Requires Java version 8 or above, as needed by NEO4J version 3 installations
+5. Requires NEO4J version 3.2 or above to be installed and running (preferable with an empty NEO4J database)
+  5.1 Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
+   * That is controlled by the following NEO4J configuration option
+     dbms.directories.import=import
+     * That option should be commented out, at least for the duration of the database load
+      #dbms.directories.import=import
+  5.2 Requires 4GB of Java heap memory be configured in the NEO4J configuration
+   * A system with 16GB of memory or above will probably not have to explicitly configure this.
+   * See NEO4J operations documentation for configuring memory parameters.
+    * This currently exists at:
+     https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
+
+NOTE: the database load will fail if these requirements are not met.
 
 General syntax:
 
