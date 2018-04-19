@@ -106,7 +106,7 @@ addLoadScript sct2_Relationship_TYPE_INT_DATE.txt relationship
 addLoadScript sct2_TextDefinition_TYPE-en_INT_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
-addLoadScript der2_cRefset_AssociationReferenceTYPE_INT_DATE.txt associationrefset
+addLoadScript der2_cRefset_AssociationTYPE_INT_DATE.txt associationrefset
 
 psql -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
 	\ir create-database-postgres.sql;
