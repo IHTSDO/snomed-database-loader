@@ -6,7 +6,7 @@ DO $$
 DECLARE
   folder TEXT := '/RF2Release'; -- Change the root directory based on your file location
   type TEXT := 'Full'; -- Change between Full, Delta, Snapshot.
-  release TEXT := 'INT_20170731'; -- Change between each release
+  release TEXT := 'INT_20180131'; -- Change between each release
   suffix TEXT := '_f'; -- Suffix of the database table. _f stands for full, _d stands for delta, _s stands for snapshot
 BEGIN
   suffix := CASE type WHEN 'Full' THEN '_f' WHEN 'Delta' THEN '_d' WHEN 'Snapshot' THEN '_s' ELSE '' END;

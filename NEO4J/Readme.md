@@ -1,6 +1,8 @@
 # Neo4j Graph Database
 
-This upload script has been kindly donated by Scott Campbell from the University of Nebraska Medical Center, Omaha, NE. This script is not directly supported by SNOMED International and is provided for reference.
+This upload script has been kindly donated by Scott Campbell and his team from the University of Nebraska Medical Center, Omaha, NE.
+
+**NOTE:** This script is not directly supported by SNOMED International and has not been tested by the SNOMED International team.
 
 ## For attribution:
 
