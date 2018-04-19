@@ -153,16 +153,22 @@ def TC_from_graph(arglist):
   # TC_from_graph:
   # command line parsing
   opt = optparse.OptionParser()
-  opt.add_option('--neopw64', action='store', dest='neopw64')
+  opt.add_option('--neopw64', action='store')
+  opt.add_option('--neopw', action='store')
   opts, args = opt.parse_args(arglist)
-  if not (len(args)==1 and opts.neopw64):
-    print('Usage: cmd TC_from_graph <TCfile-out> --neopw64 <pw>'); sys.exit(1)
+  if not (len(args)==1 and (opts.neopw or opts.neopw64)):
+    print('Usage: cmd TC_from_graph <TCfile-out> --neopw <pw>'); sys.exit(1)
+  if opts.neopw and opts.neopw64:
+    print('Usage: only one of --neopw and --neopw64 may be specified')
+    sys.exit(1)
+  if opts.neopw64: # snomed_g v1.2, convert neopw64 to neopw
+      opts.neopw = str(base64.b64decode(opts.neopw64),'utf-8') if sys.version_info[0]==3 else base64.decodestring(opts.neopw64) # py2
   output_TC_filename = args[0]
   # Extract ISA relationships from graph (active and inactive)
   timings = {}
   timings['start'] = timer()
   timings['graph_open_start'] = timer()
-  neo4j = snomed_g_lib_neo4j.Neo4j_Access(base64.decodestring(opts.neopw64))
+  neo4j = snomed_g_lib_neo4j.Neo4j_Access(opts.neopw)
   timings['graph_open_end'] = timer()
   timings['isa_get_start'] = timer()
   isa_rels = neo4j.lookup_all_isa_rels()
@@ -263,10 +269,16 @@ def TC_fordate_from_graph(arglist):
   # TC_fordate_from_graph:
   # command line parsing
   opt = optparse.OptionParser()
-  opt.add_option('--neopw64', action='store', dest='neopw64')
+  opt.add_option('--neopw64', action='store')
+  opt.add_option('--neopw', action='store')
   opts, args = opt.parse_args(arglist)
-  if not (len(args)==2 and opts.neopw64):
-    print('Usage: cmd TC_fordate_from_graph YYYYMMDD <TCfile-out> --neopw64 <pw>'); sys.exit(1)
+  if not (len(args)==2 and (opts.neopw or opts.neopw64)):
+    print('Usage: cmd TC_fordate_from_graph YYYYMMDD <TCfile-out> --neopw <pw>'); sys.exit(1)
+  if opts.neopw and opts.neopw64:
+    print('Usage: only one of --neopw and --neopw64 may be specified')
+    sys.exit(1)
+  if opts.neopw64: # snomed_g v1.2, convert neopw64 to neopw
+      opts.neopw = str(base64.b64decode(opts.neopw64),'utf-8') if sys.version_info[0]==3 else base64.decodestring(opts.neopw64) # py2
   yyyymmdd, output_TC_filename = args[0], args[1]
   # Extract ISA relationships from graph (active and inactive)
   timings = {}

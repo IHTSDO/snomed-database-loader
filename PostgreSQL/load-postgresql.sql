@@ -37,7 +37,7 @@ BEGIN
   
   EXECUTE 'TRUNCATE TABLE associationrefset' || suffix;
   EXECUTE 'COPY associationrefset' || suffix || '(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, targetcomponentid) FROM '''
-        || folder || '/' || type || '/Refset/Content/der2_cRefset_AssociationReference' || type || '_' || release || '.txt'' WITH (FORMAT csv, HEADER true, DELIMITER ''	'')';
+        || folder || '/' || type || '/Refset/Content/der2_cRefset_Association' || type || '_' || release || '.txt'' WITH (FORMAT csv, HEADER true, DELIMITER ''	'')';
 
   EXECUTE 'TRUNCATE TABLE simplerefset' || suffix;
   EXECUTE 'COPY simplerefset' || suffix || '(id, effectivetime, active, moduleid, refsetid, referencedcomponentid) FROM '''

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function
-import csv, optparse, datetime, json, sys, re, os, base64, errno, io
+import optparse, datetime, json, sys, os, base64, io, subprocess
 import snomed_g_lib_rf2, snomed_g_lib_neo4j, snomedct_constants
 
 '''
@@ -11,12 +11,15 @@ Syntax and Semantics:
           python <pgm> validate_graphdb --element concept --release_type delta/snapshot/full --rf2 <location> --newpw64 <pw>
 Example:
           python snomed_g_validate_graphdb_tools.py \
-             validate --element concept --release_type full --neopw64 <ps> \
+             validate --element concept --release_type full --neopw <pw> \
                  --rf2 /cygdrive/c/sno/snomedct/SnomedCT_RF2Release_US1000124_20160301
 '''
 
 def db_data_prep(v):
-  return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf8")
+  if sys.version_info[0]==3:
+    return v
+  else: # py2.7 support
+    return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf-8")
 
 def clean_str(s):  #  result can be processed from a CSV file as a string
   return '"'+s.strip().replace('"',r'\"')+'"' # embedded double-quote processing
@@ -83,7 +86,7 @@ def validate_graphdb(arglist):
     csv_data = [None]*len(csv_fields_d.keys())
     for nm in field_names: csv_data[csv_fields_d[nm]] = db_data_prep(rf2_d[id][current_effTime][rf2_fields_d[renamed_fields.get(nm,nm)]])
     for k,v in non_rf2_fields: csv_data[csv_fields_d[k]] = db_data_prep(v) # eg: [('history','<hist-json-str>'),...]
-    if None in csv_data: raise InvalidValue('csv_data %s' % str(csv_data))
+    if None in csv_data: raise ValueError('csv_data %s' % str(csv_data))
     for nm in quoted_fields: csv_data[csv_fields_d[nm]] = csv_clean_str(csv_data[csv_fields_d[nm]]) # quote only necessary fields
     return db_data_prep( ','.join(csv_data) ) # output_line
 
@@ -98,8 +101,8 @@ def validate_graphdb(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in concepts_d: concepts_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in concepts_d[id]: raise InvalidValue('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in concepts_d[id]: raise ValueError('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       concepts_d[id][effTime] = fields[:] # attributes in RF2-defined order
 
     def Fsn_cb(fields, fields_d, hist):
@@ -190,8 +193,8 @@ def validate_graphdb(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in description_d: description_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in description_d[id]: raise InvalidValue('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in description_d[id]: raise ValueError('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       description_d[id][effTime] = fields[:] # attributes in RF2-defined order
     def language_cb(fields, fields_d, hist):
       id = fields[ fields_d['referencedComponentId'] ] # DONT USE "id", use the id associated with the Description
@@ -316,8 +319,8 @@ def validate_graphdb(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in isa_rel_d: isa_rel_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** ISA id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in isa_rel_d[id]: raise InvalidValue('*** ISA id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** ISA id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in isa_rel_d[id]: raise ValueError('*** ISA id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       isa_rel_d[id][effTime] = fields[:] # attributes in RF2-defined order
     def isa_rel_filter(fields, fields_d, hist):
       return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_ISA
@@ -390,8 +393,8 @@ def validate_graphdb(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in defining_rel_d: defining_rel_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** DEFINING-REL id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in defining_rel_d[id]: raise InvalidValue('*** DEFINING-REL id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** DEFINING-REL id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in defining_rel_d[id]: raise ValueError('*** DEFINING-REL id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       defining_rel_d[id][effTime] = fields[:] # attributes in RF2-defined order
     def defining_rel_filter(fields, fields_d, hist):
       return fields[ fields_d['typeId'] ] != snomedct_constants.SNOMEDCT_TYPEID_ISA
@@ -484,19 +487,25 @@ def validate_graphdb(arglist):
   opt.add_option('--element',action='store', choices=['concept','description','isa_rel','defining_rel'])
   opt.add_option('--release_type', action='store', dest='release_type', choices=['delta','snapshot','full'])
   opt.add_option('--exceptions_file', action='store', dest='exceptions_file')
-  opt.add_option('--neopw64', action='store', dest='neopw64')
+  opt.add_option('--neopw64', action='store')
+  opt.add_option('--neopw', action='store')
   opts, args = opt.parse_args(arglist)
-  if not (len(args)==0 and opts.rf2 and opts.element and opts.release_type and opts.neopw64):
-    print('Usage: validate_graphdb --element concept/description/isa_rel/defining_rel --rf2 <dir> --release_type delta/snapshot [--verbose] --neopw64 <base64pw>')
+  if not (len(args)==0 and opts.rf2 and opts.element and opts.release_type and (opts.neopw or opts.neopw64)):
+    print('Usage: validate_graphdb --element concept/description/isa_rel/defining_rel --rf2 <dir> --release_type delta/snapshot [--verbose] --neopw <base64pw>')
     sys.exit(1)
+  if opts.neopw and (opts.neopw or opts.neopw64):
+    print('Usage: only one of --neopw and --neopw64 may be specified')
+    sys.exit(1)
+  if opts.neopw64: # snomed_g v1.2, convert neopw64 to neopw
+    opts.neopw = str(base64.b64decode(opts.neopw64),'utf-8') if sys.version_info[0]==3 else base64.decodestring(opts.neopw64) # py2
   # Connect to NEO4J
   #neopw = base64.decodestring( json.loads(open('necares_config.json').read())['salt'] )
-  neo4j = snomed_g_lib_neo4j.Neo4j_Access(base64.decodestring(opts.neopw64))
+  neo4j = snomed_g_lib_neo4j.Neo4j_Access(opts.neopw)
   # Connect to RF2 files
   rf2_folders = snomed_g_lib_rf2.Rf2_Folders(opts.rf2, opts.release_type)
   # Information for comparing RF2 to Graph
   attributes_by_file = snomed_g_lib_rf2.Rf2_Attributes_per_File()
-  # TODO - open exception file (append if it exists, write header if it did not exist)
+  # POSSIBILITY - open exception file (append if it exists, write header if it did not exist)
   fn = opts.exceptions_file
   exceptions_file = open(fn, 'a')
   if exceptions_file.tell()==0: print('element,id,description',file=exceptions_file) # header
@@ -522,7 +531,7 @@ class StatusDb():
     try:    c.execute('''insert into seq values ('BUILD', 0)''')
     except: pass
     else:   print('sequence did not exist, primed')
-    c.execute('CREATE TABLE IF NOT EXISTS build (\
+    c.execute('''CREATE TABLE IF NOT EXISTS build (\
           seq INTEGER, \
           step TEXT, \
           command TEXT, \
@@ -534,7 +543,7 @@ class StatusDb():
           start TEXT, \
           end TEXT, \
           error_count INTEGER
-          )' )
+          )''' )
     db.commit()
     c.close()
     db.close() # keep db closed most of the time
@@ -606,21 +615,27 @@ class save_and_report_results():
     return # DONE
 
 #--------------------------------------------------------------------------------------|
-#   db_validate --rf2 <dir> --release_type full --neopw64 <pw> --exceptions_file e.csv |
+#   db_validate --rf2 <dir> --release_type full --neopw <pw> --exceptions_file e.csv |
 #--------------------------------------------------------------------------------------|
 
 def db_validate(arglist):
   saved_pwd = os.getcwd()
   opt = optparse.OptionParser()
-  opt.add_option('--rf2',action='store',dest='rf2')
-  opt.add_option('--release_type', action='store', dest='release_type', choices=['delta','snapshot','full'])
-  opt.add_option('--neopw64', action='store', dest='neopw64')
-  opt.add_option('--exceptions', action='store', dest='exceptions')
-  opt.add_option('--logfile', action='store', dest='logfile', default='-')
+  opt.add_option('--rf2',action='store')
+  opt.add_option('--release_type', action='store', choices=['delta','snapshot','full'])
+  opt.add_option('--neopw64', action='store')
+  opt.add_option('--neopw', action='store')
+  opt.add_option('--exceptions', action='store')
+  opt.add_option('--logfile', action='store', default='-')
   opts, args = opt.parse_args(arglist)
-  if not (len(args)==0 and opts.rf2 and opts.release_type and opts.neopw64):
-    print('Usage: db_validate --rf2 <dir> --release_type full --neopw64 <base64pw>')
+  if not (len(args)==0 and opts.rf2 and opts.release_type and (opts.neopw or opts.neopw64)):
+    print('Usage: db_validate --rf2 <dir> --release_type full --neopw <pw>')
     sys.exit(1)
+  if opts.neopw and opts.neopw64:
+    print('Usage: only one of --neopw and --neopw64 may be specified')
+    sys.exit(1)
+  if opts.neopw64: # snomed_g v1.2, convert neopw64 to neopw
+      opts.neopw = str(base64.b64decode(opts.neopw64),'utf-8') if sys.version_info[0]==3 else base64.decodestring(opts.neopw64) # py2
   # open logfile
   logfile = open(opts.logfile, 'w') if opts.logfile != '-' else sys.stdout
   #---------------------------------------------------------------------------
@@ -660,19 +675,45 @@ def db_validate(arglist):
   job_start_datetime = datetime.datetime.now()
 
   # Commands needed to Create/Update a SNOMED_G Graph Database
-  command_list_db_build = [
-    {'stepname':'JOB_START',              'log':'JOB-START(release_type:[%s], rf2:[%s], date:[%s])' % (opts.release_type, opts.rf2, yyyymmdd)},
-    {'stepname':'VALIDATE_CONCEPTS',      'cmd':'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element concept      --release_type %s --rf2 %s --neopw64 %s' % (snomed_g_bin,opts.release_type,opts.rf2,opts.neopw64),
-      'mode':['validate']},
-    {'stepname':'VALIDATE_DESCRIPTIONS',  'cmd':'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element description  --release_type %s --rf2 %s --neopw64 %s' % (snomed_g_bin,opts.release_type,opts.rf2,opts.neopw64),
-      'mode':['validate']},
-    {'stepname':'VALIDATE_ISA_RELS',      'cmd':'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element isa_rel      --release_type %s --rf2 %s --neopw64 %s' % (snomed_g_bin,opts.release_type,opts.rf2,opts.neopw64),
-      'mode':['validate']},
-    {'stepname':'VALIDATE_DEFINING_RELS', 'cmd':'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element defining_rel --release_type %s --rf2 %s --neopw64 %s' % (snomed_g_bin,opts.release_type,opts.rf2,opts.neopw64),
-      'mode':['validate']},
-    {'stepname':'JOB_END',                'log':'JOB-END'}
-  ]
-  command_list = command_list_db_build
+  commands_d = {
+      'JOB_START':
+          {'stepname': 'JOB_START',
+           'log':      'JOB-START(release_type:[%s], rf2:[%s], date:[%s])' \
+                           % (opts.release_type, opts.rf2, yyyymmdd)},
+      'VALIDATE_CONCEPTS':
+          {'stepname': 'VALIDATE_CONCEPTS',
+           'cmd':      'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element concept      --release_type %s --rf2 %s --neopw %s' \
+                           % (snomed_g_bin, opts.release_type, opts.rf2, opts.neopw),
+           'mode':     ['validate']},
+      'VALIDATE_DESCRIPTIONS':
+          {'stepname': 'VALIDATE_DESCRIPTIONS',
+           'cmd':      'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element description  --release_type %s --rf2 %s --neopw %s' \
+                       % (snomed_g_bin, opts.release_type, opts.rf2, opts.neopw),
+                       'mode': ['validate']},
+      'VALIDATE_ISA_RELS':
+          {'stepname': 'VALIDATE_ISA_RELS',
+           'cmd':      'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element isa_rel      --release_type %s --rf2 %s --neopw %s' \
+                           % (snomed_g_bin, opts.release_type, opts.rf2, opts.neopw),
+                       'mode': ['validate']},
+      'VALIDATE_DEFINING_RELS':
+          {'stepname': 'VALIDATE_DEFINING_RELS',
+           'cmd':      'python %s/snomed_g_validate_graphdb_tools.py validate_graphdb --element defining_rel --release_type %s --rf2 %s --neopw %s' \
+                           % (snomed_g_bin, opts.release_type, opts.rf2, opts.neopw),
+                       'mode': ['validate']},
+      'JOB_END':
+          {'stepname': 'JOB_END',
+           'log':      'JOB-END'}
+  }
+
+  command_list_validate_build = \
+      [ commands_d[x] for x in
+        ['JOB_START',
+         'VALIDATE_CONCEPTS',
+         'VALIDATE_DESCRIPTIONS',
+         'VALIDATE_ISA_RELS',
+         'VALIDATE_DEFINING_RELS',
+         'JOB_END'] ]
+  command_list = command_list_validate_build
   stepnames = [x['stepname'] for x in command_list] # list of dictionaries
   seqnum = DB.get_next_sequence_number()
   # Execute commands (BUILD)
@@ -705,7 +746,7 @@ def db_validate(arglist):
         subprocess.check_call(cmd_as_list, stdout=logfile, stderr=logfile)
         if opts.output_dir !='.': os.chdir(saved_pwd) # get back (popd)
         status = 0 # if no exception -- status guaranteed to be zero
-      except subprocess.CalledProcessError, e:
+      except subprocess.CalledProcessError as e:
         status = e.returncode # by validate_graphdb convention, this code is the number of discrprancies found
         results_d[stepname]['status'] = status
         if status != expected_status:

@@ -108,7 +108,7 @@ def instantiate(arglist):
       load_csv_line = ('LOAD CSV with headers from "%s%sDR_%s_new.csv" as line' % (('file:///' if sys.platform in ['cygwin','win32','darwin'] else 'file:'),output_dir,typeId)).replace('file:////','file:///')
       print(load_csv_line,file=fout)
       print('with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id',file=fout)
-      print('MERGE (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id };)',file=fout)
+      print('MERGE (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id });',file=fout)
       print(file=fout)
       print('// Add defining relationship edge in 2nd step, Java memory issue',file=fout)
       print('USING PERIODIC COMMIT 200',file=fout)
