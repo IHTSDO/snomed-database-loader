@@ -1,25 +1,31 @@
 #!/usr/bin/python
 from __future__ import print_function
-import py2neo, sys, base64, json, optparse, re, datetime
+import py2neo, sys, base64, optparse, datetime
 
 '''
 Module:  snomed_g_neo4j_tools.py
 Author:  Jay Pedersen, July 2016
 Purpose: NEO4J utility commands -- eg 'run_cypher'.
 Syntax and Semantics:
-          python <pgm> run_cypher <filename> --neopw64 <pw>
+          python <pgm> run_cypher <filename> --neopw <pw>
 '''
 
 def run_cypher(arglist):
   # Parse command line
   opt = optparse.OptionParser()
-  opt.add_option('--verbose',action='store_true',dest='verbose')
-  opt.add_option('--neopw64', action='store', dest='neopw64')
+  opt.add_option('--verbose',action='store_true')
+  opt.add_option('--neopw64', action='store')
+  opt.add_option('--neopw', action='store')
   opts, args = opt.parse_args(arglist)
-  if not (len(args)==1 and opts.neopw64):
-    print('Usage: command <cypherfile> --neopw64 <pw>'); sys.exit(1)
+  if not (len(args)==1 and (opts.neopw or opts.neopw64)):
+    print('Usage: command <cypherfile> --neopw <pw>'); sys.exit(1)
+  if opts.neopw and opts.neopw64:
+    print('Usage: only one of --neopw and --neopw64 may be specified')
+    sys.exit(1)
+  if opts.neopw64: # snomed_g v1.2, convert neopw64 to neopw
+    opts.neopw = str(base64.b64decode(opts.neopw64),'utf-8') if sys.version_info[0]==3 else base64.decodestring(opts.neopw64) # py2
+  n4jpw = opts.neopw
   cypher_fn = args[0]
-  n4jpw = base64.decodestring(opts.neopw64)
   graph_db = py2neo.Graph(password=n4jpw) # 'http://localhost:7474/db/data/transaction/commit')
   # want LONG TIMEOUT for CSV loadering
   from py2neo.packages.httpstream import http
