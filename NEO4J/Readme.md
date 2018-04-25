@@ -34,8 +34,8 @@ Requirements:
         - #dbms.directories.import=import
     - Requires 4GB of Java heap memory be configured in the NEO4J configuration
       - A system with 16GB of memory or above will probably not have to explicitly configure this.
-        - See NEO4J operations documentation for configuring memory parameters.
-          - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
+      - See NEO4J operations documentation for configuring memory parameters.
+        - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
 
 NOTE: the database load will fail if these requirements are not met.
 
@@ -94,8 +94,8 @@ Requirements:
         - #dbms.directories.import=import
     - Requires 4GB of Java heap memory be configured in the NEO4J configuration
       - A system with 16GB of memory or above will probably not have to explicitly configure this.
-        - See NEO4J operations documentation for configuring memory parameters.
-          - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
+      - See NEO4J operations documentation for configuring memory parameters.
+        - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
 
 NOTE: the database load will fail if these requirements are not met.
 
