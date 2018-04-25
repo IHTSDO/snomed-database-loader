@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function
-import sys, optparse, sqlite3, datetime, csv, sqlite3
+import sys, optparse, sqlite3, datetime, csv, sqlite3, io
 
 '''
 Module: snomed_g_sqlite_tools.py
@@ -12,7 +12,11 @@ Module: snomed_g_sqlite_tools.py
 '''
 
 def db_data_prep(v):
-  return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf8")
+  if sys.version_info[0]==3:
+    return v
+  else: # py2.7 support
+    return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf-8")
+
 #-------------------------------------------------------------------------------------
 #  csv_import <sqlitefile> <sqlitetable> <csvfile> --fields 'f1<sep>f2<sep>...<sep>fn'
 # 
@@ -27,30 +31,32 @@ def csv_import(arglist):
     # --host 127.0.0.1  --sid deid --user heronloader --password <whatever> --port 1431
     # schema folder
     opt = optparse.OptionParser()
-    opt.add_option('--primary_key',action='store',default='',dest='primary_key')
+    opt.add_option('--primary_key',action='store',dest='primary_key')
     opt.add_option('--csvdelim',action='store',default=',',dest='csvdelim')
     opt.add_option('--logmodulo',action='store',type='int',default=0,dest='logmodulo')
     opt.add_option('--fields',action='store',dest='fields')
+    opt.add_option('--exists',action='store_true')
+    opt.add_option('--excessive_verbosity',action='store_true')
     opts, args = opt.parse_args(arglist)
     print(args)
-    if len(args)!=3: print('Usage: command <csvfile> <sqlitefile> <sqlitetable> --primary_key X'); sys.exit(1)
+    if len(args)!=3: print('Usage: command <sqlitefile> <csvfile>  <sqlitetable> [--primary_key X]'); sys.exit(1)
     if opts.csvdelim==r'\t': opts.csvdelim = '\t' # deal with TAB delimiter
     return args,opts
 
   # csv_import:
   # Parse command line
   args, opts = parse_command_line(arglist)
-  csvfile, sqlitefile, sqlitetable = args
+  sqlitefile, csvfile, sqlitetable = args
 
   print('csv delimiter is [%s]' % opts.csvdelim)
   # open CSV file (could be pipe-separated RRF file)
-  f = open(csvfile)
+  f = io.open(csvfile,'r',encoding='utf-8')
   # determine field names -- either from header line in file or from --fields
   if opts.fields: # ASSUME this means there is no header line
-    field_names = opts.fields.split(opts.csvdelim)
+    field_names = [x.strip('"') for x in opts.fields.split(opts.csvdelim)]
   else:  # ASSUME there is a header line in the file
     hdr = f.readline().rstrip('\n').rstrip('\r')
-    field_names = hdr.split(opts.csvdelim)
+    field_names = [x.strip('"') for x in hdr.split(opts.csvdelim)]
   print(field_names)
   fields_d = {}
   for idx, nm in enumerate(field_names): fields_d[nm] = idx
@@ -62,17 +68,18 @@ def csv_import(arglist):
   
   conn = sqlite3.connect(sqlitefile)
   curs = conn.cursor()
-  drop_sql_str = 'DROP TABLE IF EXISTS %s' % sqlitetable
-  print(drop_sql_str)
-  curs.execute(drop_sql_str)
-  create_sql = 'create table %s ('%sqlitetable + ','.join(field_adds) + ');'
-  print(create_sql)
-  curs.execute(create_sql)
+  if not opts.exists:
+    drop_sql_str = 'DROP TABLE IF EXISTS %s' % sqlitetable
+    print(drop_sql_str)
+    curs.execute(drop_sql_str)
+    create_sql = 'create table %s ('%sqlitetable + ','.join(field_adds) + ');'
+    print(create_sql)
+    curs.execute(create_sql)
   # create "INSERT INTO <table> (<name1>, ...) VALUES (?, ...);"
   insert_sql = 'insert into %s ('%sqlitetable + ','.join(field_names) + ') VALUES (' + ','.join(['?']*len(field_names)) + ');'
   print(insert_sql)
   # process CSV file, insert rows into table
-  reader = csv.reader(open(csvfile), delimiter=opts.csvdelim)
+  reader = csv.reader(io.open(csvfile,'r',encoding='utf-8'), delimiter=opts.csvdelim)
   first = True
   rownum = 0
   lasttime = datetime.datetime.now()
@@ -80,6 +87,8 @@ def csv_import(arglist):
       if first: first = False; continue # header line
       rownum += 1
       insert_values = [db_data_prep(row[idx]) for idx in range(len(field_names))]
+      if opts.excessive_verbosity:
+        print('%d. %s' % (rownum, str(insert_values)))
       curs.execute(insert_sql, insert_values)
       if opts.logmodulo!=0 and rownum % opts.logmodulo==0:
           curtime = datetime.datetime.now()
@@ -88,6 +97,7 @@ def csv_import(arglist):
           print('Inserted %d rows, delta seconds %d' % (rownum,delta_seconds))
           lasttime = curtime
   conn.commit()
+  print('Processed %d rows' % rownum)
   return
 
 #------------------------------------------------------------------------------------
