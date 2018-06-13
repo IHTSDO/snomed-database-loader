@@ -7,13 +7,13 @@ REM Copyright Chris Tillman 2018, licensed under GPL any version
 REM Set the variables appropriately for your system
 
 REM Set the path where SQL and batch scripts live
-SET SCRIPT_PATH=C:\EncounterPro\SNOMED
+SET SCRIPT_PATH=E:\EncounterPro\SNOMED\MSSQL
 
 REM The server designation, this one is a local SQL SERVER Express I access through Windows user permisson
-SET MSSQLSERVER=localhost\encounterpro_os
+SET MSSQLSERVER=DESKTOP-GU15HUD\ENCOUNTERPRO
 
 REM The path the import files were extracted into ... if you have spaces in the path, the script will fail
-SET IMPORT_FILE_PATH=C:\EncounterPro\SNOMED\SnomedCT_USEditionRF2_PRODUCTION_20180301T183000Z
+SET IMPORT_FILE_PATH=E:\EncounterPro\SNOMED\SnomedCT_USEditionRF2_PRODUCTION_20180301T183000Z
 
 REM The YYYYMMDD which makes up part of the filename.
 SET YYYYMMDD=20180301
@@ -59,3 +59,7 @@ REM "%PATH_TO_BCP%" sct2_refset_iissscc in "%IMPORT_FILE_PATH%\%IMPORT_TYPE%\Ref
 REM "%PATH_TO_BCP%" sct2_refset_s in "%IMPORT_FILE_PATH%\%IMPORT_TYPE%\Refset\sct2_refset_s_%IMPORT_TYPE%_%LOCAL_ID%_%YYYYMMDD%.txt" -C 65001 -S %MSSQLSERVER% -d snomedct -T -c -F 2
 REM "%PATH_TO_BCP%" sct2_refset_ss in "%IMPORT_FILE_PATH%\%IMPORT_TYPE%\Refset\sct2_refset_ss_%IMPORT_TYPE%_%LOCAL_ID%_%YYYYMMDD%.txt" -C 65001 -S %MSSQLSERVER% -d snomedct -T -c -F 2
 
+REM Reset the path variable for the ICD coding file
+SET IMPORT_TYPE=Documentation
+
+%PATH_TO_BCP% tls_Icd10cmHumanReadableMap in "%IMPORT_FILE_PATH%\%IMPORT_TYPE%\tls_Icd10cmHumanReadableMap_%LOCAL_ID%_%YYYYMMDD%.tsv" -C 65001 -S %MSSQLSERVER% -d snomedct -T -c -F 2
