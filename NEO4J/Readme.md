@@ -24,7 +24,8 @@ Requirements:
 
 1. Requires python 2.7 or python 3.5 (or above)
     - NOTE: has been tested with python 2.7 and python 3.6
-    - Requires the py2neo python library to be installed
+    - Requires the py2neo python library v3.2.1 to be installed. This can be accomplished via:
+    `pip install py2neo==3.1.2`
 2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
     - Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
 3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
@@ -33,7 +34,7 @@ Requirements:
     - Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
       - Controlled by the NEO4J configuration option dbms.directories.import=import
         - That option should be commented out, at least for the duration of the database load
-        - #dbms.directories.import=import
+        - `#dbms.directories.import=import`
     - Requires 4GB of Java heap memory be configured in the NEO4J configuration
       - A system with 16GB of memory or above will probably not have to explicitly configure this.
       - See NEO4J operations documentation for configuring memory parameters.
@@ -41,11 +42,8 @@ Requirements:
 
 NOTE: the database load will fail if these requirements are not met.
 
-General syntax:
 
-`python <path-to-snomed_g-bin>/snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw <password> --output_dir <output-directory-path>`
-
-Mac syntax for for en-GB
+### Preliminary Steps:
 
 Assuming you download desktop version of neo4j, create a database, then find neo4j.conf for that database by clicking on open folder, then select configuration
 
@@ -57,22 +55,29 @@ Configure it so that it has at least 4g memory
 
 `dbms.memory.heap.max_size=4G`
 
+### Main Procedure:
 
-`cd <path-to-snomed_g-bin>`
+##### General syntax
 
+`python <path-to-snomed_g-bin>/snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw <password> --output_dir <output-directory-path>`
+
+##### Specific Steps
+1. Change to the working directory
+     `cd <path-to-snomed_g-bin>`
+
+2. Execute the build script. Following the general syntax from above here is an exampple with optional flags set
 `python snomed_g_graphdb_build_tools.py db_build --release_type full  --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB'  --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z `
 
-By default, the language designation is "en" and the language is simply "Language", which is used in the filename of the Description file and the Language files.
+3. By default, the language designation is "en" and the language is simply "Language", which is used in the filename of the Description file and the Language files.
 
-If that is not what was used, the following parameters need to be specified (assume "en-us" and "USEnglish" values should be used):
-
+3. If that is not what was used, the following parameters need to be specified (assume "en-us" and "USEnglish" values should be used):
 `--language_code 'en-us' --language_name 'USEnglish'`
 
-**NOTE**: the `--output_dir` specifies a directory for creating temporary CSV files for use in database creation, it is not the location of the database itself.
+    **NOTE**: the `--output_dir` specifies a directory for creating temporary CSV files for use in database creation, it is not the location of the database itself.
 
-Example: (using the Jan 31, 2015 International Edition, on a windows machine)
+    Example: (using the Jan 31, 2015 International Edition, on a windows machine)
 
-`python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_build_tools.py db_build --action create --rf2 c:/sno/snomedct/nelex/SnomedCT_RF2Release_INT_20150131/ --release_type full --neopw <password> --output_dir c:/build/20150131 --language_code 'en-us' --language_name 'USEnglish'`
+    `python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_build_tools.py db_build --action create --rf2 c:/sno/snomedct/nelex/SnomedCT_RF2Release_INT_20150131/ --release_type full --neopw <password> --output_dir c:/build/20150131 --language_code 'en-us' --language_name 'USEnglish'`
 
 ================================================================================================
 
