@@ -24,7 +24,7 @@ Requirements:
 
 1. Requires python 2.7 or python 3.5 (or above)
     - NOTE: has been tested with python 2.7 and python 3.6
-    - Requires the py2neo python library v3.2.1 to be installed. This can be accomplished via:
+    - Requires the py2neo python library v3.1.2 to be installed. This can be accomplished via:
     `pip install py2neo==3.1.2`
 2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
     - Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
