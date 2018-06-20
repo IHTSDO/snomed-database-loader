@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function
-import csv, optparse, datetime, json, sys, re, os, base64, errno, io
+import optparse, datetime, json, sys, base64, io
 import snomed_g_lib_rf2, snomedct_constants
 
 '''
@@ -19,8 +19,11 @@ Example:
                  --rf2 /cygdrive/c/sno/snomedct/SnomedCT_RF2Release_US1000124_20160301
 '''
 
-def db_data_prep(v):
-  return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf8")
+def make_utf8(v):
+  if sys.version_info[0]==3:
+    return v
+  else: # py2.7 support
+    return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf-8")
 
 def clean_str(s):  #  result can be processed from a CSV file as a string
   return '"'+s.strip().replace('"',r'\"')+'"' # embedded double-quote processing
@@ -46,7 +49,7 @@ def make_csv(arglist):
     return rf2_folders.rf2_file_path(element, view) # eg: 'concept'
 
   def old_compute_hist_changes(new_field_values, prev_field_values, field_names): # find map with only modified fields
-    return { field_names[idx] : new_field_values[idx] for idx in range(len(field_names)) if db_data_prep(new_field_values[idx]) != db_data_prep(prev_field_values[idx]) }
+    return { field_names[idx] : new_field_values[idx] for idx in range(len(field_names)) if make_utf8(new_field_values[idx]) != make_utf8(prev_field_values[idx]) }
 
   '''
   HISTORY COMPUTATION -- Example information for a concept:
@@ -85,11 +88,11 @@ def make_csv(arglist):
 
   def build_csv_output_line(id, non_rf2_fields, current_effTime, rf2_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_fields):
     csv_data = [None]*len(csv_fields_d.keys())
-    for nm in field_names: csv_data[csv_fields_d[nm]] = db_data_prep(rf2_d[id][current_effTime][rf2_fields_d[renamed_fields.get(nm,nm)]])
-    for k,v in non_rf2_fields: csv_data[csv_fields_d[k]] = db_data_prep(v) # eg: [('history','<hist-json-str>'),...]
-    if None in csv_data: raise InvalidValue('csv_data %s' % str(csv_data))
+    for nm in field_names: csv_data[csv_fields_d[nm]] = make_utf8(rf2_d[id][current_effTime][rf2_fields_d[renamed_fields.get(nm,nm)]])
+    for k,v in non_rf2_fields: csv_data[csv_fields_d[k]] = make_utf8(v) # eg: [('history','<hist-json-str>'),...]
+    if None in csv_data: raise ValueError('csv_data %s' % str(csv_data))
     for nm in quoted_fields: csv_data[csv_fields_d[nm]] = csv_clean_str(csv_data[csv_fields_d[nm]]) # quote only necessary fields
-    return db_data_prep( ','.join(csv_data) ) # output_line
+    return make_utf8( ','.join(csv_data) ) # output_line
 
   #------------------------------------------------------------------------------|
   #        CONCEPT CSV files creation -- concept_new.csv, concept_chg.csv        |
@@ -101,23 +104,26 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in concepts_d: concepts_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in concepts_d[id]: raise InvalidValue('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in concepts_d[id]: raise ValueError('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       concepts_d[id][effTime] = fields[:] # attributes in RF2-defined order
       rows_processed['n'] += 1 # tracks rows processed, --testing only
 
     def Fsn_cb(fields, fields_d, hist):
-      all_Fsn_in_Rf2_d[ db_data_prep(fields[ fields_d['conceptId'] ]) ] = db_data_prep(fields[ fields_d['term'] ]) # FSN
+      ''' updates dictionary local to testing_concept -- all_Fsn_in_Rf2_d[conceptId] = FSN '''
+      all_Fsn_in_Rf2_d[ make_utf8(fields[ fields_d['conceptId'] ]) ] = make_utf8(fields[ fields_d['term'] ]) # FSN
 
     def Fsn_filter(fields, fields_d, hist):
-      return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN
+      ''' filter out any description that is not an active FSN '''
+      return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN and \
+             fields[ fields_d['active'] ] == '1'
 
     # testing_concept:
     all_Fsn_in_Rf2_d = {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, require_active=False)
     concepts_d = {}
     rows_processed = {'n': 0} # for --testing
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('concept') ).process_file(concept_cb, None, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('concept') ).process_file(concept_cb, None, require_active=False)
     id_list = concepts_d.keys()
     print('Concepts: id_list size %d, definitions: %d (release type [%s])' % (len(id_list),rows_processed['n'],opts.release_type))
     return
@@ -125,19 +131,22 @@ def make_csv(arglist):
   def make_concept_csvs():
   
     def concept_cb(fields, fields_d, hist):
-      id = fields[ fields_d['id'] ]
-      effTime = fields[ fields_d['effectiveTime'] ]
-      if id not in concepts_d: concepts_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
+      id, effTime = [fields[fields_d[x]] for x in ['id','effectiveTime']]
+      if id not in concepts_d:
+        concepts_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in concepts_d[id]: raise InvalidValue('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in concepts_d[id]: raise ValueError('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       concepts_d[id][effTime] = fields[:] # attributes in RF2-defined order
 
     def Fsn_cb(fields, fields_d, hist):
-      all_Fsn_in_Rf2_d[ db_data_prep(fields[ fields_d['conceptId'] ]) ] = db_data_prep(fields[ fields_d['term'] ]) # FSN
+      ''' updates dictionary local to make_concept_csvs -- all_Fsn_in_Rf2_d[conceptId] = FSN '''
+      all_Fsn_in_Rf2_d[ make_utf8(fields[ fields_d['conceptId'] ]) ] = make_utf8(fields[ fields_d['term'] ]) # FSN
 
     def Fsn_filter(fields, fields_d, hist):
-      return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN
+      ''' filter out any description that is not an active FSN '''
+      return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN and \
+             fields[ fields_d['active'] ] == '1'
 
     # make_concept_csvs:
     # ==> generate concept_new.csv, concept_chg.csv -- from info in RF2 and NEO4J
@@ -147,70 +156,86 @@ def make_csv(arglist):
     timing_overall_nm = '%04d_make_concept_csvs' % timing_idx; timing_start(timing_d, timing_overall_nm)
     timing_idx += 1; timing_nm = '%04d_read_RF2_description' % timing_idx; timing_start(timing_d, timing_nm)
     all_Fsn_in_Rf2_d = {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, require_active=False) # active FSN only
+    # ==> all_Fsn_in_Rf2_d set, indexed by sctid, all active FSNs in RF2 mapped to their concept ids
     timing_end(timing_d, timing_nm)
-    f_new, f_chg = io.open('concept_new.csv','w',encoding='utf8'),io.open('concept_chg.csv','w',encoding='utf8')
+    f_new, f_chg = [io.open(x,'w',encoding='utf-8') for x in ['concept_new.csv','concept_chg.csv']]
     outfile_list = [f_new,f_chg]
-    rf2_fields = attributes_by_file.rf2_fields['concept']
+    rf2_fields = attributes_by_file.rf2_fields['concept'] # [id,effectiveTime,active,moduleId,definitionStatusId] does NOT have FSN or history
     rf2_fields_d = { nm: idx for idx,nm in enumerate(rf2_fields) }
-    csv_fields = attributes_by_file.csv_fields['concept'] # ['id','effectiveTime','active',...,'history']
+    csv_fields = attributes_by_file.csv_fields['concept'] # rf2_fields for 'concept' with ['FSN','history'] added on
     csv_fields_d = { nm: idx for idx,nm in enumerate(csv_fields) }
     field_names = [ x for x in csv_fields if x not in ['FSN','history'] ] # exclude non-RF2 history and FSN (external)
-    renamed_fields = attributes_by_file.renamed_fields['concept'] # dictionary
-    quoted_in_csv_fields = attributes_by_file.quoted_in_csv_fields['concept']
-    csv_header = db_data_prep(','.join(csv_fields)) # "id,effectiveTime,..."
-    for f in outfile_list: print(csv_header, file=f) # header
+    renamed_fields = attributes_by_file.renamed_fields['concept'] # dictionary, empty for concept
+    quoted_in_csv_fields = attributes_by_file.quoted_in_csv_fields['concept'] # history, term, descriptionType
+    csv_header = make_utf8(','.join(csv_fields)) # "id,effectiveTime,...,FSN,history"
+    for f in outfile_list: print(csv_header, file=f) # print header line for CSV files
     # create concepts_d with information from DELTA/SNAPSHOT/FULL concept file
     timing_idx += 1; timing_nm = '%04d_read_RF2_concept' % timing_idx; timing_start(timing_d, timing_nm)
     concepts_d = {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('concept') ).process_file(concept_cb, None, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('concept') ).process_file(concept_cb, None, require_active=False)
+    # ==> created concepts_d[sctid][effTime] dictionary from RF2 Concept file
     timing_end(timing_d, timing_nm)
     rf2_idlist = concepts_d.keys()
+    # ==> rf2_idlist is all concept ids from RF2 (from Concept file), regardless of whether active
     Fsn_d = { k: all_Fsn_in_Rf2_d[k] for k in list(set(all_Fsn_in_Rf2_d.keys()).intersection(set(rf2_idlist))) } # sets compare ascii+unicode
     print('count of RF2 ids: %d' % len(rf2_idlist))
     # Look for existing FSN values in graph
     print('count of FSNs in RF2: %d' % len(Fsn_d.keys()))
     if opts.action=='create':
-      graph_matches_d = {}
+      graph_matches_d = {} # No matches are possible as the graph does not yet exist.
     else:
       # NEO4J -- look for these concepts (N at a time)
       timing_idx += 1; timing_nm = '%04d_neo4j_lookup_concepts' % timing_idx; timing_start(timing_d, timing_nm)
       if opts.release_type=='delta':
         graph_matches_d = neo4j.lookup_concepts_for_ids(rf2_idlist) # This includes FSN values
       else:
-        graph_matches_d = neo4j.lookup_all_concepts()
+        graph_matches_d = neo4j.lookup_all_concepts() # Includes FSN and history from graph
       timing_end(timing_d, timing_nm)
       print('Found %d of the IDs+FSNs in the graph DB:' % len(graph_matches_d.keys()))
       # Set any missing FSN values from the Graph
       target_id_set = set(graph_matches_d.keys()) - set(Fsn_d.keys())
-      print('Id values in graph that are not in Fsn_d: %d' % len(target_id_set))
-      print('Ids in graph but not in Fsn_d:'); print(str(target_id_set))
+      print('Id count in graph -- not in Fsn_d: %d' % len(target_id_set))
+      print('Ids in graph -- not in Fsn_d:'); print(str(target_id_set))
       if len(target_id_set) > 0: # create report with the ids from graph, but not in concepts file
         with open('update__in_graph_but_not_RF2.txt','w') as f_rpt:
           print(json.dumps(list(target_id_set)),file=f_rpt)
       target_id_set = target_id_set.intersection(set(rf2_idlist))
-      print('Id values in graph that were not in Fsn_d but are in rf2_idlist (concepts): %d' % len(target_id_set))
-      print('Ids in graph but not in Fsn_d but are in rf2_idlist:'); print(str(target_id_set))
+      print('Id count in graph -- not in Fsn_d but in rf2_idlist (concepts): %d' % len(target_id_set))
+      print('Ids in graph -- not in Fsn_d but in rf2_idlist:'); print(str(target_id_set))
       for id in list(target_id_set): Fsn_d[id] = graph_matches_d[id]['FSN']
       print('count of FSNs after merge with RF2 FSNs: %d' % len(Fsn_d.keys()))
     # Make sure all ids have an FSN
     if sorted(Fsn_d.keys()) != sorted(rf2_idlist): raise ValueError('*** (sanity check failure) Cant find FSN for all IDs in release ***')
     # GENERATE CSV FILES
     timing_idx += 1; timing_nm = '%04d_generate_csvs' % timing_idx; timing_start(timing_d, timing_nm)
+    f_temp_changed_fsn = io.open('temp_fsn_change.txt','w',encoding='utf-8') # DEBUG
+    print(make_utf8('id\told_description\tnew_description'),file=f_temp_changed_fsn)
     for id in rf2_idlist:
-      current_effTime = sorted(concepts_d[id].keys())[-1] # highest effectiveTime is current
-      if id not in graph_matches_d:
+      current_effTime = sorted(concepts_d[id].keys())[-1] # concepts_d[id] is a list of effectiveTime values, highest is current
+      if id not in graph_matches_d: # not in graph ==> new
         stats['new'] += 1
-      elif concepts_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
-        stats['no_change'] += 1; continue # NO CHANGE ==> SKIP
-      else:
-        stats['change'] += 1
+      else: # in graph ==> change/no-change, definition change in Concept file or FSN change?
+        the_same = False
+        if graph_matches_d[id]['effectiveTime'] == concepts_d[id][current_effTime][rf2_fields_d['effectiveTime']]:
+          if not id in all_Fsn_in_Rf2_d:
+            the_same = True # odd case, no FSN in RF2, exception? (in graph, not in RF2)
+            print('%%%% Found id [[[%s]]] in graph, but no description for it in the RF2 %%%%' % id)
+          else:
+            if graph_matches_d[id]['FSN'] == all_Fsn_in_Rf2_d[id]:
+              the_same = True # use the FSN from the graph
+            else: # DEBUG
+              print(make_utf8('%s\t%s\t%s' % (id,graph_matches_d[id]['FSN'],all_Fsn_in_Rf2_d[id])),file=f_temp_changed_fsn)
+        if the_same:
+          stats['no_change'] += 1; continue # NO CHANGE ==> SKIP
+        else:
+          stats['change'] += 1 # concept changed or FSN changed
       hist_str = compute_history_string(id, concepts_d, graph_matches_d, field_names, rf2_fields_d, renamed_fields)
       output_line = build_csv_output_line(id,[('FSN',Fsn_d[id]),('history',hist_str)],current_effTime, concepts_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
       print(output_line,file=(f_new if not id in graph_matches_d else f_chg))
     # Done generating CSVs
-    timing_end(timing_d, timing_nm)
-    timing_end(timing_d, timing_overall_nm)
+    f_temp_changed_fsn.close() # DEBUG
+    for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm)  # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list: f.close() # cleanup
     print('Total RF2 elements: %d, NEW: %d, CHANGE: %d, NO CHANGE: %d' % (len(rf2_idlist), stats['new'], stats['change'], stats['no_change']))
@@ -228,8 +253,8 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in description_d: description_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in description_d[id]: raise InvalidValue('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in description_d[id]: raise ValueError('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       description_d[id][effTime] = fields[:] # attributes in RF2-defined order
       rows_processed['n'] += 1 # tracks rows processed, --testing only
     def language_cb(fields, fields_d, hist):
@@ -248,8 +273,8 @@ def make_csv(arglist):
     # testing_description
     description_d, language_d, snapshot_language_d = {}, {}, {}
     rows_processed = { 'n': 0 } # cant simply use rows_processed = 0 and have it available in description_cb, map works
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(description_cb, None, False)
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('language') ).process_file(language_cb, None, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(description_cb, None, require_active=False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('language') ).process_file(language_cb, None, require_active=False)
     id_list = description_d.keys()
     print('Descriptions: id_list size %d, definitions: %d (release type [%s])' % (len(id_list),rows_processed['n'],opts.release_type))
     return
@@ -261,8 +286,8 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in description_d: description_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in description_d[id]: raise InvalidValue('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** Concept id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in description_d[id]: raise ValueError('*** Concept id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       description_d[id][effTime] = fields[:] # attributes in RF2-defined order
     def language_cb(fields, fields_d, hist):
       id = fields[ fields_d['referencedComponentId'] ] # DONT USE "id", use the id associated with the Description
@@ -286,21 +311,21 @@ def make_csv(arglist):
     # READ RF2 DESCRIPTION FILE
     timing_idx += 1; timing_nm = '%04d_read_RF2_description' % timing_idx; timing_start(timing_d, timing_nm)
     description_d, language_d, snapshot_language_d = {}, {}, {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(description_cb, None, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(description_cb, None, require_active=False)
     timing_end(timing_d, timing_nm)
     rf2_idlist = description_d.keys()
     print('count of RF2 ids: %d' % len(rf2_idlist))
     # READ RF2 LANGUAGE FILE
     timing_idx += 1; timing_nm = '%04d_read_RF2_language' % timing_idx; timing_start(timing_d, timing_nm)
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('language') ).process_file(language_cb, None, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('language') ).process_file(language_cb, None, require_active=False)
     timing_end(timing_d, timing_nm)
     if opts.release_type=='delta': # need snapshot file for fallback of potential missing historical information
       print('read snapshot language values');
       timing_idx += 1; timing_nm = '%04d_read_rf2_language_snapshot' % timing_idx; timing_start(timing_d, timing_nm)
-      snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('language','Snapshot') ).process_file(snapshot_language_cb, None, False); print('read')
+      snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('language','Snapshot') ).process_file(snapshot_language_cb, None, require_active=False); print('read')
       timing_end(timing_d, timing_nm)
     # CSV INIT, ATTRIBUTE NAMES MANAGEMENT
-    f_new, f_chg = io.open('descrip_new.csv','w',encoding='utf8'),io.open('descrip_chg.csv','w',encoding='utf8')
+    f_new, f_chg = [io.open(x,'w',encoding='utf-8') for x in ['descrip_new.csv','descrip_chg.csv']]
     outfile_list = [f_new,f_chg]
     rf2_fields = attributes_by_file.rf2_fields['description']
     rf2_fields_d = { nm: idx for idx,nm in enumerate(rf2_fields) }
@@ -309,7 +334,7 @@ def make_csv(arglist):
     field_names = [ x for x in csv_fields if x not in ['id128bit','acceptabilityId','refsetId','descriptionType','history'] ]
     renamed_fields = attributes_by_file.renamed_fields['description'] # dictionary
     quoted_in_csv_fields = attributes_by_file.quoted_in_csv_fields['description']
-    csv_header = db_data_prep(','.join(csv_fields)) # "id,effectiveTime,..."
+    csv_header = make_utf8(','.join(csv_fields)) # "id,effectiveTime,..."
     for f in outfile_list: print(csv_header, file=f) # header
     if opts.action=='create':
       graph_matches_d = {}
@@ -327,11 +352,12 @@ def make_csv(arglist):
     timing_idx += 1; timing_nm = '%04d_generate_csvs' % timing_idx; timing_start(timing_d, timing_nm)
     for id in rf2_idlist:
       current_effTime = sorted(description_d[id].keys())[-1] # highest effectiveTime is current
-      if id not in graph_matches_d:
+      if id not in graph_matches_d: # not in graph ==> new
         stats['new'] += 1
-      elif description_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
-        stats['no_change'] += 1; continue # NO CHANGE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
-      else:
+      else: # in graph ==> change/no-change
+        if description_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
+          stats['no_change'] += 1
+          continue # NO CHANGE ==> CONTINUE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
         stats['change'] += 1
       hist_str = compute_history_string(id, description_d, graph_matches_d, field_names, rf2_fields_d, renamed_fields)
       # Need to add the following to the description_d definition ==>
@@ -365,8 +391,7 @@ def make_csv(arglist):
       output_line = build_csv_output_line(id, non_rf2_fields, current_effTime, description_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
       print(output_line,file=(f_new if not id in graph_matches_d else f_chg))
     # Done generating CSVs
-    timing_end(timing_d, timing_nm)
-    timing_end(timing_d, timing_overall_nm)
+    for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm)  # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list: f.close() # cleanup
     if stats['no_language'] > 0: print('Missing %d LANGUAGE records' % stats['no_language'])
@@ -387,8 +412,8 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in isa_rel_d: isa_rel_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** ISA id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in isa_rel_d[id]: raise InvalidValue('*** ISA id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** ISA id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in isa_rel_d[id]: raise ValueError('*** ISA id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       isa_rel_d[id][effTime] = fields[:] # attributes in RF2-defined order
       rows_processed['n'] += 1 # tracks rows processed, --testing only
     def isa_rel_filter(fields, fields_d, hist):
@@ -397,7 +422,7 @@ def make_csv(arglist):
     # testing_isa_rel:
     isa_rel_d = {}
     rows_processed = { 'n': 0 } 
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(isa_rel_cb, isa_rel_filter, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(isa_rel_cb, isa_rel_filter, require_active=False)
     id_list = isa_rel_d.keys()
     print('ISA: id_list size %d, definitions: %d (release type [%s])' % (len(id_list),rows_processed['n'],opts.release_type))
     return
@@ -409,8 +434,8 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in isa_rel_d: isa_rel_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** ISA id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in isa_rel_d[id]: raise InvalidValue('*** ISA id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** ISA id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in isa_rel_d[id]: raise ValueError('*** ISA id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       isa_rel_d[id][effTime] = fields[:] # attributes in RF2-defined order
     def isa_rel_filter(fields, fields_d, hist):
       return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_ISA
@@ -424,12 +449,12 @@ def make_csv(arglist):
     # READ RF2 RELATIONSHIP FILE - EXTRACT ISA
     timing_idx += 1; timing_nm = '%04d_read_RF2_relationship' % timing_idx; timing_start(timing_d, timing_nm)
     isa_rel_d = {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(isa_rel_cb, isa_rel_filter, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(isa_rel_cb, isa_rel_filter, require_active=False)
     timing_end(timing_d, timing_nm)
     rf2_idlist = isa_rel_d.keys()
     print('count of ids in RF2: %d' % len(rf2_idlist))
     # CSV FILE INIT, ATTRIBUTE NAME MANAGEMENT
-    f_new, f_chg = io.open('isa_rel_new.csv','w',encoding='utf8'),io.open('isa_rel_chg.csv','w',encoding='utf8')
+    f_new, f_chg = [io.open(x,'w',encoding='utf-8') for x in ['isa_rel_new.csv','isa_rel_chg.csv']]
     outfile_list = [f_new,f_chg]
     rf2_fields = attributes_by_file.rf2_fields['isa_rel']
     rf2_fields_d = { nm: idx for idx,nm in enumerate(rf2_fields) }
@@ -438,7 +463,7 @@ def make_csv(arglist):
     field_names = [ x for x in csv_fields if x not in ['history'] ]
     renamed_fields = attributes_by_file.renamed_fields['isa_rel'] # dictionary
     quoted_in_csv_fields = attributes_by_file.quoted_in_csv_fields['isa_rel']
-    csv_header = db_data_prep(','.join(csv_fields)) # "id,effectiveTime,..."
+    csv_header = make_utf8(','.join(csv_fields)) # "id,effectiveTime,..."
     for f in outfile_list: print(csv_header, file=f) # header
     if opts.action=='create':
       graph_matches_d = {}
@@ -454,18 +479,18 @@ def make_csv(arglist):
     timing_idx += 1; timing_nm = '%04d_csv_generation' % timing_idx; timing_start(timing_d, timing_nm)
     for id in rf2_idlist: # must compute updated history for each
       current_effTime = sorted(isa_rel_d[id].keys())[-1] # highest effectiveTime is current
-      if id not in graph_matches_d:
+      if id not in graph_matches_d: # not in graph ==> new
         stats['new'] += 1
-      elif isa_rel_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
-        stats['no_change'] += 1; continue # NO CHANGE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
-      else:
+      else: # in graph ==> change/no-change
+        if isa_rel_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
+          stats['no_change'] += 1
+          continue # NO CHANGE ==> CONTINUE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
         stats['change'] += 1
       hist_str = compute_history_string(id, isa_rel_d, graph_matches_d, field_names, rf2_fields_d, renamed_fields)
       output_line = build_csv_output_line(id,[('history',hist_str)],current_effTime, isa_rel_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
       print(output_line,file=(f_new if not id in graph_matches_d else f_chg))
     # Done generating CSVs
-    timing_end(timing_d, timing_nm)
-    timing_end(timing_d, timing_overall_nm)
+    for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm)  # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list: f.close() # cleanup
     print('Total RF2 elements: %d, NEW: %d, CHANGE: %d, NO CHANGE: %d' % (len(rf2_idlist), stats['new'], stats['change'], stats['no_change']))
@@ -483,8 +508,8 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in defining_rel_d: defining_rel_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** DEFINING-REL id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in defining_rel_d[id]: raise InvalidValue('*** DEFINING-REL id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** DEFINING-REL id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in defining_rel_d[id]: raise ValueError('*** DEFINING-REL id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       defining_rel_d[id][effTime] = fields[:] # attributes in RF2-defined order
       rows_processed['n'] += 1 # tracks rows processed, --testing only
     def defining_rel_filter(fields, fields_d, hist):
@@ -493,7 +518,7 @@ def make_csv(arglist):
     # testing_defining_rel:
     defining_rel_d = {}
     rows_processed = { 'n': 0 }
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, require_active=False)
     id_list = defining_rel_d.keys()
     print('DEFINING rels: id_list size %d, definitions: %d (release type [%s])' % (len(id_list),rows_processed['n'],opts.release_type))
     return
@@ -505,8 +530,8 @@ def make_csv(arglist):
       effTime = fields[ fields_d['effectiveTime'] ]
       if id not in defining_rel_d: defining_rel_d[id] = {} # not seen before -- empty dictionary (keyed by effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** DEFINING-REL id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in defining_rel_d[id]: raise InvalidValue('*** DEFINING-REL id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** DEFINING-REL id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in defining_rel_d[id]: raise ValueError('*** DEFINING-REL id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       defining_rel_d[id][effTime] = fields[:] # attributes in RF2-defined order
     def defining_rel_filter(fields, fields_d, hist):
       return fields[ fields_d['typeId'] ] != snomedct_constants.SNOMEDCT_TYPEID_ISA
@@ -529,14 +554,14 @@ def make_csv(arglist):
     # READ RF2 RELATIONSHIP FILE - EXTRACT DEFINING-RELS
     timing_idx += 1; timing_nm = '%04d_read_RF2_relationship' % timing_idx; timing_start(timing_d, timing_nm)
     defining_rel_d = {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, require_active=False)
     timing_end(timing_d, timing_nm)
     rf2_idlist = defining_rel_d.keys()
     print('count of ids in RF2: %d' % len(rf2_idlist))
     # CSV FILE INIT, ATTRIBUTE NAME MANAGEMENT
-    f_new, f_chg = io.open('defining_rel_new.csv','w',encoding='utf8'),io.open('defining_rel_chg.csv','w',encoding='utf8')
-    f_edge_rem = io.open('defining_rel_edge_rem.csv','w',encoding='utf8')
-    print(db_data_prep('id,rolegroup,sourceId,destinationId'),file=f_edge_rem)
+    f_new, f_chg, f_edge_rem = [io.open(x,'w',encoding='utf-8') \
+                                for x in ['defining_rel_new.csv','defining_rel_chg.csv','defining_rel_edge_rem.csv']]
+    print(make_utf8('id,rolegroup,sourceId,destinationId'),file=f_edge_rem)
     outfile_list = [f_new,f_chg]
     f_DRs = {} # per-defining-relationship type
     rf2_fields = attributes_by_file.rf2_fields['defining_rel']
@@ -546,10 +571,10 @@ def make_csv(arglist):
     field_names = [ x for x in csv_fields if x not in ['history'] ]
     renamed_fields = attributes_by_file.renamed_fields['defining_rel'] # dictionary
     quoted_in_csv_fields = attributes_by_file.quoted_in_csv_fields['defining_rel']
-    csv_header = db_data_prep(','.join(csv_fields)) # "id,effectiveTime,..."
+    csv_header = make_utf8(','.join(csv_fields)) # "id,effectiveTime,..."
     for f in outfile_list: print(csv_header, file=f) # header
     if opts.action == 'create':
-      graph_matches_d = {}
+      graph_matches_d = {} # no existing graph, no matches
     else:
       # EXTRACT DEFINING RELATIONSHIPS FROM NEO4J
       timing_idx += 1; timing_nm = '%04d_get_neo4j_DEFINING_RELS' % timing_idx; timing_start(timing_d, timing_nm)
@@ -565,25 +590,26 @@ def make_csv(arglist):
       current_effTime = sorted(defining_rel_d[id].keys())[-1] # highest effectiveTime is current
       current_typeId = defining_rel_d[id][current_effTime][rf2_fields_d['typeId']]
       rolegroup_changed = False # if this occurred, treat as create instead of change (as it requires edge remove+edge create)
-      if id not in graph_matches_d:
+      if id not in graph_matches_d: # not in graph ==> new
         stats['new'] += 1
-        if current_typeId not in f_DRs:
-          f_DRs[current_typeId] = open('DR_%s_new.csv' % current_typeId,'w'); print(csv_header, file=f_DRs[current_typeId])
-          print('%s,%s' % (current_typeId, roleHash[current_typeId]), file=f_used_roles)
-      elif defining_rel_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
-        stats['no_change'] += 1; continue # NO CHANGE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
-      else:
-        stats['change'] += 1
+      else: # in graph ==> change/no-change
+        if defining_rel_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
+          stats['no_change'] += 1 # NO CHANGE IN THIS RELATIONSHIP (common situation)
+          continue  # NO CHANGE ==> CONTINUE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
+        stats['change'] += 1 # effectiveTime changed ==> defining relationship changed
         # see if rolegroup changed
         if graph_matches_d[id]['rolegroup'] != defining_rel_d[id][current_effTime][ rf2_fields_d['relationshipGroup'] ]: # rolegroup change?
           print('%s,%s,%s,%s' % (id,graph_matches_d[id]['rolegroup'],graph_matches_d[id]['sctid'],graph_matches_d[id]['destinationId']),file=f_edge_rem)
           rolegroup_changed = True # treat this as an edge create case
+      if current_typeId not in f_DRs: # this could occur on a 'new', but also 'change'
+        f_DRs[current_typeId] = open('DR_%s_new.csv' % current_typeId,'w'); print(csv_header, file=f_DRs[current_typeId])
+        print('%s,%s' % (current_typeId, roleHash[current_typeId]), file=f_used_roles)
       hist_str = compute_history_string(id, defining_rel_d, graph_matches_d, field_names, rf2_fields_d, renamed_fields)
       output_line = build_csv_output_line(id,[('history',hist_str)],current_effTime, defining_rel_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
-      for f in ([f_chg] if rolegroup_changed==False and id in graph_matches_d else [f_new, f_DRs[current_typeId]]): print(output_line,file=f)
+      output_files = [f_chg] if (rolegroup_changed==False and id in graph_matches_d) else [f_new, f_DRs[current_typeId]]
+      for f in output_files: print(output_line, file=f)
     # Done generating CSVs
-    timing_end(timing_d, timing_nm)
-    timing_end(timing_d, timing_overall_nm)
+    for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm) # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list+[f_edge_rem]+[f_DRs[typeId] for typeId in f_DRs.keys()]+[f_used_roles]: f.close() # cleanup
     print('Total RF2 elements: %d, NEW: %d, CHANGE: %d, NO CHANGE: %d' % (len(rf2_idlist), stats['new'], stats['change'], stats['no_change']))
@@ -597,8 +623,8 @@ def make_csv(arglist):
       effTime = fields[fields_d['effectiveTime']]
       if id not in association_refset_d: association_refset_d[id] = {} # not seen before -- empty dictionary (keyed by id+effectiveTime)
       else:
-        if opts.release_type != 'full': raise InvalidValue('*** ASSOCIATION id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
-        if effTime in association_refset_d[id]: raise InvalidValue('*** ASSOCIATION id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
+        if opts.release_type != 'full': raise ValueError('*** ASSOCIATION id [%s] with multiple entries in [%s] release-type, should NOT occur ***' % (id,opts.release_type))
+        if effTime in association_refset_d[id]: raise ValueError('*** ASSOCIATION id [%s] with duplicate effectiveTime [%s], should NOT occur ***' % (id, effTime))
       association_refset_d[id][effTime] = fields[:] # attributes in RF2-defined order
 
     # make_association_refset_csvs:
@@ -622,12 +648,12 @@ def make_csv(arglist):
     # READ RF2 ASSOCIATION REFSET FILE - EXTRACT HISTORICAL CONCEPT ASSOCIATIONS
     timing_idx += 1; timing_nm = '%04d_read_RF2_association_refset' % timing_idx; timing_start(timing_d, timing_nm)
     association_refset_d = {}
-    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('association_refset') ).process_file(association_refset_cb, None, False)
+    snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('association_refset') ).process_file(association_refset_cb, None, require_active=False)
     timing_end(timing_d, timing_nm)
     rf2_idlist = association_refset_d.keys()
     print('count of ids in RF2: %d' % len(rf2_idlist))
     # CSV FILE INIT, ATTRIBUTE NAME MANAGEMENT
-    f_new, f_chg = io.open('association_refset_new.csv','w',encoding='utf8'),io.open('association_refset_chg.csv','w',encoding='utf8')
+    f_new, f_chg = [io.open(x,'w',encoding='utf-8') for x in ['association_refset_new.csv','association_refset_chg.csv']]
     outfile_list = [f_new,f_chg]
     rf2_fields = attributes_by_file.rf2_fields['association_refset']
     rf2_fields_d = { nm: idx for idx,nm in enumerate(rf2_fields) }
@@ -636,7 +662,7 @@ def make_csv(arglist):
     field_names = [ x for x in csv_fields if x not in ['history','association'] ] # since 'association' computed -- issue with build_csv_output_line
     renamed_fields = attributes_by_file.renamed_fields['association_refset'] # dictionary
     quoted_in_csv_fields = attributes_by_file.quoted_in_csv_fields['association_refset']
-    csv_header = db_data_prep(','.join(csv_fields)) # "id,effectiveTime,..."
+    csv_header = make_utf8(','.join(csv_fields)) # "id,effectiveTime,..."
     for f in outfile_list: print(csv_header, file=f) # header
     if opts.action == 'create':
       graph_matches_d = {}
@@ -654,20 +680,20 @@ def make_csv(arglist):
     timing_idx += 1; timing_nm = '%04d_csv_generation' % timing_idx; timing_start(timing_d, timing_nm)
     for id in rf2_idlist: # must compute updated history for each
       current_effTime = sorted(association_refset_d[id].keys())[-1] # highest effectiveTime is current
-      if id not in graph_matches_d:
+      if id not in graph_matches_d: # not in graph ==> new
         stats['new'] += 1
-      elif association_refset_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
-        stats['no_change'] += 1; continue # NO CHANGE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
-      else:
+      else: # in graph ==> change/no-change
+        if association_refset_d[id][current_effTime][rf2_fields_d['effectiveTime']] == graph_matches_d[id]['effectiveTime']:
+          stats['no_change'] += 1
+          continue # NO CHANGE ==> CONTINUE ==> NO ADDITIONAL PROCESSING FOR THIS ENTRY
         stats['change'] += 1
       hist_str = compute_history_string(id, association_refset_d, graph_matches_d, field_names, rf2_fields_d, renamed_fields)
       #print('computed history JSON: [%s]' % hist_str)
       output_line = build_csv_output_line(id,[('history',hist_str),('association',assoc_names[association_refset_d[id][current_effTime][rf2_fields_d['refsetId']]])],
                                           current_effTime, association_refset_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
-      for f in ([f_chg] if id in graph_matches_d else [f_new]): print(output_line,file=f)
+      print(output_line,file=(f_new if not id in graph_matches_d else f_chg))
     # Done generating CSVs
-    timing_end(timing_d, timing_nm)
-    timing_end(timing_d, timing_overall_nm)
+    for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm)  # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list: f.close() # cleanup
     print('Total RF2 elements: %d, NEW: %d, CHANGE: %d, NO CHANGE: %d' % (len(rf2_idlist), stats['new'], stats['change'], stats['no_change']))
@@ -678,25 +704,31 @@ def make_csv(arglist):
   # make_csv:
   # Output: specified CSV file, all fields that were extracted
   opt = optparse.OptionParser()
-  opt.add_option('--verbose',action='store_true',dest='verbose')
-  opt.add_option('--rf2',action='store',dest='rf2')
-  opt.add_option('--element',action='store', choices=['concept','description','isa_rel','defining_rel','association_refset'])
-  opt.add_option('--release_type', action='store', dest='release_type', choices=['delta','snapshot','full'])
-  opt.add_option('--action', action='store', dest='action', default='create', choices=['create','update'])
-  opt.add_option('--neopw64', action='store', dest='neopw64')
+  opt.add_option('--verbose', action='store_true')
+  opt.add_option('--rf2', action='store')
+  opt.add_option('--element', action='store', choices=['concept','description','isa_rel','defining_rel','association_refset'])
+  opt.add_option('--release_type', action='store', choices=['delta','snapshot','full'])
+  opt.add_option('--action', action='store', default='create', choices=['create','update'])
+  opt.add_option('--neopw64', action='store')
+  opt.add_option('--neopw', action='store')
   opt.add_option('--testing', action='store_true', dest='testing')
-  opt.add_option('--relationship_file', action='store', dest='relationship_file', default='Relationship')
-  opt.add_option('--language_code', action='store', dest='language_code', default='en')
-  opt.add_option('--language_name', action='store', dest='language_name', default='Language')
+  opt.add_option('--relationship_file', action='store', default='Relationship')
+  opt.add_option('--language_code', action='store', default='en')
+  opt.add_option('--language_name', action='store', default='Language')
   opts, args = opt.parse_args(arglist)
   if not (len(args)==0 and opts.rf2 and opts.element and opts.release_type):
     print('Usage: make_csv --element concept/description/isa_rel/defining_rel/association_refset --rf2 <dir> --release_type delta/snapshot --action create/update')
     sys.exit(1)
   # Connect to NEO4J
   #neopw = base64.decodestring( json.loads(open('necares_config.json').read())['salt'] )
+  if opts.neopw and opts.neopw64:
+    print('Usage: only one of --neopw and --neopw64 may be specified')
+    sys.exit(1)
+  if opts.neopw64: # snomed_g v1.2, convert neopw64 to neopw
+      opts.neopw = str(base64.b64decode(opts.neopw64),'utf-8') if sys.version_info[0]==3 else base64.decodestring(opts.neopw64) # py2
   if opts.action in ['update']:
     import snomed_g_lib_neo4j # just-in-time import
-    neo4j = snomed_g_lib_neo4j.Neo4j_Access(base64.decodestring(opts.neopw64))
+    neo4j = snomed_g_lib_neo4j.Neo4j_Access(opts.neopw)
   else:
     neo4j = None # not needed for 'create'
   # Connect to RF2 files
@@ -755,7 +787,7 @@ def find_rolegroups(arglist):
 
   # Process all concepts -- find the relationship concepts and associated FSN
   rolegroupHash = {} # prep
-  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, False)
+  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, require_active=False)
 
   # generate rolegroups.csv
   with open('rolegroups.csv', 'w') as fout:
@@ -778,17 +810,24 @@ def find_rolenames(arglist):
     if fields[fields_d['typeId']] not in roleHash: roleHash[fields[fields_d['typeId']]] = None # placeholder
 
   def Fsn_cb(fields, fields_d, hist):
-    # Description file, we are guaranteed this is a FSN
-    # NOTE: may be processing FULL release, want most recent term, dont want to sort the file to figure it out, use hash
-    sctid = fields[fields_d['conceptId']]
-    if sctid in roleHash:
-      effTime = fields[ fields_d['effectiveTime'] ]
-      rolename = db_data_prep(role_name(fields[ fields_d['term'] ])) # NOTE: role_name transforms term to role name
-      if roleHash[sctid]==None or effTime > roleHash[sctid]['effectiveTime']:
-        roleHash[sctid] = { 'effectiveTime': effTime, 'rolename': rolename }
+    ''' Callback from Description file.
+        Sets roleHash for the concept associated with a description.
+        NOTES: 
+        1. The Fsn_filter guarantees that we are processing an active FSN description record
+           for a concept known to have been used in a defining relationship (and is thus a role).
+        2. The term for the description is used for the role name.
+        3. We may be processing a FULL release, use most recent definition based on effectiveTime.
+    '''
+    sctid, effTime   = fields[fields_d['conceptId']], fields[fields_d['effectiveTime']]
+    rolename = make_utf8(role_name(fields[ fields_d['term'] ])) # NOTE: role_name transforms term to role name
+    if roleHash[sctid]==None or effTime > roleHash[sctid]['effectiveTime']:
+      roleHash[sctid] = { 'effectiveTime': effTime, 'rolename': rolename }
 
   def Fsn_filter(fields, fields_d, hist):
-    return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN
+    ''' filter any description that is not for a determined role or that is not an active FSN '''
+    return fields[fields_d['conceptId']] in roleHash and \
+           fields[fields_d['typeId']] == snomedct_constants.SNOMEDCT_TYPEID_FSN and \
+           fields[fields_d['active']] == '1'
 
   def role_name(s): # convert FSN for defining concept role into displayable name, eg: FINDING_SITE
     return s.replace(' (attribute)','').replace(' ','_').replace('"','').replace('-','').replace('(','').replace(')','').replace('___','_').upper()
@@ -811,8 +850,8 @@ def find_rolenames(arglist):
 
   # Process all concepts -- find the relationship concepts and associated FSN
   roleHash = {} # prep
-  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, False)
-  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, False) # TODO - what of 'Delta' case?
+  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('relationship') ).process_file(defining_rel_cb, defining_rel_filter, require_active=False)
+  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, require_active=False) # TODO - what of 'Delta' case?
   # NOTE: for 'Delta' case -- we could allow the user to provide an 'all_roles.csv' file specifying the role names
 
   # generate all_roles.csv
@@ -834,18 +873,29 @@ def get_id_active_fsn(arglist):
   def rf2_filename(element, view=None): # rf2_folders is set in make_csv initialization
     return rf2_folders.rf2_file_path(element, view) # eg: 'concept'
   def concept_cb(fields, fields_d, hist):
-    # NOTE: may be processing FULL release, want most recent term, dont want to sort the file to figure it out, use hash
-    sctid, effTime, active = fields[fields_d['id']], fields[fields_d['effectiveTime']], fields[fields_d['active']]
+    ''' Callback from Concept file.
+        Sets idHash for the concept being processed
+        NOTES: 
+        1. There is no filter, all records are processed (i.e. multiple historical records for one concept).
+        2. We may be processing a FULL release, use most recent definition based on effectiveTime.
+    '''
+    sctid, effTime, active = [fields[fields_d[x]] for x in ['id','effectiveTime','active']]
     if sctid not in idHash:
       idHash[sctid] = { 'effectiveTime': effTime, 'active': active}
     elif effTime > idHash[sctid]['effectiveTime']:
       idHash[sctid] = { 'effectiveTime': effTime, 'active': active}
   def Fsn_filter(fields, fields_d, hist):
-    return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN
+    ''' filter out any description that is not an active FSN '''
+    return fields[ fields_d['typeId'] ] == snomedct_constants.SNOMEDCT_TYPEID_FSN and \
+           fields[ fields_d['active'] ] == '1'
   def Fsn_cb(fields, fields_d, hist):
-    # NOTE: we are guaranteed this is a FSN by filter
-    # NOTE: may be processing FULL release, want most recent term, dont want to sort the file to figure it out, use hash
-    sctid, effTime, fsn = fields[fields_d['conceptId']], fields[fields_d['effectiveTime']], fields[fields_d['term']]
+    ''' Callback from Description file.
+        Set fsnHash for the concept associated with this description.
+        NOTES: 
+        1. The Fsn_filter guarantees that we are processing an active FSN description.
+        2. We may be processing a FULL release, use most recent definition based on effectiveTime.
+    '''
+    sctid, effTime, fsn = [fields[fields_d[x]] for x in ['conceptId','effectiveTime','term']]
     if sctid not in fsnHash:
       fsnHash[sctid] = { 'effectiveTime': effTime, 'FSN': fsn}
     elif effTime > fsnHash[sctid]['effectiveTime']:
@@ -869,8 +919,8 @@ def get_id_active_fsn(arglist):
   # Process all concepts -- find the id and active state (for latest effectiveTime)
   idHash = {} # prep
   fsnHash = {}
-  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('concept') ).process_file(concept_cb, None, False)
-  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, False)
+  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('concept') ).process_file(concept_cb, None, require_active=False)
+  snomed_g_lib_rf2.Process_Rf2_Release_File( rf2_filename('description') ).process_file(Fsn_cb, Fsn_filter, require_active=False)
 
   # generate specified output file
   with open(args[0], 'w') as fout:
@@ -889,7 +939,7 @@ def get_id_active_fsn(arglist):
 def set_missing_efftime(arglist):
 
   def rf2_file_callback(infile_fnam, outfile_fnam):
-    fin, fout = io.open(infile_fnam,'r',encoding='utf8'),io.open(outfile_fnam,'w',encoding='utf8')
+    fin, fout = io.open(infile_fnam,'r',encoding='utf-8'),io.open(outfile_fnam,'w',encoding='utf-8')
     rawline = fin.readline() # try to read header line (may not exist, file might be empty)
     if rawline: # header line exists, not empty file
       line = rawline.rstrip('\n').rstrip('\r')
@@ -938,7 +988,7 @@ def compare_concept_sets(arglist):
 
     def find_concept_set(target_attributes, in_filename_path):
         result = set()
-        fin = io.open(in_filename_path,'r',encoding='utf8') # open old file
+        fin = io.open(in_filename_path,'r',encoding='utf-8') # open old file
         raw_header = fin.readline()
         if raw_header: # not at EOF (some files may be empty)
             header = raw_header.rstrip('\n').rstrip('\r') # header line MUST exist
@@ -965,7 +1015,7 @@ def compare_concept_sets(arglist):
     if filetype=='concept': attribute_list = ['id']
     elif filetype=='description': attribute_list = ['conceptId']
     elif filetype in ['relationship','statedrelationship']: attribute_list = ['sourceId','destinationId']
-    else: raise InvalidValue('compare_concept_sets -- filetype: [%s]' % filetype)
+    else: raise ValueError('compare_concept_sets -- filetype: [%s]' % filetype)
     print('Comparing concepts of type [%s]\nFile1:[%s]\nFile2:[%s]' % (filetype, file1_path, file2_path))
     # determine sets of concepts from file1 and file2
     k1 = find_concept_set(attribute_list, file1_path)
@@ -1000,7 +1050,7 @@ def extract_concept_sets(arglist):
 
     def find_concept_set(target_attributes, in_filename_path):
         result = set()
-        fin = io.open(in_filename_path,'r',encoding='utf8') # open old file
+        fin = io.open(in_filename_path,'r',encoding='utf-8') # open old file
         raw_header = fin.readline()
         if raw_header: # not at EOF (some files may be empty)
             header = raw_header.rstrip('\n').rstrip('\r') # header line MUST exist
@@ -1021,7 +1071,7 @@ def extract_concept_sets(arglist):
     if filetype=='concept': attribute_list = ['id']
     elif filetype=='description': attribute_list = ['conceptId']
     elif filetype in ['relationship','statedrelationship']: attribute_list = ['sourceId','destinationId']
-    else: raise InvalidValue('compare_concept_sets -- filetype: [%s]' % filetype)
+    else: raise ValueError('compare_concept_sets -- filetype: [%s]' % filetype)
     print('Extracting concept set from [%s]\nFile:[%s]' % (filetype, file_path))
     # determine sets of concepts from file1 and file2
     k1 = find_concept_set(attribute_list, file_path)
