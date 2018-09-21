@@ -77,7 +77,7 @@ Example: (using the Jan 31, 2015 International Edition, on a windows machine)
 
 `python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_build_tools.py db_build --action create --rf2 c:/sno/snomedct/nelex/SnomedCT_RF2Release_INT_20150131/ --release_type full --neopw <password> --output_dir c:/build/20150131 --language_code 'en-us' --language_name 'USEnglish'`
 
-================================================================================================
+================================================================
 
 # Update a Neo4j Graph from a FULL RF2
 
@@ -114,7 +114,7 @@ Example: (_UPDATE to US 2016 0301 (from INT 20150131)_)
 
 `python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_tools.py db_build --action update --rf2 /sno/snomedct/SnomedCT_RF2Release_US1000124_20160301 --release_type full --neopw <password> --output_dir /sno/build/upd_to_us20160301 --logfile /sno/build/int_20150131/sct_build_20160301.log`
 
-=================================================================================================
+==============================================================
 
 # Create Transitive Closure of ISA relationships contained in a SNOMED CT graph stored in Neo4j
 
