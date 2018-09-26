@@ -8,6 +8,6 @@ Please see the relevant sub-directories for each of the different database load 
 - [MYSQL with optimizedviews](mysql-loader-with-optimized-views/)
 - [NEO4J](NEO4J/)
 - [PostgreSQL](PostgreSQL/)
-- [MSSQL](MS SQL/)
+- [MSSQL](MSSQL/)
 
 If you have any scripts for other databases, please fork this repository and create the pull request to submit any contributions.
