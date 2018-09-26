@@ -1110,7 +1110,7 @@ def full_to_snapshot(arglist):
     fin_fnam, fout_fnam = args[0], args[1]
     # Pass 1 -- determine the highest effectiveTime for each 'id'
     effTime_d = {}
-    fin = open(fin_fnam)
+    fin = io.open(fin_fnam, 'r', encoding='utf-8')
     line_number = 0
     id_index, effTime_index = None, None
     while True:
@@ -1132,8 +1132,8 @@ def full_to_snapshot(arglist):
         effTime_d[id].append(effTime)
     fin.close()
     # Pass #2 - extract highest effectiveTime for each id
-    fin = open(fin_fnam)
-    fout = open(fout_fnam, 'w')
+    fin = io.open(fin_fnam, 'r', encoding='utf-8')
+    fout = io.open(fout_fnam, 'w', encoding='utf-8')
     line_number = 0
     lines_in_full, lines_in_snapshot = 0, 0
     while True: # we already know id_index, effTime_index
