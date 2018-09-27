@@ -89,7 +89,10 @@ Requirements:
     - NOTE: has been tested with python 2.7 and python 3.6
     - Requires the py2neo python library to be installed
 2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
-    - Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
+    - The purpose of this directory is to for writing log files and temporary CSV files.
+    - It is not a directory that NEO4J needs for its normal operation.
+    - The contents of these CSV files are loaded into NEO4J.
+    - After the database load completes, the CSV files are no longer needed and can then be removed.
 3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
 4. Requires Java version 8 or above, as needed by NEO4J version 3 installations
 5. Requires NEO4J version 3.2 or above to be installed and running (holding the NEO4J database to be updated)
