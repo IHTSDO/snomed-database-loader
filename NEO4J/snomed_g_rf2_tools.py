@@ -31,6 +31,8 @@ def clean_str(s):  #  result can be processed from a CSV file as a string
 def csv_clean_str(s):
   return '"'+s.strip().replace('"','""').replace('\\','\\\\')+'"' # embedded double-quote processing
 
+def chomp(s): return s.rstrip('\n').rstrip('\r') # line ending removal
+
 # TIMING functions
 def timing_start(timing_d, nm): timing_d[nm] = { 'start': datetime.datetime.now() }
 def timing_end(timing_d, nm):   timing_d[nm]['end'] = datetime.datetime.now()
@@ -1099,59 +1101,49 @@ def full_to_snapshot(arglist):
   opt = optparse.OptionParser()
   opt.add_option('--verbose',action='store_true',dest='verbose')
   opt.add_option('--release',action='store_true',dest='release')
-  #opt.add_option('--rf2',action='store',dest='rf2')
-  #opt.add_option('--release_type', action='store', dest='release_type', choices=['delta','snapshot','full'])
   opts, args = opt.parse_args(arglist)
   if not (len(args)==2): print('Usage: full_to_snapshot <input-rf2-file> <output-rf2-file>'); sys.exit(1)
+  fin_fnam, fout_fnam = args
+
+  # --release special processing
   if opts.release:
-    transformer = snomed_g_lib_rf2.TransformRf2(args[0],args[1])
+    transformer = snomed_g_lib_rf2.TransformRf2(fin_fnam, fout_fnam)
     transformer.full_to_snapshot()
-  else: # Concept file
-    fin_fnam, fout_fnam = args[0], args[1]
-    # Pass 1 -- determine the highest effectiveTime for each 'id'
-    effTime_d = {}
-    fin = io.open(fin_fnam, 'r', encoding='utf-8')
-    line_number = 0
-    id_index, effTime_index = None, None
+    return
+
+  # Pass 1 -- determine the highest effectiveTime for each 'id'
+  fieldsep = '\t' # tab-separated fields in RF2 files
+  effTime_d = {} # track most current effectiveTime for each id
+  id_index, effTime_index = None, None # field numbers of 'id' and 'effectiveTime', when determined
+  with io.open(fin_fnam, 'r', encoding='utf-8') as fin:
+    fieldnames = chomp(fin.readline()).split('\t') # assume header line exists
+    id_index, effTime_index = [fieldnames.index(x) for x in ['id', 'effectiveTime']] # field numbers now known
     while True:
       rawline = fin.readline()
       if not rawline: break # EOF
-      line_number += 1
-      line = rawline.rstrip('\n').rstrip('\r')
-      fields = line.split('\t')
-      if line_number==1: # header
-        id_index = fields.index('id')
-        effTime_index = fields.index('effectiveTime')
-        continue # we have what we need -- skip to next line
-      # not the header line -- track effectiveTime values
-      id, effTime = fields[id_index], fields[effTime_index]
-      if id not in effTime_d:
-        effTime_d[id] = [effTime]
-      else:
-        if effTime in effTime_d[id]: print('Dup effTime [%s] found for id [%s] on line %d' % (effTime, id, line_number))
-        effTime_d[id].append(effTime)
-    fin.close()
-    # Pass #2 - extract highest effectiveTime for each id
-    fin = io.open(fin_fnam, 'r', encoding='utf-8')
-    fout = io.open(fout_fnam, 'w', encoding='utf-8')
-    line_number = 0
-    lines_in_full, lines_in_snapshot = 0, 0
+      fields = chomp(rawline).split(fieldsep)
+      id, effTime = [fields[x] for x in [id_index, effTime_index]] # track id, effectiveTime
+      if id not in effTime_d or effTime > effTime_d[id]:
+        effTime_d[id] = effTime # max effTime ==> most current known definition for id
+  # Pass #2 - write only highest effectiveTime for each id to output file
+  lines_in_full, lines_in_snapshot = 0, 0
+  with io.open(fin_fnam, 'r', encoding='utf-8') as fin, \
+       io.open(fout_fnam, 'w', encoding='utf-8') as fout:
+    header = chomp(fin.readline()) # header line must exist
+    print(header, file=fout)
     while True: # we already know id_index, effTime_index
       rawline = fin.readline()
       if not rawline: break # EOF
+      line = chomp(rawline)
       lines_in_full += 1
-      line_number += 1
-      line = rawline.rstrip('\n').rstrip('\r')
-      if line_number==1: print(line, file=fout); continue # header
-      fields = line.split('\t')
-      id, effTime = fields[id_index], fields[effTime_index]
-      if effTime == max(effTime_d[id]):
-        print(line, file=fout); lines_in_snapshot += 1
-    for f in [fin,fout]: f.close()
-    # end Pass 2
-    print('Processed %d lines from FULL, created %d lines in Snapshot' % (lines_in_full, lines_in_snapshot))
-    print('Distinct id values: %d' % len(effTime_d.keys()))
-    return
+      fields = line.split(fieldsep)
+      id, effTime = [fields[x] for x in [id_index, effTime_index]]
+      if effTime == effTime_d[id]: # max ==> should be in snapshot, most current definition
+        print(line, file=fout)
+        lines_in_snapshot += 1
+  # end Pass 2
+  print('Processed %d lines from FULL, created %d lines in Snapshot' % (lines_in_full, lines_in_snapshot))
+  print('Distinct id values: %d' % len(effTime_d.keys()))
 # END full_to_snapshot
 
 #----------------------------------------------------------------------------|
