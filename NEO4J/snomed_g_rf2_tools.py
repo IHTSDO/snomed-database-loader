@@ -19,19 +19,25 @@ Example:
                  --rf2 /cygdrive/c/sno/snomedct/SnomedCT_RF2Release_US1000124_20160301
 '''
 
+
 def make_utf8(v):
   if sys.version_info[0]==3:
     return v
   else: # py2.7 support
     return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf-8")
 
+
 def clean_str(s):  #  result can be processed from a CSV file as a string
   return '"'+s.strip().replace('"',r'\"')+'"' # embedded double-quote processing
+
 
 def csv_clean_str(s):
   return '"'+s.strip().replace('"','""').replace('\\','\\\\')+'"' # embedded double-quote processing
 
-def chomp(s): return s.rstrip('\n').rstrip('\r') # line ending removal
+
+def chomp(s): # remove line ending.  <LF> or <CR><LF>
+    return s.rstrip('\n').rstrip('\r')
+
 
 # TIMING functions
 def timing_start(timing_d, nm): timing_d[nm] = { 'start': datetime.datetime.now() }
