@@ -20,10 +20,16 @@ def run_cypher(arglist):
     opt.add_option('--neopw', action='store')
     opt.add_option('--cypher', action='store')
     opts, args = opt.parse_args(arglist)
+    if len(args)==0 and not opts.cypher:
+      print('''Usage: must specify CYPHER file or --cypher '<CYPHER-code>'.''')
+      sys.exit(1)
+    if not (opts.neopw or opts.neopw64):
+      print('''Usage: must specify --neopw '<pw>' or --neopw64 '<base64-pw>'.''')
+      sys.exit(1)
     if not ((opts.neopw or opts.neopw64) and
             ((len(args)==1 and not opts.cypher) or
              (len(args)==0 and opts.cypher))):
-      print('Usage: command <cypherfile> --neopw <pw>'); sys.exit(1)
+      print('''Usage: command [<cypherfile>] --neopw <pw> [--cypher '<CYPHER-code>']'''); sys.exit(1)
     if opts.neopw and opts.neopw64:
       print('Usage: only one of --neopw and --neopw64 may be specified')
       sys.exit(1)
@@ -72,6 +78,9 @@ def run_cypher(arglist):
     if opts.verbose: command_end = datetime.datetime.now(); print('CYPHER execution time: %s' % (str(command_end-command_start),))
     next_cmd = ''
   print('SUCCESS (%d commands)' % succeeded if failed==0 else 'FAILED (%d commands failed, %d commands succeeded)' % (failed,succeeded) )
+  if len(next_cmd) > 0:
+    print('*** Did NOT the trailing command that is missing a semicolon ***')
+    print('[%s]' % next_cmd)
   sys.exit(failed) # CONVENTION -- exit program -- exit status is number of failures, zero if no failures
 # END run_cypher
 
