@@ -612,6 +612,9 @@ class TransformRf2:
                              for x in ['sct2_Relationship_', 'sct2_StatedRelationship_']):
                         print('Process RELATIONSHIP file [%s]' % in_filename)
                         convert_full_to_snapshot(['id'], in_filename_path, out_filename_path)
+                    elif in_filename.startswith('sct2_TextDefinition_'):
+                        print('Process TextDefinition file [%s]' % in_filename)
+                        convert_full_to_snapshot(['id'], in_filename_path, out_filename_path)
                     else:
                         print('COPY miscellaneous file [%s]' % (in_filename_path,))
                         copy_file(in_filename_path, out_filename_path)
