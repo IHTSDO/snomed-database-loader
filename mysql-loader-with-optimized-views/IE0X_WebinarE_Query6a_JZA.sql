@@ -5,10 +5,18 @@
 --                              363698007 |finding site| = << 39057004 |pulmonary valve|,
 --                              116676008 |associated morphology| = << 415582006 |stenosis|
 --
-DROP TABLE IF EXISTS snomedct.tmp2;
-DROP TABLE IF EXISTS snomedct.tmp3;
+DROP TABLE IF EXISTS tmp1;
+DROP TABLE IF EXISTS tmp2;
+DROP TABLE IF EXISTS tmp3;
 
-CREATE TEMPORARY TABLE IF NOT EXISTS snomedct.tmp2 (
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp1 (
+  `id` bigint(20) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+INSERT INTO tmp1 SELECT subtypeId FROM ss_transclose as tc WHERE tc.supertypeId = 404684003;
+
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp2 (
   `id` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -16,25 +24,26 @@ CREATE TEMPORARY TABLE IF NOT EXISTS snomedct.tmp2 (
 
 INSERT INTO tmp2 SELECT DISTINCT sourceId FROM sva_relationship as r WHERE r.active = 1 AND r.typeId = 363698007 
 AND (r.destinationId = 39057004 OR r.destinationId IN
-(SELECT tc2.subTypeId FROM snomedct.ss_transclose as tc2
+(SELECT tc2.subTypeId FROM ss_transclose as tc2
 WHERE tc2.supertypeId = 39057004 ));
 
-CREATE TEMPORARY TABLE IF NOT EXISTS snomedct.tmp3 (
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp3 (
   `id` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 INSERT INTO tmp3 SELECT DISTINCT sourceId FROM sva_relationship as r WHERE r.active = 1 AND r.typeId = 116676008 
 AND (r.destinationId = 415582006 OR r.destinationId IN
-(SELECT tc2.subTypeId FROM snomedct.ss_transclose as tc2
+(SELECT tc2.subTypeId FROM ss_transclose as tc2
 WHERE tc2.supertypeId = 415582006 ));
 
-SELECT DISTINCT pt.conceptId,pt.term
-FROM snomedct.ss_transclose as tc , snomedct.sva_pref as pt
-WHERE  pt.conceptId = tc.subtypeId 
-AND tc.subtypeId IN (SELECT id FROM tmp2)
-AND tc.subtypeId IN (SELECT id FROM tmp3)
+SELECT pt.conceptId,pt.term
+FROM tmp1, sva_pref as pt
+WHERE  pt.conceptId = tmp1.id 
+AND tmp1.id IN (SELECT id FROM tmp2)
+AND tmp1.id IN (SELECT id FROM tmp3)
 ORDER BY pt.term;
 
-DROP TABLE IF EXISTS snomedct.tmp2;
-DROP TABLE IF EXISTS snomedct.tmp3;
+DROP TABLE IF EXISTS tmp1;
+DROP TABLE IF EXISTS tmp2;
+DROP TABLE IF EXISTS tmp3;
