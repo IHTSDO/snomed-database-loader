@@ -40,12 +40,18 @@ def chomp(s): # remove line ending.  <LF> or <CR><LF>
 
 
 # TIMING functions
+
 def timing_start(timing_d, nm): timing_d[nm] = { 'start': datetime.datetime.now() }
+
+
 def timing_end(timing_d, nm):   timing_d[nm]['end'] = datetime.datetime.now()
+
+
 def show_timings(timestamps):
   for key in sorted(timestamps.keys()):
     delta = timestamps[key]['end'] - timestamps[key]['start']
     print('%-35s : %s' % (key, str(delta)))
+# end show_timings
 
 #--------------------------------------------------------------------------------
 #             make_csv --element concept --rf2 <dir> --release_type delta       |
