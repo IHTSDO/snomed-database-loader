@@ -366,6 +366,7 @@ def make_csv(arglist):
       print('count of Language Descriptions in RF2: %d' % len(list(set(language_d.keys()).intersection(set(rf2_idlist)))))
     # GENERATE CSV FILES
     timing_idx += 1; timing_nm = '%04d_generate_csvs' % timing_idx; timing_start(timing_d, timing_nm)
+    no_language_example_code = ''
     for id in rf2_idlist:
       current_effTime = sorted(description_d[id].keys())[-1] # highest effectiveTime is current
       if id not in graph_matches_d: # not in graph ==> new
@@ -401,8 +402,7 @@ def make_csv(arglist):
         computed['acceptabilityId'] = '<NA>'
         computed['refsetId']        = '<NA>'
         computed['descriptionType'] = '<NA>'
-        if stats['no_language']<=1000: print('*** Missing LANGUAGE records for Description %s ***' % id)
-        elif stats['no_language']==1001: print('*** Missing more than 1000 LANGUAGE records ***')
+        if stats['no_language']==1: no_language_example_code = id
       non_rf2_fields = [(x,computed[x]) for x in ['id128bit','acceptabilityId','refsetId','descriptionType']]+[('history',hist_str)]
       output_line = build_csv_output_line(id, non_rf2_fields, current_effTime, description_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
       print(output_line,file=(f_new if not id in graph_matches_d else f_chg))
@@ -410,7 +410,9 @@ def make_csv(arglist):
     for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm)  # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list: f.close() # cleanup
-    if stats['no_language'] > 0: print('Missing %d LANGUAGE records' % stats['no_language'])
+    if stats['no_language'] > 0:
+      print('[[[ NOTE: Did not find Refset/Language records for %d concepts, e.g. sctid: [%s] ]]]'
+            % (stats['no_language'], no_language_example_code))
     print('Total RF2 elements: %d, NEW: %d, CHANGE: %d, NO CHANGE: %d' % (len(rf2_idlist), stats['new'], stats['change'], stats['no_change']))
     show_timings(timing_d)
     # DONE
