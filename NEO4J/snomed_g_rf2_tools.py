@@ -214,7 +214,15 @@ def make_csv(arglist):
       for id in list(target_id_set): Fsn_d[id] = graph_matches_d[id]['FSN']
       print('count of FSNs after merge with RF2 FSNs: %d' % len(Fsn_d.keys()))
     # Make sure all ids have an FSN
-    if sorted(Fsn_d.keys()) != sorted(rf2_idlist): raise ValueError('*** (sanity check failure) Cant find FSN for all IDs in release ***')
+    Fsn_d_set, rf2_idlist_set = (set(Fsn_d.keys()), set(rf2_idlist))
+    if Fsn_d_set != rf2_idlist_set:
+        ids_without_FSNs = rf2_idlist_set - Fsn_d_set
+        FSNs_without_ids = Fsn_d_set - rf2_idlist
+        print('*** Missing FSNs for the following SCTID values:')
+        print(ids_without_FSNs)
+        print('*** FSNs without SCTID values:')
+        print(FSNs_without_ids)
+        raise ValueError('*** (sanity check failure) Cant find FSN for all IDs in release ***')
     # GENERATE CSV FILES
     timing_idx += 1; timing_nm = '%04d_generate_csvs' % timing_idx; timing_start(timing_d, timing_nm)
     f_temp_changed_fsn = io.open('temp_fsn_change.txt','w',encoding='utf-8') # DEBUG
