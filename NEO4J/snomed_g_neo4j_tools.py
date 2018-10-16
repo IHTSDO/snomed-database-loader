@@ -47,9 +47,11 @@ def run_cypher(arglist):
     print('Exception: %s' % type(e).__name__)
     print('Exception arguments: %s' % e.args)
     sys.exit(1)
-  # want LONG TIMEOUT for CSV loading
-  from py2neo.packages.httpstream import http
-  http.socket_timeout = 1200 # JGP default was 30 on July 2016, this is 20 min I believe
+  if py2neo.__version__[0]=='3': # e.g. '3.1.2' instead of '4.1.0'
+    # want LONG TIMEOUT for CSV loading, supported in py2neo 3.1.2, but not 4.1.0
+    from py2neo.packages.httpstream import http
+    http.socket_timeout = 1200 # JGP default was 30 on July 2016, this is 20 min I believe
+  # end if py2neo version 3
   # Execute the CYPHER commands in the file
   if opts.cypher:
     command_lines = [ opts.cypher ]
@@ -68,7 +70,13 @@ def run_cypher(arglist):
     if opts.verbose: print('Sending CYPHER:[%s]' % next_cmd)
     command_start = datetime.datetime.now()
     try:
-      graph_db.run(next_cmd).dump()
+      temp_cursor = graph_db.run(next_cmd) # returns Cursor, empirical evidence (not in py2neo doc)
+      # e.g. from doc -- graph.run("MATCH (a:Person) RETURN a.name, a.born LIMIT 4").to_data_frame()
+      if py2neo.__version__[0] == '3':  # e.g. '3.1.2' instead of '4.1.0'
+        temp_cursor.dump() # v3 method
+      else:
+        print(str(temp_cursor.data())) # v4 method, list of dictionaries
+      # end if py2neo v3 versus v4
     except Exception as e:
       failed += 1
       print('*** DB failure: command %d [%s] : [%s,%s]' % (idx+1,next_cmd,type(e),str(e)))
