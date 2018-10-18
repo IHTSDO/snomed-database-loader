@@ -4,11 +4,6 @@ This upload script has been kindly donated by Scott Campbell and his team from t
 
 **NOTE:** This script is not directly supported by SNOMED International and has not been tested by the SNOMED International team.
 
-Version 1.2, 2018-04-18,
-    (a) Support python 3 in addition to python 2.7.  (Tested with python 3.6 and python 2.7).
-    (b) Support --neopw <password> in addition to --neopw64 <base64-password> (deprecated, but still supported).
-    (c) Bug fix -- bug existed in update processing, related to defining relationship differences determination.
-Version 1.1, 2018-04-13, Fix FSN issue in some ObjectConcept nodes -- require that the description have the active='1' attribute value.
 
 ## For attribution:
 
@@ -16,17 +11,21 @@ Version 1.1, 2018-04-13, Fix FSN issue in some ObjectConcept nodes -- require th
 
 **Full manuscript:** Campbell WS, Pedersen J, McClay JC, Rao P, Bastola D, Campbell JR. [An alternative database approach for management of SNOMED CT and improved patient data queries](https://www.ncbi.nlm.nih.gov/pubmed/26305513). J Biomed Inform. 2015 Oct;57:350-7\. doi: 10.1016/j.jbi.2015.08.016\. Epub 2015 Aug 21\. PubMed PMID: 26305513.
 
-# Create a Neo4j Graph from a FULL RF2 Release
+## Create a Neo4j Graph from a FULL RF2 Release
 
 This is a Linux or Windows command-line operation requiring a Python 2.7 or Python 3.5 (or above) interpreter and the SNOMED_G software.
 
 Requirements:
 
-1. Requires python 2.7 or python 3.5 (or above)
-    - NOTE: has been tested with python 2.7 and python 3.6
-    - Requires the py2neo python library to be installed, version 3.1.2
-      - One way to install py2neo 3.1.2 is to use the python pip utility:
-         - pip install py2neo==3.1.2 
+1. Python requirements
+    - Requires python 2.7 or python 3.5 or above
+    - NOTE: Has been tested with python 2.7 and python 3.6 and 3.7
+    - Requires the py2neo python library to be installed
+      - For python 3, the latest version of py2neo is supported (4.X)
+      - For python 2.7, py2neo 3.1.2 is currently required
+          - One way to install py2neo 3.1.2 is to use the python pip utility:
+              - pip install py2neo==3.1.2
+          - This is a temporary requirement, awaiting a py2neo bugfix 
 2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
     - Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
 3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
@@ -79,7 +78,7 @@ Example: (using the Jan 31, 2015 International Edition, on a windows machine)
 
 ================================================================
 
-# Update a Neo4j Graph from a FULL RF2
+## Update a Neo4j Graph from a FULL RF2
 
 This is a Linux or Windows command-line operation requiring Python 2.7 and the SNOMED_G software.
 
@@ -99,7 +98,7 @@ Requirements:
     - Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
       - Controlled by the NEO4J configuration option dbms.directories.import=import
         - That option should be commented out, at least for the duration of the database load
-        - #dbms.directories.import=import
+           - \#dbms.directories.import=import
     - Requires 4GB of Java heap memory be configured in the NEO4J configuration
       - A system with 16GB of memory or above will probably not have to explicitly configure this.
       - See NEO4J operations documentation for configuring memory parameters.
@@ -119,7 +118,7 @@ Example: (_UPDATE to US 2016 0301 (from INT 20150131)_)
 
 ==============================================================
 
-# Create Transitive Closure of ISA relationships contained in a SNOMED CT graph stored in Neo4j
+## Create Transitive Closure of ISA relationships contained in a SNOMED CT graph stored in Neo4j
 
 Syntax:
 
@@ -132,3 +131,14 @@ Example: `base64-neo4j-password` must be replaced by the Base64 representation o
 This creates the file TC_20150131_graph.txt.
 
 
+## Versions
+
+1. Version 1.3. 2018-10-18,
+    - Support for py2neo version 4.x for python 3, version 4.1 tested (current version)
+    - Support for py2neo version 4.x for python 2.7 is awaiting py2neo bugfix
+2. Version 1.2, 2018-04-18,
+    - Support python 3 in addition to python 2.7.  (Tested with python 3.6 and python 2.7).
+    - Support --neopw <password> in addition to --neopw64 <base64-password> (deprecated, but still supported).
+    - Bug fix -- bug existed in update processing, related to defining relationship differences determination.
+3. Version 1.1, 2018-04-13
+    - Fix FSN issue in some ObjectConcept nodes -- require that the description have the active='1' attribute value.
