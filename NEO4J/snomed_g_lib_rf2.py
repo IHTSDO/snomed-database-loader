@@ -1,6 +1,6 @@
 '''
 Module:  snomed_g_lib_rf2.py
-Author:  Jay Pedersen, July 2016
+Author:  Jay Pedersen, University of Nebraska Medical Center (UNMC), July 2016
 Purpose: Define utility classes for processing RF2 format files,
          which are the SNOMED CT release format.
 '''
@@ -8,6 +8,11 @@ Purpose: Define utility classes for processing RF2 format files,
 from __future__ import print_function
 import os, re, glob, io
 import snomedct_constants
+
+
+def chomp(s): # remove line ending.  <LF> or <CR><LF>
+    return s.rstrip('\n').rstrip('\r')
+
 
 class Rf2_Folders:
   def __init__(self, base_directory, release_type, rel_config='Relationship', language_code='en', language_name='Language'):
@@ -532,55 +537,46 @@ class TransformRf2:
 
     def full_to_snapshot(self): # walk input directory structure, translate to output
 
-        # NOTE: UNSURE IF THIS WORKS CORRECTLY, JGP 20170420, it bases its decision on
-        #       the key of a row based only on the 'id' property.  That works for concepts.
-        #       Does it work for relationships, descriptions and language files?
+        # NOTE: UNSURE IF THIS WORKS CORRECTLY, JGP 20170420.  It bases its decision on
+        #       the key of a row based only on the 'id' property.  That works for concepts
+        #       and relationships.  Does it work for descriptions and language files?
 
-        def convert_full_to_snapshot(key_field_list,fin_fnam,fout_fnam):
+        def convert_full_to_snapshot(key_field_list, fin_fnam, fout_fnam):
             # Pass 1 -- determine highest effectiveTime for each primary_key (eg: 'id')
-            effTime_d = {}
-            line_number = 0
-            field_indices, effTime_index = None, None
-            with io.open(fin_fnam,'r',encoding='utf8') as fin:
+            fieldsep = '\t'  # tab-separated fields in RF2 files
+            effTime_d = {}  # track most current effectiveTime for each id
+            id_index, effTime_index = None, None  # field numbers of 'id' and 'effectiveTime', when determined
+            with io.open(fin_fnam, 'r', encoding='utf-8') as fin:
+                fieldnames = chomp(fin.readline()).split('\t')  # assume header line exists
+                id_index, effTime_index = [fieldnames.index(x)
+                                           for x in ['id', 'effectiveTime']]  # field numbers now known
                 while True:
                     rawline = fin.readline()
-                    if not rawline: break # EOF
-                    line_number += 1
-                    line = rawline.rstrip('\n').rstrip('\r')
-                    fields = line.split('\t')
-                    if line_number==1: # header
-                        field_indices = [fields.index(key_field) for key_field in key_field_list] # eg 'id'
-                        effTime_index = fields.index('effectiveTime')
-                        continue # we have what we need -- skip to next line
-                    # not the header line -- track effectiveTime values
-                    id = tuple(fields[idx] for idx in field_indices)
-                    effTime = fields[effTime_index]
-                    if id not in effTime_d:
-                        effTime_d[id] = effTime
-                    elif effTime > effTime_d[id]:
-                        effTime_d[id] = effTime
-            # Pass #2 - extract highest effectiveTime for each id
-            fin, fout = io.open(fin_fnam,'r',encoding='utf8'),io.open(fout_fnam,'w',encoding='utf8')
-
-            line_number = 0
+                    if not rawline: break  # EOF
+                    fields = chomp(rawline).split(fieldsep)
+                    id, effTime = [fields[x] for x in [id_index, effTime_index]]  # track id, effectiveTime
+                    if id not in effTime_d or effTime > effTime_d[id]:
+                        effTime_d[id] = effTime  # max effTime ==> most current known definition for id
+            # Pass #2 - write only highest effectiveTime for each id to output file
             lines_in_full, lines_in_snapshot = 0, 0
-            while True: # we already know id_index, effTime_index
-                rawline = fin.readline()
-                if not rawline: break # EOF
-                lines_in_full += 1
-                line_number += 1
-                line = rawline.rstrip('\n').rstrip('\r')
-                if line_number==1: print(line, file=fout); continue # header
-                fields = line.split('\t')
-                id = tuple(fields[idx] for idx in field_indices)
-                effTime = fields[effTime_index]
-                if effTime == effTime_d[id]:
-                    print(line, file=fout); lines_in_snapshot += 1
-            for f in [fin,fout]: f.close()
+            with io.open(fin_fnam, 'r', encoding='utf-8') as fin, \
+                    io.open(fout_fnam, 'w', encoding='utf-8') as fout:
+                header = chomp(fin.readline())  # header line must exist
+                print(header, file=fout)
+                while True:  # we already know id_index, effTime_index
+                    rawline = fin.readline()
+                    if not rawline: break  # EOF
+                    line = chomp(rawline)
+                    lines_in_full += 1
+                    fields = line.split(fieldsep)
+                    id, effTime = [fields[x] for x in [id_index, effTime_index]]
+                    if effTime == effTime_d[id]:  # max ==> should be in snapshot, most current definition
+                        print(line, file=fout)
+                        lines_in_snapshot += 1
             # end Pass 2
             print('Processed %d lines from FULL, created %d lines in Snapshot' % (lines_in_full, lines_in_snapshot))
             print('Distinct id values: %d' % len(effTime_d.keys()))
-            return
+        # end convert_full_to_snapshot
 
         def copy_file(in_filename, out_filename):
             fin, fout = io.open(in_filename,'r',encoding='utf8'),io.open(out_filename,'w',encoding='utf8')
@@ -612,8 +608,12 @@ class TransformRf2:
                     elif in_filename.startswith('sct2_Description_'):
                         print('Process DESCRIPTION file [%s]' % in_filename)
                         convert_full_to_snapshot(['id'], in_filename_path, out_filename_path)
-                    elif in_filename.startswith('sct2_Relationship_') or in_filename.startswith('sct2_StatedRelationship_'):
+                    elif any(in_filename.startswith(x)
+                             for x in ['sct2_Relationship_', 'sct2_StatedRelationship_']):
                         print('Process RELATIONSHIP file [%s]' % in_filename)
+                        convert_full_to_snapshot(['id'], in_filename_path, out_filename_path)
+                    elif in_filename.startswith('sct2_TextDefinition_'):
+                        print('Process TextDefinition file [%s]' % in_filename)
                         convert_full_to_snapshot(['id'], in_filename_path, out_filename_path)
                     else:
                         print('COPY miscellaneous file [%s]' % (in_filename_path,))

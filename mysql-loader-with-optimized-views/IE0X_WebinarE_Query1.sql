@@ -1,15 +1,16 @@
 --
 -- QUERY 1
--- Find the active concepts with an 'acceptable' synonym containing the words “disorder” and “lung”
+-- Find the active concepts with an 'acceptable' or 'preferred' synonym 
+-- containing the words “disorder” and “lung”
 -- 
 SELECT conceptId, term 
-FROM snomedct.sva_synall
+FROM sva_synall
 WHERE MATCH (term) AGAINST 
 ('+disorder +lung' IN BOOLEAN MODE)
 AND conceptId IN (SELECT id 
-FROM snomedct.sva_concept 
+FROM sva_concept 
 WHERE active = 1)
-ORDER BY length (term);
+ORDER BY length (term)
 
 
 

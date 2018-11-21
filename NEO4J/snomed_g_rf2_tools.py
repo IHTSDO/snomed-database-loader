@@ -19,25 +19,39 @@ Example:
                  --rf2 /cygdrive/c/sno/snomedct/SnomedCT_RF2Release_US1000124_20160301
 '''
 
+
 def make_utf8(v):
   if sys.version_info[0]==3:
     return v
   else: # py2.7 support
     return v if isinstance(v,unicode) else unicode( (str(v) if isinstance(v, int) else v) , "utf-8")
 
+
 def clean_str(s):  #  result can be processed from a CSV file as a string
   return '"'+s.strip().replace('"',r'\"')+'"' # embedded double-quote processing
+
 
 def csv_clean_str(s):
   return '"'+s.strip().replace('"','""').replace('\\','\\\\')+'"' # embedded double-quote processing
 
+
+def chomp(s): # remove line ending.  <LF> or <CR><LF>
+    return s.rstrip('\n').rstrip('\r')
+
+
 # TIMING functions
+
 def timing_start(timing_d, nm): timing_d[nm] = { 'start': datetime.datetime.now() }
+
+
 def timing_end(timing_d, nm):   timing_d[nm]['end'] = datetime.datetime.now()
+
+
 def show_timings(timestamps):
   for key in sorted(timestamps.keys()):
     delta = timestamps[key]['end'] - timestamps[key]['start']
     print('%-35s : %s' % (key, str(delta)))
+# end show_timings
 
 #--------------------------------------------------------------------------------
 #             make_csv --element concept --rf2 <dir> --release_type delta       |
@@ -206,7 +220,15 @@ def make_csv(arglist):
       for id in list(target_id_set): Fsn_d[id] = graph_matches_d[id]['FSN']
       print('count of FSNs after merge with RF2 FSNs: %d' % len(Fsn_d.keys()))
     # Make sure all ids have an FSN
-    if sorted(Fsn_d.keys()) != sorted(rf2_idlist): raise ValueError('*** (sanity check failure) Cant find FSN for all IDs in release ***')
+    Fsn_d_set, rf2_idlist_set = (set(Fsn_d.keys()), set(rf2_idlist))
+    if Fsn_d_set != rf2_idlist_set:
+        ids_without_FSNs = rf2_idlist_set - Fsn_d_set
+        FSNs_without_ids = Fsn_d_set - rf2_idlist
+        print('*** Missing FSNs for the following SCTID values:')
+        print(ids_without_FSNs)
+        print('*** FSNs without SCTID values:')
+        print(FSNs_without_ids)
+        raise ValueError('*** (sanity check failure) Cant find FSN for all IDs in release ***')
     # GENERATE CSV FILES
     timing_idx += 1; timing_nm = '%04d_generate_csvs' % timing_idx; timing_start(timing_d, timing_nm)
     f_temp_changed_fsn = io.open('temp_fsn_change.txt','w',encoding='utf-8') # DEBUG
@@ -350,6 +372,7 @@ def make_csv(arglist):
       print('count of Language Descriptions in RF2: %d' % len(list(set(language_d.keys()).intersection(set(rf2_idlist)))))
     # GENERATE CSV FILES
     timing_idx += 1; timing_nm = '%04d_generate_csvs' % timing_idx; timing_start(timing_d, timing_nm)
+    no_language_example_code = ''
     for id in rf2_idlist:
       current_effTime = sorted(description_d[id].keys())[-1] # highest effectiveTime is current
       if id not in graph_matches_d: # not in graph ==> new
@@ -385,8 +408,7 @@ def make_csv(arglist):
         computed['acceptabilityId'] = '<NA>'
         computed['refsetId']        = '<NA>'
         computed['descriptionType'] = '<NA>'
-        if stats['no_language']<=1000: print('*** Missing LANGUAGE records for Description %s ***' % id)
-        elif stats['no_language']==1001: print('*** Missing more than 1000 LANGUAGE records ***')
+        if stats['no_language']==1: no_language_example_code = id
       non_rf2_fields = [(x,computed[x]) for x in ['id128bit','acceptabilityId','refsetId','descriptionType']]+[('history',hist_str)]
       output_line = build_csv_output_line(id, non_rf2_fields, current_effTime, description_d, csv_fields_d, field_names, rf2_fields_d, renamed_fields, quoted_in_csv_fields)
       print(output_line,file=(f_new if not id in graph_matches_d else f_chg))
@@ -394,7 +416,9 @@ def make_csv(arglist):
     for nm in [timing_nm, timing_overall_nm]: timing_end(timing_d, nm)  # track timings
     # CLEANUP, DISPLAY RESULTS
     for f in outfile_list: f.close() # cleanup
-    if stats['no_language'] > 0: print('Missing %d LANGUAGE records' % stats['no_language'])
+    if stats['no_language'] > 0:
+      print('[[[ NOTE: Did not find Refset/Language records for %d concepts, e.g. sctid: [%s] ]]]'
+            % (stats['no_language'], no_language_example_code))
     print('Total RF2 elements: %d, NEW: %d, CHANGE: %d, NO CHANGE: %d' % (len(rf2_idlist), stats['new'], stats['change'], stats['no_change']))
     show_timings(timing_d)
     # DONE
@@ -1099,59 +1123,49 @@ def full_to_snapshot(arglist):
   opt = optparse.OptionParser()
   opt.add_option('--verbose',action='store_true',dest='verbose')
   opt.add_option('--release',action='store_true',dest='release')
-  #opt.add_option('--rf2',action='store',dest='rf2')
-  #opt.add_option('--release_type', action='store', dest='release_type', choices=['delta','snapshot','full'])
   opts, args = opt.parse_args(arglist)
   if not (len(args)==2): print('Usage: full_to_snapshot <input-rf2-file> <output-rf2-file>'); sys.exit(1)
+  fin_fnam, fout_fnam = args
+
+  # --release special processing
   if opts.release:
-    transformer = snomed_g_lib_rf2.TransformRf2(args[0],args[1])
+    transformer = snomed_g_lib_rf2.TransformRf2(fin_fnam, fout_fnam)
     transformer.full_to_snapshot()
-  else: # Concept file
-    fin_fnam, fout_fnam = args[0], args[1]
-    # Pass 1 -- determine the highest effectiveTime for each 'id'
-    effTime_d = {}
-    fin = open(fin_fnam)
-    line_number = 0
-    id_index, effTime_index = None, None
+    return
+
+  # Pass 1 -- determine the highest effectiveTime for each 'id'
+  fieldsep = '\t' # tab-separated fields in RF2 files
+  effTime_d = {} # track most current effectiveTime for each id
+  id_index, effTime_index = None, None # field numbers of 'id' and 'effectiveTime', when determined
+  with io.open(fin_fnam, 'r', encoding='utf-8') as fin:
+    fieldnames = chomp(fin.readline()).split('\t') # assume header line exists
+    id_index, effTime_index = [fieldnames.index(x) for x in ['id', 'effectiveTime']] # field numbers now known
     while True:
       rawline = fin.readline()
       if not rawline: break # EOF
-      line_number += 1
-      line = rawline.rstrip('\n').rstrip('\r')
-      fields = line.split('\t')
-      if line_number==1: # header
-        id_index = fields.index('id')
-        effTime_index = fields.index('effectiveTime')
-        continue # we have what we need -- skip to next line
-      # not the header line -- track effectiveTime values
-      id, effTime = fields[id_index], fields[effTime_index]
-      if id not in effTime_d:
-        effTime_d[id] = [effTime]
-      else:
-        if effTime in effTime_d[id]: print('Dup effTime [%s] found for id [%s] on line %d' % (effTime, id, line_number))
-        effTime_d[id].append(effTime)
-    fin.close()
-    # Pass #2 - extract highest effectiveTime for each id
-    fin = open(fin_fnam)
-    fout = open(fout_fnam, 'w')
-    line_number = 0
-    lines_in_full, lines_in_snapshot = 0, 0
+      fields = chomp(rawline).split(fieldsep)
+      id, effTime = [fields[x] for x in [id_index, effTime_index]] # track id, effectiveTime
+      if id not in effTime_d or effTime > effTime_d[id]:
+        effTime_d[id] = effTime # max effTime ==> most current known definition for id
+  # Pass #2 - write only highest effectiveTime for each id to output file
+  lines_in_full, lines_in_snapshot = 0, 0
+  with io.open(fin_fnam, 'r', encoding='utf-8') as fin, \
+       io.open(fout_fnam, 'w', encoding='utf-8') as fout:
+    header = chomp(fin.readline()) # header line must exist
+    print(header, file=fout)
     while True: # we already know id_index, effTime_index
       rawline = fin.readline()
       if not rawline: break # EOF
+      line = chomp(rawline)
       lines_in_full += 1
-      line_number += 1
-      line = rawline.rstrip('\n').rstrip('\r')
-      if line_number==1: print(line, file=fout); continue # header
-      fields = line.split('\t')
-      id, effTime = fields[id_index], fields[effTime_index]
-      if effTime == max(effTime_d[id]):
-        print(line, file=fout); lines_in_snapshot += 1
-    for f in [fin,fout]: f.close()
-    # end Pass 2
-    print('Processed %d lines from FULL, created %d lines in Snapshot' % (lines_in_full, lines_in_snapshot))
-    print('Distinct id values: %d' % len(effTime_d.keys()))
-    return
+      fields = line.split(fieldsep)
+      id, effTime = [fields[x] for x in [id_index, effTime_index]]
+      if effTime == effTime_d[id]: # max ==> should be in snapshot, most current definition
+        print(line, file=fout)
+        lines_in_snapshot += 1
+  # end Pass 2
+  print('Processed %d lines from FULL, created %d lines in Snapshot' % (lines_in_full, lines_in_snapshot))
+  print('Distinct id values: %d' % len(effTime_d.keys()))
 # END full_to_snapshot
 
 #----------------------------------------------------------------------------|
