@@ -28,7 +28,7 @@ The following text is the unillustrated text from that document
 
 # Importing a SNOMED CT Full Release into MySQL
 
-#1 Introduction
+# 1 Introduction
 
 This document explains how to use an rf2_load SQL script to load a SNOMED CT International Release package into a MySQL database. The resulting database not only includes all the data from the release files but also provides a range of integrated and optimized snapshot views. These views include the ability to simultaneously access a current snapshot view and a user-specified previous snapshot view. 
 In addition to snapshot views of individual release table data, the resulting database provides direct access to several useful combined views. These include
@@ -38,8 +38,8 @@ In addition to snapshot views of individual release table data, the resulting da
 * The transitive closure of subtype relationships (current snapshot view only).
    * Allowing optimized retrieval of subtypes of selected concepts.
 
-#2 Prerequisites
-#2.1 MySQL Installation
+# 2 Prerequisites
+# 2.1 MySQL Installation
 
 The following sections of these notes assume that you have already installed MySQL and the MySQL Workbench on your system.
 * MySQL and MySQL Workbench are available for as open source software for Windows, Mac and Unix like operating systems.

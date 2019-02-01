@@ -1,7 +1,6 @@
---
--- QUERY 2
--- Find the Preferred Term of concept with id “19829001” 
--- Expression Constraint: 19829001
+-- SNOMED SQL QUERY EXAMPLE : FIND TERMS FOR A CONCEPT
+-- 
+-- Find the Terms associated with a concept with id “19829001” 
 --
 
 SET @concept=19829001;
