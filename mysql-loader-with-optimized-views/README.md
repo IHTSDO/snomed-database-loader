@@ -1,5 +1,12 @@
-# SNOMED CT MySQL Loader with Optimized Views
+# SNOMED CT MySQL 5.7 Loader with Optimized Views
 ## Using the SQL Loader
+
+## IMPORTANT NOTE
+
+The current version of the loader script has been tested to work with MySQL 5.7. However, it may not work with later versions without modification to the data loading process.
+
+Use with MySQL version 8.x requires changes to settings that are not yet fully documented. This is due to changes in default security provisions that block the "LOAD DATA LOCAL INFILE" statements. These statements are used to install the SNOMED CT release files into the database.
+Once the best way to work around these issues have been determined an update will be posted.
 
 ## Introduction
 
