@@ -4,6 +4,10 @@
 -- MySQL Script for Loading and Optimizing SNOMED CT Release Files
 -- Apache 2.0 license applies
 -- 
+-- MySQL VERSION NOTES: 
+--    Tested to work on MySQL 5.7
+--    Known issues with MySQL 8.x due to security blocking LOAD DATA LOCAL INFILE statements
+--
 -- =======================================================
 -- Copyright of this version 2018: SNOMED International www.snomed.org
 -- Based on work by David Markwell between 2011 and 2018
