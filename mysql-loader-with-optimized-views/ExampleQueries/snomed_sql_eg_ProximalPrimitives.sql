@@ -1,8 +1,12 @@
--- Returns the proximal primitives for the conceptId @concept.
+-- SNOMED SQL QUERY EXAMPLE : GET PROXIMAL PRIMITIVE SUPERTYPES OF CONCEPT
+-- 
+-- Returns the proximal primitives for the concept with Id @concept.
 
 -- NOTE
 -- The ss_proximal_primitives table must be created before using this.
--- Run the proximal_primitive_generator if it does not exist.
+-- This is part of the full import process but will not have been created if
+-- the transitive closure file build and import was removed from the import script
+
 
 SET @concept=10675911000119109;
 

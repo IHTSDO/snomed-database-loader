@@ -4,6 +4,10 @@
 -- MySQL Script for Loading and Optimizing SNOMED CT Release Files
 -- Apache 2.0 license applies
 -- 
+-- MySQL VERSION NOTES: 
+--    Tested to work on MySQL 5.7
+--    Known issues with MySQL 8.x due to security blocking LOAD DATA LOCAL INFILE statements
+--
 -- =======================================================
 -- Copyright of this version 2018: SNOMED International www.snomed.org
 -- Based on work by David Markwell between 2011 and 2018
@@ -25,9 +29,9 @@
 --
 -- 1. RELEASE PACKAGE AND VERSION 
 -- ==============================
--- This template script is specific a specific version: 20180731
+-- This template script is specific a specific version: 20190131
 -- of a specific release package:
--- SnomedCT_InternationalRF2_PRODUCTION_20180731T120000Z 
+-- SnomedCT_InternationalRF2_PRODUCTION_20190131T120000Z 
 --
 -- If this is the release package version you are importing please
 -- skip to section 3 of these notes.
@@ -37,10 +41,10 @@
 -- If you are working with a different version of the same release package
 -- this script may be adapted to import that package.
 --
--- First replace all instances of: SnomedCT_InternationalRF2_PRODUCTION_20180731T120000Z
+-- First replace all instances of: SnomedCT_InternationalRF2_PRODUCTION_20190131T120000Z
 -- with the release folder name for the release package version to be loaded.
 --
--- Then replace all instances of the date stamp: 20180731
+-- Then replace all instances of the date stamp: 20190131
 -- With the date stamp for the version to be imported.
 -- 
 -- IMPORTANT NOTE
@@ -58,7 +62,7 @@
 -- This templated version of the file contains placeholders $RELPATH
 --
 -- Replace all instances of $RELPATH with the fullpath of the folder
--- SnomedCT_InternationalRF2_PRODUCTION_20180731T120000Z
+-- SnomedCT_InternationalRF2_PRODUCTION_20190131T120000Z
 --
 -- 4. IF YOU ARE *NOT* IMPORTING A TRANSITIVE CLOSURE FILE
 -- ========================================================
@@ -80,7 +84,7 @@
 /*
 	CONFIGURATION SETTINGS USED WHEN PRODUCING THIS VERSION
 	
-	Release Package: SnomedCT_InternationalRF2_PRODUCTION_20180731T120000Z
+	Release Package: SnomedCT_InternationalRF2_PRODUCTION_20190131T120000Z
 	Configuration Options
 	{"optimization":"supersededTime","optimizationCol":"\t`supersededTime` DATETIME NOT NULL DEFAULT  '0000-00-00 00:00:00',\n","reltype":"Full","dbName":"sct","extend":false,"dbEngine":"MyISAM","charSet":"utf8","relpath":"$RELPATH"}
 */
@@ -430,27 +434,11 @@ CREATE TABLE `sct_textDefinition` (
 	PRIMARY KEY (`id`,`effectiveTime`))
 	ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
--- CREATE TABLE `sct_refset_OWLAxiom` 
+-- CREATE TABLE `sct_refset_OWLExpression` 
 
-DROP TABLE IF EXISTS `sct_refset_OWLAxiom`;
+DROP TABLE IF EXISTS `sct_refset_OWLExpression`;
 
-CREATE TABLE `sct_refset_OWLAxiom` (
-	`id` BINARY(16) NOT NULL DEFAULT  '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '0000-00-00 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`owlExpression` TEXT NOT NULL,
-	`supersededTime` DATETIME NOT NULL DEFAULT  '0000-00-00 00:00:00',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
--- CREATE TABLE `sct_refset_OWLOntology` 
-
-DROP TABLE IF EXISTS `sct_refset_OWLOntology`;
-
-CREATE TABLE `sct_refset_OWLOntology` (
+CREATE TABLE `sct_refset_OWLExpression` (
 	`id` BINARY(16) NOT NULL DEFAULT  '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',
 	`effectiveTime` DATETIME NOT NULL DEFAULT  '0000-00-00 00:00:00',
 	`active` TINYINT NOT NULL DEFAULT  0,
@@ -500,136 +488,129 @@ DELIMITER ;
 
 SELECT "STAGE: Load Data Into Tables";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_SimpleFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_SimpleFull_INT_20190131.txt'
 INTO TABLE `sct_refset_Simple`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AssociationFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AssociationFull_INT_20190131.txt'
 INTO TABLE `sct_refset_Association`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`targetComponentId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_20190131.txt'
 INTO TABLE `sct_refset_AttributeValue`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`valueId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Language/der2_cRefset_LanguageFull-en_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Language/der2_cRefset_LanguageFull-en_INT_20190131.txt'
 INTO TABLE `sct_refset_Language`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`acceptabilityId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_iisssccRefset_ExtendedMapFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_iisssccRefset_ExtendedMapFull_INT_20190131.txt'
 INTO TABLE `sct_refset_ExtendedMap`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapGroup`,`mapPriority`,`mapRule`,`mapAdvice`,`mapTarget`,`correlationId`,`mapCategoryId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_20190131.txt'
 INTO TABLE `sct_refset_SimpleMap`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cRefset_MRCMModuleScopeFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cRefset_MRCMModuleScopeFull_INT_20190131.txt'
 INTO TABLE `sct_refset_MRCMModuleScope`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mrcmRuleRefsetId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_RefsetDescriptorFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_RefsetDescriptorFull_INT_20190131.txt'
 INTO TABLE `sct_refset_RefsetDescriptor`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ciRefset_DescriptionTypeFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ciRefset_DescriptionTypeFull_INT_20190131.txt'
 INTO TABLE `sct_refset_DescriptionType`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`descriptionFormat`,`descriptionLength`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainFull_INT_20190131.txt'
 INTO TABLE `sct_refset_MRCMAttributeDomain`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`domainId`,`grouped`,`attributeCardinality`,`attributeInGroupCardinality`,`ruleStrengthId`,`contentTypeId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ModuleDependencyFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ModuleDependencyFull_INT_20190131.txt'
 INTO TABLE `sct_refset_ModuleDependency`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeFull_INT_20190131.txt'
 INTO TABLE `sct_refset_MRCMAttributeRange`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`rangeConstraint`,`attributeRule`,`ruleStrengthId`,`contentTypeId`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_sssssssRefset_MRCMDomainFull_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_sssssssRefset_MRCMDomainFull_INT_20190131.txt'
 INTO TABLE `sct_refset_MRCMDomain`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`domainConstraint`,`parentDomain`,`proximalPrimitiveConstraint`,`proximalPrimitiveRefinement`,`domainTemplateForPrecoordination`,`domainTemplateForPostcoordination`,`guideURL`)
 SET `id`=UNHEX(REPLACE(@uuid,'-',''));
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Concept_Full_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Concept_Full_INT_20190131.txt'
 INTO TABLE `sct_concept`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`definitionStatusId`);
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Description_Full-en_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Description_Full-en_INT_20190131.txt'
 INTO TABLE `sct_description`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`conceptId`,`languageCode`,`typeId`,`term`,`caseSignificanceId`);
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Relationship_Full_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Relationship_Full_INT_20190131.txt'
 INTO TABLE `sct_relationship`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`sourceId`,`destinationId`,`relationshipGroup`,`typeId`,`characteristicTypeId`,`modifierId`);
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_StatedRelationship_Full_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_StatedRelationship_Full_INT_20190131.txt'
 INTO TABLE `sct_statedRelationship`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`sourceId`,`destinationId`,`relationshipGroup`,`typeId`,`characteristicTypeId`,`modifierId`);
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_TextDefinition_Full-en_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_TextDefinition_Full-en_INT_20190131.txt'
 INTO TABLE `sct_textDefinition`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`conceptId`,`languageCode`,`typeId`,`term`,`caseSignificanceId`);
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_sRefset_OWLAxiomFull_INT_20180731.txt'
-INTO TABLE `sct_refset_OWLAxiom`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`)
-SET `id`=UNHEX(REPLACE(@uuid,'-',''));
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_sRefset_OWLOntologyFull_INT_20180731.txt'
-INTO TABLE `sct_refset_OWLOntology`
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_sRefset_OWLExpressionFull_INT_20190131.txt'
+INTO TABLE `sct_refset_OWLExpression`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (@uuid,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`)
@@ -675,7 +656,6 @@ UPDATE `config_settings` `s`, `config_language` `l`
 	`s`.`languageName`=`l`.`name`
 	WHERE `l`.`prefix`=`p_lang_prefix`
 	AND `s`.`id`=1;
-SELECT `languageId`,`languageName`,`snapshotTime` FROM `config_settings`;
 END;;
 
 CREATE FUNCTION `getsnapshotTime`() RETURNS DATETIME
@@ -699,8 +679,42 @@ END;;
 DELIMITER ;;
 CREATE FUNCTION `ShowUid`(Uid blob) RETURNS varchar(36) CHARSET utf8
 BEGIN
-	SET @Tmp = Hex(uid);
+	SET @Tmp = LOWER(Hex(uid));
 	RETURN CONCAT(SUBSTRING(@Tmp,1,8),'-',SUBSTRING(@Tmp,9,4),'-',SUBSTRING(@Tmp,13,4),'-',SUBSTRING(@Tmp,17,4),'-',SUBSTRING(@Tmp,21));
+END;;
+
+DELIMITER ;
+DROP function IF EXISTS `getRefsetSelectLines`;
+
+DELIMITER ;;
+
+CREATE FUNCTION `getRefsetSelectLines`(`p_view_prefix` varchar(6),`p_refset_types_pattern` text,`p_table_abbrev` varchar(6),`p_added_sql` text) RETURNS text CHARSET utf8
+BEGIN
+DECLARE `v_id_label` varchar(255);
+DECLARE `v_table_short` varchar(10);
+DECLARE `v_field_pfx` varchar(10);
+DECLARE `v_table_name` varchar(64);
+DECLARE `v_regexp` text;
+DECLARE `v_sql_out` text;
+DECLARE `v_done` BOOLEAN DEFAULT FALSE;
+DECLARE cur CURSOR FOR SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='sct' AND LOWER(TABLE_NAME) regexp `v_regexp`;
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET `v_done` := TRUE;
+
+SET `v_table_short`=IF(`p_table_abbrev`='','',CONCAT(' `',`p_table_abbrev`,'`'));
+SET `v_field_pfx`=IF(`p_table_abbrev`='','',CONCAT('`',`p_table_abbrev`,'`.'));
+SET `v_regexp`=CONCAT('^',`p_view_prefix`,'_refset_(',REPLACE(REPLACE(REPLACE(LOWER(`p_refset_types_pattern`),',','|'),' ',''),'%','.*'),')$');
+SET `v_sql_out`=CONCAT('-- Refset SELECT lines for tables matching:',`v_regexp`,CHAR(10));
+
+OPEN cur;
+tableLoop: LOOP
+    FETCH cur INTO `v_table_name`;
+    IF `v_done` THEN
+      LEAVE tableLoop;
+    END IF;
+    SET `v_id_label`=CONCAT('`{',SUBSTRING_INDEX(v_table_name,'_',-1),' Refsets} id`');
+	SET `v_sql_out`=CONCAT(`v_sql_out`,CHAR(10),'-- ',`v_table_name`,CHAR(10),'SELECT showUid(',`v_field_pfx`,'`id`) ',`v_id_label`,', ', (SELECT GROUP_CONCAT(CONCAT(`v_field_pfx`,'`',COLUMN_NAME,'`')) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = `v_table_name` AND COLUMN_NAME !='id'), ' FROM `',`v_table_name`,'`',`v_table_short`,IF(`p_added_sql`='','',CONCAT(CHAR(10),CHAR(9),CHAR(9),p_added_sql)),';', CHAR(10),CHAR(10));
+END LOOP tableLoop;
+ RETURN `v_sql_out`;
 END;;
 
 DELIMITER ;
@@ -913,26 +927,15 @@ CREATE VIEW `sva_textDefinition` AS
 	FROM `sct_textDefinition` `sub`
 	WHERE ((`sub`.`id` = `tbl`.`id`)))));
 
--- CREATE VIEW `sva_refset_OWLAxiom` 
+-- CREATE VIEW `sva_refset_OWLExpression` 
 
-DROP VIEW IF EXISTS `sva_refset_OWLAxiom`;
+DROP VIEW IF EXISTS `sva_refset_OWLExpression`;
 
-CREATE VIEW `sva_refset_OWLAxiom` AS 
+CREATE VIEW `sva_refset_OWLExpression` AS 
 (SELECT `tbl`.`id` `id`,`tbl`.`effectiveTime` `effectiveTime`,`tbl`.`active` `active`,`tbl`.`moduleId` `moduleId`,`tbl`.`refsetId` `refsetId`,`tbl`.`referencedComponentId` `referencedComponentId`,`tbl`.`owlExpression` `owlExpression`
-	FROM `sct_refset_OWLAxiom` `tbl`
+	FROM `sct_refset_OWLExpression` `tbl`
 	WHERE (`tbl`.`effectiveTime` = (SELECT max(`sub`.`effectiveTime`)
-	FROM `sct_refset_OWLAxiom` `sub`
-	WHERE ((`sub`.`id` = `tbl`.`id`)))));
-
--- CREATE VIEW `sva_refset_OWLOntology` 
-
-DROP VIEW IF EXISTS `sva_refset_OWLOntology`;
-
-CREATE VIEW `sva_refset_OWLOntology` AS 
-(SELECT `tbl`.`id` `id`,`tbl`.`effectiveTime` `effectiveTime`,`tbl`.`active` `active`,`tbl`.`moduleId` `moduleId`,`tbl`.`refsetId` `refsetId`,`tbl`.`referencedComponentId` `referencedComponentId`,`tbl`.`owlExpression` `owlExpression`
-	FROM `sct_refset_OWLOntology` `tbl`
-	WHERE (`tbl`.`effectiveTime` = (SELECT max(`sub`.`effectiveTime`)
-	FROM `sct_refset_OWLOntology` `sub`
+	FROM `sct_refset_OWLExpression` `sub`
 	WHERE ((`sub`.`id` = `tbl`.`id`)))));
 
 
@@ -1136,26 +1139,15 @@ CREATE VIEW `svx_textDefinition` AS
 	FROM `sct_textDefinition` `sub`
 	WHERE ((`sub`.`id` = `tbl`.`id`) AND (`sub`.`effectiveTime` <= `getSnapshotTime`())))));
 
--- CREATE VIEW `svx_refset_OWLAxiom` 
+-- CREATE VIEW `svx_refset_OWLExpression` 
 
-DROP VIEW IF EXISTS `svx_refset_OWLAxiom`;
+DROP VIEW IF EXISTS `svx_refset_OWLExpression`;
 
-CREATE VIEW `svx_refset_OWLAxiom` AS 
+CREATE VIEW `svx_refset_OWLExpression` AS 
 (SELECT `tbl`.`id` `id`,`tbl`.`effectiveTime` `effectiveTime`,`tbl`.`active` `active`,`tbl`.`moduleId` `moduleId`,`tbl`.`refsetId` `refsetId`,`tbl`.`referencedComponentId` `referencedComponentId`,`tbl`.`owlExpression` `owlExpression`
-	FROM `sct_refset_OWLAxiom` `tbl`
+	FROM `sct_refset_OWLExpression` `tbl`
 	WHERE (`tbl`.`effectiveTime` = (SELECT max(`sub`.`effectiveTime`)
-	FROM `sct_refset_OWLAxiom` `sub`
-	WHERE ((`sub`.`id` = `tbl`.`id`) AND (`sub`.`effectiveTime` <= `getSnapshotTime`())))));
-
--- CREATE VIEW `svx_refset_OWLOntology` 
-
-DROP VIEW IF EXISTS `svx_refset_OWLOntology`;
-
-CREATE VIEW `svx_refset_OWLOntology` AS 
-(SELECT `tbl`.`id` `id`,`tbl`.`effectiveTime` `effectiveTime`,`tbl`.`active` `active`,`tbl`.`moduleId` `moduleId`,`tbl`.`refsetId` `refsetId`,`tbl`.`referencedComponentId` `referencedComponentId`,`tbl`.`owlExpression` `owlExpression`
-	FROM `sct_refset_OWLOntology` `tbl`
-	WHERE (`tbl`.`effectiveTime` = (SELECT max(`sub`.`effectiveTime`)
-	FROM `sct_refset_OWLOntology` `sub`
+	FROM `sct_refset_OWLExpression` `sub`
 	WHERE ((`sub`.`id` = `tbl`.`id`) AND (`sub`.`effectiveTime` <= `getSnapshotTime`())))));
 
 
@@ -1571,22 +1563,10 @@ DROP TABLE IF EXISTS `tmp`;
 
 CREATE TEMPORARY TABLE `tmp` (`id` BINARY(16) NOT NULL DEFAULT  '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',`effectiveTime` DATETIME,`supersededTime` DATETIME, PRIMARY KEY (`id`,`effectiveTime`));
 
-INSERT INTO `tmp` SELECT `tbl`.`id`, `tbl`.`effectiveTime`, (SELECT IFNULL(MIN(`sub`.`effectiveTime`),DATE "99991231") FROM `sct_refset_OWLAxiom` `sub`
-	WHERE `tbl`.`id`=`sub`.`id` AND `tbl`.`effectiveTime`<`sub`.`effectiveTime`) `supersededTime` FROM `sct_refset_OWLAxiom` `tbl`;
+INSERT INTO `tmp` SELECT `tbl`.`id`, `tbl`.`effectiveTime`, (SELECT IFNULL(MIN(`sub`.`effectiveTime`),DATE "99991231") FROM `sct_refset_OWLExpression` `sub`
+	WHERE `tbl`.`id`=`sub`.`id` AND `tbl`.`effectiveTime`<`sub`.`effectiveTime`) `supersededTime` FROM `sct_refset_OWLExpression` `tbl`;
 
-UPDATE `sct_refset_OWLAxiom` `tbl`
-	JOIN `tmp`
-	SET `tbl`.`supersededTime`=`tmp`.`supersededTime`
-		WHERE `tmp`.`id`=`tbl`.`id` AND `tmp`.`effectiveTime`=`tbl`.`effectiveTime`;
-
-DROP TABLE IF EXISTS `tmp`;
-
-CREATE TEMPORARY TABLE `tmp` (`id` BINARY(16) NOT NULL DEFAULT  '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',`effectiveTime` DATETIME,`supersededTime` DATETIME, PRIMARY KEY (`id`,`effectiveTime`));
-
-INSERT INTO `tmp` SELECT `tbl`.`id`, `tbl`.`effectiveTime`, (SELECT IFNULL(MIN(`sub`.`effectiveTime`),DATE "99991231") FROM `sct_refset_OWLOntology` `sub`
-	WHERE `tbl`.`id`=`sub`.`id` AND `tbl`.`effectiveTime`<`sub`.`effectiveTime`) `supersededTime` FROM `sct_refset_OWLOntology` `tbl`;
-
-UPDATE `sct_refset_OWLOntology` `tbl`
+UPDATE `sct_refset_OWLExpression` `tbl`
 	JOIN `tmp`
 	SET `tbl`.`supersededTime`=`tmp`.`supersededTime`
 		WHERE `tmp`.`id`=`tbl`.`id` AND `tmp`.`effectiveTime`=`tbl`.`effectiveTime`;
@@ -1765,22 +1745,13 @@ CREATE VIEW `soa_textDefinition` AS
 	FROM `sct_textDefinition`
 	WHERE `supersededTime` = DATE "99991231");
 
--- CREATE VIEW `soa_refset_OWLAxiom` 
+-- CREATE VIEW `soa_refset_OWLExpression` 
 
-DROP VIEW IF EXISTS `soa_refset_OWLAxiom`;
+DROP VIEW IF EXISTS `soa_refset_OWLExpression`;
 
-CREATE VIEW `soa_refset_OWLAxiom` AS 
+CREATE VIEW `soa_refset_OWLExpression` AS 
 (SELECT `id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`
-	FROM `sct_refset_OWLAxiom`
-	WHERE `supersededTime` = DATE "99991231");
-
--- CREATE VIEW `soa_refset_OWLOntology` 
-
-DROP VIEW IF EXISTS `soa_refset_OWLOntology`;
-
-CREATE VIEW `soa_refset_OWLOntology` AS 
-(SELECT `id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`
-	FROM `sct_refset_OWLOntology`
+	FROM `sct_refset_OWLExpression`
 	WHERE `supersededTime` = DATE "99991231");
 
 
@@ -1948,22 +1919,13 @@ CREATE VIEW `sox_textDefinition` AS
 	FROM `sct_textDefinition`
 	WHERE ((`getsnapshotTime`() >= `effectiveTime`) AND (`getSnapshotTime`() < `supersededTime`)));
 
--- CREATE VIEW `sox_refset_OWLAxiom` 
+-- CREATE VIEW `sox_refset_OWLExpression` 
 
-DROP VIEW IF EXISTS `sox_refset_OWLAxiom`;
+DROP VIEW IF EXISTS `sox_refset_OWLExpression`;
 
-CREATE VIEW `sox_refset_OWLAxiom` AS 
+CREATE VIEW `sox_refset_OWLExpression` AS 
 (SELECT `id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`
-	FROM `sct_refset_OWLAxiom`
-	WHERE ((`getsnapshotTime`() >= `effectiveTime`) AND (`getSnapshotTime`() < `supersededTime`)));
-
--- CREATE VIEW `sox_refset_OWLOntology` 
-
-DROP VIEW IF EXISTS `sox_refset_OWLOntology`;
-
-CREATE VIEW `sox_refset_OWLOntology` AS 
-(SELECT `id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`
-	FROM `sct_refset_OWLOntology`
+	FROM `sct_refset_OWLExpression`
 	WHERE ((`getsnapshotTime`() >= `effectiveTime`) AND (`getSnapshotTime`() < `supersededTime`)));
 
 
@@ -2298,21 +2260,13 @@ ALTER TABLE `sct_textDefinition`
 ADD INDEX `textDefinition_super` (`id`,`supersededTime`),
 ADD INDEX `textDefinition_concept` (`conceptId`,`supersededTime`,`languageCode`);
 
--- Index `sct_refset_OWLAxiom` 
+-- Index `sct_refset_OWLExpression` 
 
-ALTER TABLE `sct_refset_OWLAxiom`
-ADD INDEX `OWLAxiom_super` (`id`,`supersededTime`),
-ADD INDEX `OWLAxiom_c` (`referencedComponentId`),
-ADD INDEX `OWLAxiom_rc` (`refsetId`,`referencedComponentId`),
-ADD INDEX `OWLAxiom_rsc` (`refsetId`,`supersededTime`,`referencedComponentId`);
-
--- Index `sct_refset_OWLOntology` 
-
-ALTER TABLE `sct_refset_OWLOntology`
-ADD INDEX `OWLOntology_super` (`id`,`supersededTime`),
-ADD INDEX `OWLOntology_c` (`referencedComponentId`),
-ADD INDEX `OWLOntology_rc` (`refsetId`,`referencedComponentId`),
-ADD INDEX `OWLOntology_rsc` (`refsetId`,`supersededTime`,`referencedComponentId`);
+ALTER TABLE `sct_refset_OWLExpression`
+ADD INDEX `OWLExpression_super` (`id`,`supersededTime`),
+ADD INDEX `OWLExpression_c` (`referencedComponentId`),
+ADD INDEX `OWLExpression_rc` (`refsetId`,`referencedComponentId`),
+ADD INDEX `OWLExpression_rsc` (`refsetId`,`supersededTime`);
 
 -- #TRANSCLOSE#
 -- ===============================================
@@ -2329,7 +2283,7 @@ SELECT "STAGE: Loading Transitive Closure Data and Generating Proximal Primitive
 
 USE `sct`;
 
-LOAD DATA LOCAL INFILE '$RELPATH/xder_TransitiveClosure_Snapshot_INT_20180731.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/xder_TransitiveClosure_Snapshot_INT_20190131.txt'
 	INTO TABLE `ss_transclose`
 	LINES TERMINATED BY '\n'
 	(`subtypeId`,`supertypeId`);
