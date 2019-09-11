@@ -1,0 +1,21 @@
+CREATE TABLE `sct_relationship` (
+  `id` bigint(20) NOT NULL DEFAULT '0',
+  `effectiveTime` datetime NOT NULL DEFAULT '2002-01-31 00:00:00',
+  `active` tinyint(4) NOT NULL DEFAULT '0',
+  `moduleId` bigint(20) NOT NULL DEFAULT '0',
+  `sourceId` bigint(20) NOT NULL DEFAULT '0',
+  `destinationId` bigint(20) NOT NULL DEFAULT '0',
+  `relationshipGroup` int(11) NOT NULL DEFAULT '0',
+  `typeId` bigint(20) NOT NULL DEFAULT '0',
+  `characteristicTypeId` bigint(20) NOT NULL DEFAULT '0',
+  `modifierId` bigint(20) NOT NULL DEFAULT '0',
+  `supersededTime` datetime NOT NULL DEFAULT '9999-12-31 00:00:00',
+  PRIMARY KEY (`id`,`effectiveTime`),
+  KEY `relationship_super` (`id`,`supersededTime`),
+  KEY `relationship_sd1` (`sourceId`,`destinationId`),
+  KEY `relationship_ts1` (`typeId`,`sourceId`),
+  KEY `relationship_td1` (`typeId`,`destinationId`),
+  KEY `relationship_td2` (`supersededTime`,`typeId`,`destinationId`),
+  KEY `relationship_ts2` (`supersededTime`,`typeId`,`sourceId`),
+  KEY `relationship_sd2` (`supersededTime`,`sourceId`,`destinationId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;

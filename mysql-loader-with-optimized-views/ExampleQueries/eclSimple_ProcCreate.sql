@@ -1,27 +1,32 @@
--- SNOMED SQL QUERY EXAMPLE : LIST PREFERRED TERM OF ALL SUBTYPES OF A CONCEPT
-
--- Find the Preferred Term of subtypes of the concept with id `v_focus_id (set here to 404684003)
--- With an attribute with id`v_attr1_id` (here set to 363698007)
--- With a `value equal to or a subtype of @valueid1 (here set to 39057004)
--- AND
--- With an attribute with id @attributeid2 (here set to 116676008)
--- With a `value equal to or a subtype of @valueid2 (here set to 415582006)
-
--- Find the clinical findings with a finding site of pulmonary `valve (or subtype) and an 
--- associated morphology of stenosis (or subtype)
--- Expression Constraint: < 404684003 |clinical finding|:
---                              363698007 |finding site| = << 39057004 |pulmonary `valve|,
---                              116676008 |associated morphology| = << 415582006 |stenosis|
-
--- THIS IS AN OPTIMIZED VERSION OF:
---    snomed_sql_eg_ListSubtypesOfaConceptWithMultipleSpecifiedAttributeValues_slow.sql
--- Unlike the slower `version it run the individual tests separately and then logically combines them.
--- While the slow `version takes between 1 and 2 minutes to run, this `version returns exactly the same result 2 or 3 seconds.
-
 DROP PROCEDURE IF EXISTS `eclSimple`;
 DELIMITER ;;
 CREATE PROCEDURE eclSimple(`p_ecl` text)
 BEGIN
+-- SNOMED SQL QUERY FOR SIMPLE EXPRESSION CONSTRAINTS
+-- Lists the id and preferred terms for all matching concepts
+
+-- Requires a SIMPLE ECL expression constraint.
+-- Call this procedure as follows:
+--   CALL eclSimple("ecl_expression");
+-- Examples:
+--   CALL eclSimple('<404684003:363698007=<<39057004,116676008=<<415582006');
+-- 	 CALL eclSimple('<404684003:363698007=<39057004,116676008=<415582006');
+--   CALL eclSimple('<404684003:363698007=<<39057004');
+--   CALL eclSimple('< 404684003 |clinical finding|:363698007 |finding site| = << 39057004 |pulmonary `valve|,116676008 |associated morphology| = << 415582006 |stenosis|')
+ 
+-- Currently permits:
+--    1) Just a focus concept constraint,
+--    2) A focus concept constraint and one attribute value constraint
+--    3) A focus concept constraint and one attribute value constraint
+-- General format:
+--    <<focus_id[:attr1=<<attr1_value[,attr2=<<attr2_value]]
+-- In all cases
+--    a) The << can be replaced by < (subtypes only) or omitted (self only)
+--    b) Each identifier can be followed by pipe-delimited term which is removed before computing the matching concepts
+--    c) Spaces can be included in constraints and are removed before computing the matching concepts
+
+-- NOTE: MORE COMPLEX ECL CONSTRAINTS ARE NOT CURRENTLY SUPPORTED BY THIS DEMONSTRATOR PROCEDURE
+
 DECLARE `v_text` text;
 DECLARE `v_ecl` text;
 DECLARE `v_focus_id` bigint;
@@ -39,8 +44,11 @@ DECLARE `v_pos` int;
 DECLARE `v_count` int DEFAULT 0;
 
 SET `v_ecl`='';
+
+-- Copy the input parameter with a trailing pipe appended (support last iteration of pipe loop)
 SET `v_text`=CONCAT(`p_ecl`,'|');
 
+-- Loop to remove any pipe delimited terms and return a simplified constraint
 pipe:WHILE `v_text` regexp '\|' DO
 	SET `v_count`=`v_count`+1;
 	SET `v_ecl`=CONCAT(`v_ecl`,SUBSTRING_INDEX(`v_text`,'|',1));
@@ -53,8 +61,10 @@ pipe:WHILE `v_text` regexp '\|' DO
     IF `v_count`>10 THEN LEAVE pipe; END IF;
 END WHILE pipe;
 
+-- Remove all spaces in the ECL
 SET `v_ecl`=REPLACE(`v_ecl`,' ','');
 
+-- Split the focus concept constraint from any refinements
 SET `v_focus_symbol`=SUBSTRING_INDEX(`v_ecl`,':',1);
 IF `v_focus_symbol` != `v_ecl` THEN
 	SET `v_refine1`=SUBSTRING_INDEX(`v_ecl`,':',-1);
@@ -63,6 +73,7 @@ ELSE
 	SET `v_refine1`='';
 END IF;
 
+-- separate symbols from the focus concept id
 IF LEFT(`v_focus_symbol`,2)='<<' THEN
 	SET `v_focus_id`=MID(v_focus_symbol,3);
     SET `v_focus_symbol`='<<';
@@ -74,8 +85,11 @@ ELSE
     SET `v_focus_symbol`='';
 END IF;
 
+-- check if there are 1 or two refinements
+-- if there are two split them 
 IF `v_refine2` != `v_refine1` THEN
 	SET `v_refine1`=SUBSTRING_INDEX(`v_refine1`,',',1);
+    -- Split the attribute name, symbol and value for refinement 2
     SET `v_attr2_id`=SUBSTRING_INDEX(`v_refine2`,'=',1);
     SET `v_value2_symbol`=SUBSTRING_INDEX(`v_refine2`,'=',-1);
 	IF LEFT(`v_value2_symbol`,2)='<<' THEN
@@ -91,6 +105,7 @@ IF `v_refine2` != `v_refine1` THEN
 ELSE
     SET `v_refine2`='';
 END IF;
+-- If there is at least 1 refinement split the attribute name, symbol and value for refinement 1
 IF `v_refine1` != '' THEN
     SET `v_attr1_id`=SUBSTRING_INDEX(`v_refine1`,'=',1);
     SET `v_value1_symbol`=SUBSTRING_INDEX(`v_refine1`,'=',-1);
@@ -106,6 +121,7 @@ IF `v_refine1` != '' THEN
 	END IF;
 END IF;
 
+-- drop then create temporary tables for results focus and 1 or 2 refinements
 DROP TABLE IF EXISTS tmp_focus;
 DROP TABLE IF EXISTS tmp_ref1;
 DROP TABLE IF EXISTS tmp_ref2;
@@ -127,6 +143,7 @@ CREATE TEMPORARY TABLE IF NOT EXISTS tmp_ref2 (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 -- END OF PREPARATION STEPS
 
+-- Get the results of the focus concept constraint
 -- IF SUBTYPES INCLUDED ADD ALL CONCEPTS PASSING THE SUBSUMPTION TEST TO A TEMPORARY TABLE tmp_focus
 IF `v_focus_symbol` = '<' OR `v_focus_symbol` = '<<' THEN
 	INSERT IGNORE INTO `tmp_focus` SELECT `subtypeId` FROM `ss_transclose` as `tc` WHERE `tc`.`supertypeId` = `v_focus_id`;
@@ -137,8 +154,8 @@ IF `v_focus_symbol` = '' OR `v_focus_symbol` = '<<' THEN
 	INSERT IGNORE INTO `tmp_focus` VALUES (`v_focus_id`);
 END IF;
 
-# SELECT * FROM `tmp_focus`;
 
+-- Get the results of the first refinement constraint
 -- ADD ALL CONCEPTS PASSING THE FIRST ATTRIBUTE VALUE TEST TO TEMPORARY TABLE tmp_ref1
 IF `v_refine1` != '' THEN
 	IF `v_value1_symbol` = '<' OR `v_value1_symbol` = '<<' THEN
@@ -152,6 +169,7 @@ IF `v_refine1` != '' THEN
     END IF;
 END IF;
 
+-- Get the results of the second refinement constraint
 -- ADD ALL CONCEPTS PASSING THE SECOND ATTRIBUTE VALUE TEST TO TEMPORARY TABLE tmp_ref2
 IF `v_refine2` != '' THEN
 	IF `v_value2_symbol` = '<' OR `v_value2_symbol` = '<<' THEN
@@ -168,12 +186,14 @@ END IF;
 -- LIST ALL THE CONCEPT THAT ARE IN ALL THREE TEMPORARY TABLES
 
 IF `v_refine1` = '' THEN
+-- If no refinements this is simply the concepts in tmp_focus
 	SELECT `pt`.`conceptId`,`pt`.`term`
 	FROM `tmp_focus`, `soa_pref` as `pt`
 		WHERE  `pt`.`conceptId` = `tmp_focus`.`id` 
 		ORDER BY `pt`.`term`;
 
 ELSEIF `v_refine2` = '' THEN
+-- If there is only one refinement constraint only list concepts found BOTH in tmp_focus AND in tmp_ref1
 	SELECT `pt`.`conceptId`,`pt`.`term`
 	FROM `tmp_focus`, `soa_pref` as `pt`
 		WHERE  `pt`.`conceptId` = `tmp_focus`.`id` 
@@ -181,7 +201,8 @@ ELSEIF `v_refine2` = '' THEN
 		ORDER BY `pt`.`term`;
 
 ELSE
-	SELECT `pt`.`conceptId`,`pt`.`term`
+-- If there are two refinement constraints only list concepts found in ALL three table tmp_focus AND tmp_ref1 AND tmp_ref2
+	SELECT `pt`.`conceptId`,`pt`.`term` `prefTerm`
 	FROM `tmp_focus`, `soa_pref` as `pt`
 		WHERE  `pt`.`conceptId` = `tmp_focus`.`id` 
 		AND `pt`.`conceptId` IN (SELECT `id` FROM `tmp_ref1`)
@@ -198,5 +219,5 @@ DROP TABLE IF EXISTS `tmp_ref2`;
 END;;
 DELIMITER ;
 
-CALL eclSimple('< 404684003 |clinical finding|:363698007 |finding site| = << 39057004 |pulmonary `valve|,116676008 |associated morphology| = << 415582006 |stenosis|')
+
 

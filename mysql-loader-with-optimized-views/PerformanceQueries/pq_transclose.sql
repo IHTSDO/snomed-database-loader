@@ -1,0 +1,12 @@
+SET @t1=current_timestamp(3);
+select * from ss_transclose limit 10000;
+SET @t2=current_timestamp(3);
+# select * from sva_refset_Language limit 10000;
+SET @t3=current_timestamp(3);
+# select * from svx_refset_Language limit 10000;
+SET @t4=current_timestamp(3);
+# select * from soa_refset_Language limit 10000;
+SET @t5=current_timestamp(3);
+# select * from sox_refset_Language limit 10000;
+SET @t6=current_timestamp(3);
+select version() `version`,'SELECT 10000 ss_transclose' `task`,current_timestamp(0),MillisecondDiff(@t2,@t1) sct,MillisecondDiff(@t3,@t2) sva,MillisecondDiff(@t4,@t3) svx,MillisecondDiff(@t5,@t4) soa,MillisecondDiff(@t6,@t5) sox,MillisecondDiff(@t6,@t1) total;
