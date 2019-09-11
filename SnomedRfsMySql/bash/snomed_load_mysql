@@ -18,7 +18,7 @@ loadkey_default='VP_latest'
 
 Q='"'
 
-help="\n----------------------------------\nHELP FOR SCRIPT: $prog\n----------------------------------\nLoads SNOMED CT Release Package into MySQL database.\n\nRequires:\n\tA folder containing an unzipped SNOMED CT Release Package\n\tA SnomedRfsMySql folder containing relevant support folders and files\n\tA sct_mysql_load_LOADKEY.sql file generated for this release package\n\tor another release package containing matching set of file structures\n\t(e.g. previous release of same package)\n\nCommand line parameters (all optional). Script uses default values and prompts for required parameters.\n\t-help (or -h): Displays this message.\n\t-r releasepath: Specifies releasepath (the full path to the release package folder).\n\t-d dbname: Specifies dbname (the name of the database to be created).\n\t-b loaderFolder: Specifies loaderFolder (the folder containing required support folders and files).\n\t-s loadkey: Specifies the {loadkey} of the master script load script file sct_mysql_load_{loadkey}.sql.\n\t-c cnfname: Specifies the {cnfname} in the MySQL configuration file name {cnfname}.cnf (default: $cnfname).\n\t-u mysqluser: Specifies the username for an administrator account on the MySQL Server (default $USER).\n\t-p portnumber: Specifies the MySQL port number (by default read from the file {cnfname}.cnf.\n\t-mode flag1 flag2 ... : Specifies mode options that affect script actions.\n\t\tMode flag values:\n\t\t  notc: Do not build or use transitive closure file (default is to use - after building if required).\n\t\t  forcetc: Force rebuild of transitive closure file (default is to build unless already present).\n\t\t  reuse: Reuses existing temporary copy of the MySQL load script (default is to create from master).\n\t\t  noload: Does not run the MySQL load script (diagnostic mode allowing review of script).\n\n"
+help="\n----------------------------------\nHELP FOR SCRIPT: $prog\n----------------------------------\nLoads SNOMED CT Release Package into MySQL database.\n\nRequires:\n\tA folder containing an unzipped SNOMED CT Release Package\n\tA SnomedRfsMySql folder containing relevant support folders and files\n\tA sct_mysql_load_LOADKEY.sql file generated for this release package\n\tor another release package containing matching set of file structures\n\t(e.g. previous release of same package)\n\nCommand line parameters (all optional). Script uses default values and prompts for required parameters.\n\t-help (or -h): Displays this message.\n\t-r releasepath: Specifies releasepath (the full path to the release package folder).\n\t-d dbname: Specifies dbname (the name of the database to be created).\n\t-b loaderFolder: Specifies loaderFolder (the folder containing required support folders and files).\n\t-s loadkey: Specifies the {loadkey} of the master script load script file sct_mysql_load_{loadkey}.sql.\n\t-c cnfname: Specifies the {cnfname} in the MySQL configuration file name {cnfname}.cnf (default: $cnfname).\n\t-u mysqluser: Specifies the username for an administrator account on the MySQL Server (default $USER).\n\t-p portnumber: Specifies the MySQL port number (by default read from the file {cnfname}.cnf.\n\t-mode flag1 flag2 ... : Specifies mode options that affect script actions.\n\t\tMode flag values:\n\t\t  skiptc: Do not build or use transitive closure file (default is to use - after building if required).\n\t\t  notc: Same as skiptc but also removes any existing transitive closure file.\n\t\t  forcetc: Force rebuild of transitive closure file (default is to build unless already present).\n\t\t  reuse: Reuses existing temporary copy of the MySQL load script (default is to create from master).\n\t\t  noload: Does not run the MySQL load script (diagnostic mode allowing review of script).\n\n"
 
 # Get command line parameters
 # -h Help
@@ -29,7 +29,7 @@ help="\n----------------------------------\nHELP FOR SCRIPT: $prog\n------------
 # -s loadkey (key for the MySQL script to be run : default=VP_latest)
 # -r thisRelease (release folder path)
 # -u MySQL username
-# -mode mode (Options: notc, forcetc, reuse, noload)
+# -mode mode (Options: skiptc, notc, forcetc, reuse, noload)
 
 while [[ $#>0 ]]
 do
@@ -92,7 +92,8 @@ do
 	if [[ $1 == '-mode' ]] ; then
 		# Specify mode. 
 		# reuse : Don't recreate the script use existing temporary file from previous run
-		# notc : Don't create transitive closure (TC) file, remove if it exists
+		# skiptc : Don't create or use transitive closure (TC) file.
+		# notc : Don't create transitive closure (TC) file. Delete TC file if it exists.
 		# forcetc : Force TC rebuild even if TC file already exists
 			# Note: TC default is to create TC if it does not exist and reuse it if it already exists
 		# noload : Don't iniate the database import (for diagnotic review of SQL script output only)
@@ -372,7 +373,7 @@ if [ -f "$tc_target" ] ; then
 		printf 'Using previously built transitive closure file.\n'
 		addLog "Using previously built transitive closure file"
 	fi
-elif [[ $mode =~ (notc) ]] ; then
+elif [[ $mode =~ (notc|skiptc) ]] ; then
 	echo "Skipping Transitive Closure Build"
 	addLog "Skipping Transitive Closure Build"
 else
@@ -390,10 +391,12 @@ else
 	fiTC='*/'
 fi
 
+thisReldate=`sed 's/^.*_\(20[0-9]\{6\}\).*$/\1/' <<<"$thisRelease"`
+
 if [[ $mode =~ (reuse) ]] ; then
 	printf "Debug skipping Script Regeneration - Will reuse current temp file\n"
 else
-	sed 's#$HOME/#'"${HOME}/"'#g;s#$RELPATH/#'"${thisRelease}/"'#g;s#$DBNAME#'"${dbname}"'#g;s#^-- ifTC#'"${ifTC}"'#;s#^-- fiTC#'"${fiTC}"'#g' "$sql_file" >"$sql_tmp"
+	sed 's#$HOME/#'"${HOME}/"'#g;s#$RELPATH/#'"${thisRelease}/"'#g;s#$RELDATE#'"${thisReldate}"'#g;s#$DBNAME#'"${dbname}"'#g;s#^-- ifTC#'"${ifTC}"'#;s#^-- fiTC#'"${fiTC}"'#g' "$sql_file" >"$sql_tmp"
 fi
 
 # Keep line below commented out except for testing without running database import

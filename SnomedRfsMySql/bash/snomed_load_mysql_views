@@ -14,4 +14,4 @@ cnf_file="$EPSDRIVE/SnomedRfs/SnomedRfsMySql/cnf/${cnfname}.cnf"
 
 awk '/^-- START VIEWS --/{start=1};/^-- START EXTRAS --/{start=1};/^-- END VIEWS --/{start=0};/^-- END EXTRAS --/{start=0};{if (start==1) print $0}' "$sql_src" >"$sql_tgt"
 
-snomed_load_mysql -c my_snomedimport_client -p 3306 -s VP_views -r /Users/dma/SnomedCT_ReleaseFiles/SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z -mode notc
+snomed_load_mysql -c my_snomedimport_client -p 3306 -s VP_views -r /Users/dma/SnomedCT_ReleaseFiles/SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z -mode skiptc
