@@ -52,12 +52,12 @@ The following sections of these notes assume that you have already installed MyS
 * MySQL and MySQL Workbench are available for as open source software for Windows, Mac and Unix like operating systems.
 For download and installation details see MySQL Community Edition (https://www.MySQL.com/products/community/) 
 
-#2.2 SNOMED CT Release Package Download
+# 2.2 SNOMED CT Release Package Download
 
 The following sections of the notes assume that you have already downloaded the SNOMED CT Release Package. In order to do this you will first need to register for a SNOMED CT License. 
 * For details of how to register for a SNOMED CT license and download release packages please see  the SNOMED International Member Licencing and Distribution Service (MLDS) (https://mlds.ihtsdotools.org).
 
-#2.3 Scripts to Process the Release Package
+# 2.3 Scripts to Process the Release Package
 
 The scripts noted below are required for the import process. They may be obtained in a zip download file or from a GitHub repository.
 Script: SNOMED CT MySQL Loader Script
@@ -73,8 +73,8 @@ Notes: The loader scripts provided by SNOMED International expect to find a tran
 	Windows users may install Strawberry Perl (freely available) so they are able to run the script. 
 	If you do not use the transitive closure script you will need to edit the SNOMED CT MySQL Loader Script file to remove the section that imports to and uses the transitive closure table. See notes in the next section.
 
-#3 Importing the Release Files
-#3.1 Unzip the Release File Package
+# 3 Importing the Release Files
+# 3.1 Unzip the Release File Package
 
 The release file package is usually delivered as a zip archive. You need to unzip (or expand) this package to allow the scripts to work. It is a good idea to move the zip folder to a convenient location with a relatively short path name.
 When the archive is expanded there should be a single folder with a name like
@@ -88,9 +88,9 @@ When the archive is expanded there should be a single folder with a name like
 	* 20180731 : It is the July 2018 release of the this package
 	* T120000Z : The national release time 12:00 UTC (note that updates may have a later time)
 
-#3.2 Run the Transitive Closure Script
+# 3.2 Run the Transitive Closure Script
 
-#3.2.1 In Mac or Unix environments use terminal
+# 3.2.1 In Mac or Unix environments use terminal
 
 Change directory to the folder containing the transitiveClosureRf2SnapMulti.pl script.
 Enter the following command replacing all instances of:
@@ -102,7 +102,7 @@ perl  "transitiveClosureRf2SnapMulti.pl"  "$RELPATH/Snapshot/Terminology/sct2_Re
 
 #Hint: Copy and paste the command line template into a text editor. Make the replacements and then copy and paste then copy and paste the result to the command line.
 
-#3.2.1 In Windows use the command line
+# 3.2.1 In Windows use the command line
 
 Change directory to the folder containing the transitiveClosureRf2SnapMulti.pl script.
 Enter the following command replacing all instances of:
@@ -112,7 +112,7 @@ Enter the following command replacing all instances of:
 
 perl  "transitiveClosureRf2SnapMulti.pl"  "$RELPATH\Snapshot\Terminology\sct2_Relationship_Snapshot_INT_$RELDATE.txt"  "$RELPATH\xder_transitiveClosure_Snapshot_INT_$RELDATE.txt"
 
-#3.3 Copy and Edit the Loader Script
+# 3.3 Copy and Edit the Loader Script
 
 Make a copy of the loader script.
 Open the loader script in a text editor that supports plain text and search and replace.
@@ -120,13 +120,13 @@ Open the loader script in a text editor that supports plain text and search and 
 
 The following notes are also present at the top of the loader script file and explain how to ensure the script will work correctly for you.
 
-#3.3.1. RELEASE PACKAGE AND VERSION 
+# 3.3.1. RELEASE PACKAGE AND VERSION 
 
 This template script is specific a specific version: yymmdd
 of a specific release package: SnomedCT_InternationalRF2_PRODUCTION_yymmddThhmmssZ 
 If this is the release package version you are importing please skip to section 3 of these notes.
 
-#3.3.2. PACKAGE AND VERSION CONFIGURATION
+# 3.3.2. PACKAGE AND VERSION CONFIGURATION
 
 If you are working with a different version of the same release package this script may be adapted to import that package.
 * First replace all instances of: SnomedCT_InternationalRF2_PRODUCTION_20180731T120000Z
@@ -144,23 +144,23 @@ Different release packages or release package versions may contain different set
 
 Updated versions of this script may be available for newer production releases of SNOMED CT International Edition packages.
 
-#3.3.3. FOLDER LOCATION CONFIGURATION
+# 3.3.3. FOLDER LOCATION CONFIGURATION
 
 This templated version of the file contains placeholders $RELPATH
 
 Replace all instances of $RELPATH with the fullpath of the folder:  SnomedCT_InternationalRF2_PRODUCTION_20180731T120000Z.
 
-#3.3.4. IF YOU ARE NOT IMPORTING A TRANSITIVE CLOSURE FILE
+# 3.3.4. IF YOU ARE NOT IMPORTING A TRANSITIVE CLOSURE FILE
 
 You are recommended to create a transitive closure file for import. However, if you do not want to have a transitive closure table or are unable to create the transitive closure file then find the line
 towards the end of this file that contains the text: #TRANSCLOSE#
 Delete that line and all the lines that follow it up to the end of the file. If you do not do this, the script will complete to that point but will report an error when it completes.
 
-#3.3.5. SAVE THE SCRIPT
+# 3.3.5. SAVE THE SCRIPT
 
 Save a copy of the SQL script with any modifications you have made.
 
-#3.4 Running the SQL Modified Script
+# 3.4 Running the SQL Modified Script
 
 # Option 1
 
@@ -179,19 +179,19 @@ NOTE: In this option the user interface may report completion after reading and 
 
 Those familiar with MySQL command line may also run this script as a command line call rather than using the MySQL Workbench interface.
 
-#3.5 Successful Completion  
+# 3.5 Successful Completion  
 
 In MySQL Workbench go to the schema tab in the left hand frame. If you do not see the sct schema right click and select refresh all. You should see a new database schema sct. Containing the tables, views, stored procedures and functions required to provide direct access to the SNOMED CT data and to optimize/simplify various common viewing requirements.
 
-#4 Information About the Database
+# 4 Information About the Database
 
 The following notes summarize the naming conventions and usage of various components of the generated database.
 
-#4.1 Tables
+# 4.1 Tables
 
 A database table is created for each file in all subfolders of the Full release folder. 
 
-#4.1.1 Table Names
+# 4.1.1 Table Names
 
 The name of each table follows the following conventions based on but not identical to the names of the each release file.
 * Prefix "sct_" (this prefix applied to all tables replacing the file prefixes "sct2_", "der2_", etc.
@@ -199,11 +199,11 @@ The name of each table follows the following conventions based on but not identi
 * Refset tables are named "refset_" followed by the name of the refset (e.g. sct_refset_Language, sct_refset_ExtendedMap)
 * The remaining elements of the release filename are omitted.
 
-#4.1.2 Column Names
+# 4.1.2 Column Names
 
 The columns of the tables match those of the release file with one additional column (supersededTime). This additional column contains the date/time at which this row in the table was superseded by another version of the same component with a more recent effectiveTime. Thus the supersededTime of row that has been superseded is the effectiveTime of the immediately following version of that component or refset member. For rows that have not been superseded (i.e. rows that are current at the time of the most recent release) the supersededTime is set to a distant future date, indicating that the row has not been superseded. The supersededTime is generated during the load process and is used to optimize snapshot views.
 
-#4.1.3 Column Datatypes
+# 4.1.3 Column Datatypes
 
 * SNOMED CT identifiers are represented by the BIGINT datatype.
 * UUID's are represented by the BINARY(16) datatype. 
@@ -214,15 +214,15 @@ The columns of the tables match those of the release file with one additional co
 * Longer text strings are represented by the TEXT datatype.
 * Dates and times are represented by the DATETIME datatype.
 
-#4.1.4 Additional Tables
+# 4.1.4 Additional Tables
 
 There are four additional tables. Two of these are concerned with configuration (config_language and config_settings). The other two contain alternative views of subtype relationships. A snapshot view of the transitive closure of all subtype relationships (ss_transclose) and a snapshot view of the relationships between each concept and its proximal primitive supertypes (ss_proximal_primitives).
 
-#4.2 Snapshot Table Views
+# 4.2 Snapshot Table Views
 
 There are four snapshot views of each of the SNOMED CT tables. These have the same names as the tables to which they related but have a different prefix according to the view they represent.
 
-#4.2.1 Snapshot Prefixes
+# 4.2.1 Snapshot Prefixes
 
 * sva_  The current snapshot view (i.e. the most recent version of each component or refset member in the table)
 * svx_  The snapshot view at the date specified in the config_settings file. 
@@ -234,7 +234,7 @@ This date of the snapshot for the svx and sox views be set and changed using the
 
 The optimized (soa and sox) views return the same content as the (sva and svx) views. The only difference is how those views are generated. In some queries the optimized versions perform significantly better in others the different may be imperceptible. Occasionally, in particular types of queries that return the complete snapshot view of a table the optimized queries may be slower.
 
-#4.3 Additional Combined Views
+# 4.3 Additional Combined Views
 
 In addition to the snapshot views of individual tables, a range of useful combined views are provided. In all cases these views use the same prefixes (sva_,svx_,soa_ or sox_) to indicate the snapshot view on which they are based.
 The names following each prefix indicate the combined content that will be returned. 
@@ -265,8 +265,8 @@ The following view returns the preferred terms for proximal primitive supertypes
 
 	* s.._proxprim_pref
 
-#4.4 Functions and Procedures
-#4.4.1 Functions
+# 4.4 Functions and Procedures
+# 4.4.1 Functions
 
 setLanguage(languageCode)
 
@@ -280,7 +280,7 @@ setSnapshotTime(datetime)
 	* Can be any valid date / time string. Recommended format for the date is YYYY-MM-DD  (e.g. "2018-01-31").
 	* The date does not have to coincide with a release date as the snapshot simply looks for the latest version of each component prior to the specified date.
 
-#4.4.2 Procedures
+# 4.4.2 Procedures
 
 getLanguage()
 
@@ -295,6 +295,6 @@ getLanguage()
     SELECT ShowUid(`id`),`effectiveTime`,`active`,`moduleId`,`refsetId`,
 	`referencedComponentId` FROM `sox_refset_simple`;
 
-#5 Example Queries
+# 5 Example Queries
 
 A set of example queries that have been written to demonstrate some of the features of the database are also provided in the download package.
