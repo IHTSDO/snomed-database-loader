@@ -112,7 +112,7 @@ call:getFilePath "%tpath%\sct2_Relationship..." "Snapshot" foundfile
 set tc_source=!foundfile!
 
 :: Get the name for the Transitive Closure file based on the name of the relationships file
-set "tc_target=%thisRelease%\xder_transitiveClosure%tc_source:*_Relationship_=%"
+set "tc_target=%thisRelease%\xder_transitiveClosure%tc_source:*_Relationship=%"
 
 if exist %tc_target% (
     call:printf "\nTransitive Closure file exists\nUnless an error occured previously you should keep and reuse this file."
