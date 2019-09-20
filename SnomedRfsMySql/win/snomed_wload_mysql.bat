@@ -1,16 +1,53 @@
 @echo off
 
-set logfile=%HOMEDRIVE%%HOMEPATH%\snomed_wload_mysql.log
-echo >%logfile%
+:: Windows Script for SnomedRfsMySql import of SNOMED CT Release File.
+:: (c) Copyright 2019 SNOMED International 
+:: Licenced under the terms of Apache 2.0 licence.
+::
+:: This script does the following:
+::   1. Sets variables for locating and processing other files required for processing
+::   2. Collects user input:
+::        Essential: Release package zip archive or folder location
+::        Required with defaults: Database name (snomedct), MySQL username (root), MySQL template script key (VP_latest)
+::   3. Unzips the Release Package (unless already unzipped)
+::   4. Builds a Snapshot transitive closure file using a Perl script (requires Strawberry Perl to be installed)
+::   5. Creates a custom SQL script for a specified (or default) MySQL template script
+::        The customizations relate to references to release package location, release date and database name
+::   6. Invokes the mysql.exe command line application to run the SQL script. This does the following:
+::        a) Creates the database with tables for each of the files to be imported
+::        b) Imports data from the release files into these tables
+::        c) Creates views of all the tables to provide convenient SQL access to snapshot and delta views
+::        d) Creates composite views that facilitate access to concepts with descriptions and relationships
+::        e) Creates composite views the enable review of historical data associated with inactivated concepts and descriptions
+::        f) Indexes all the main tables in ways that enable efficient access
+::        g) Imports the generated Transitive Closure snapshow into a table
+::        h) Creates views that facilitate access to subtype testing and identification of proximal primitives
+::        i) Creates stored procedures that illustrate searches for concept by text and constraints
+
+:: Prerequisites:
+::   A licensed download of a SNOMED CT Edition (note: the accompanying SQL template is designed for use with the International Edition)
+::   Installation of MySQL Community Edition server (recommended version 8.0.17 or later but should also work with version 5.7)
+::      The MySQL server need to running with a specified configuration (see documentation and the snomed_wconfig_mysql.bat file)
+::   Installation of Strawberry Perl
+::   At least 10Gb of free disk space (Release archive 0.5 Gb, Unzipped 3.5 Gb, Database 5.6 Gb)
+
+:: Start new logfile.
+:: Rename and retain most recent previous logfile
+set logfile=%HOMEDRIVE%%HOMEPATH%\sct_load_mysql.log
+set prevlog=%HOMEDRIVE%%HOMEPATH%\sct_load_mysql_old.log
+2>nul del /f %prevlog% 
+2>nul rename %logfile% %prevlog%
+echo. >%logfile%
+
 call:printlog "\nSNOMED CT Release Files MySql Loader - Started\nInitializing variables"
 call:printf "\nSNOMED CT Release Files MySql Loader - Started\n\t(Log file: %logfile%)\n\nInitializing variables"
 
 setlocal EnableDelayedExpansion
-:: SET FOLDER PATH VARIABLE
 
+:: SET FOLDER PATH VARIABLES
 set "winpath=%~dp0"
 pushd "%winpath%"
-:: loaderFolder is the SnomedRfsMySql folder containing the win folder
+:: loaderFolder is the SnomedRfsMySql folder containing relevant subfolders
 cd ..
 set "loaderFolder=%cd%"
 set "mysqlload=mysql_load"
@@ -21,10 +58,11 @@ set "phDbname=$DBNAME"
 set "phReldate=$RELDATE"
 
 :: Get Release Path
-set /P thisRelease="Release folder path? "
+set /P thisRelease="Release folder or zip archive path? "
 
 :: Get valid Unix style version of thisRelease for use in SQL
 :: Then revise theRelease to ensure it uses only backslashes
+set thisRelease=%thisRelease:.zip=%
 set thisReleaseSql=%thisRelease:\=/%
 set thisRelease=%thisRelease:/=\%
 
@@ -36,42 +74,31 @@ for %%A in (%thisRelease%) do (
 
 :: Set thisReldate from releasePackage
 set "thisReldate=%releasePackage:*20=%"
-
 set thisReldate=20%thisReldate:~0,6%
-
 
 :: Get database name from input or default
 set /P dbname="Database name (default: snomedct): "
-
 if "a%dbname%"=="a" (
-
     set dbname=snomedct
-
 )
-
 
 :: Get source script prefix from input or default
 set /P loadKey="SQL Script (default: VP_latest): "
-
 if "a%loadKey%"=="a" (
-
     set "loadkey=VP_latest"
-
 )
-
 
 :: Get MySql username from input or default
 set /P mysqluser="MySQL User Name (default: root): "
-
 if "a%mysqluser%"=="a" (
-
     set "mysqluser=root"
-
 )
+
+:: Add selected options to logfile
 call:printlog "Release Path\t%thisRelease%\nDatabase Name\t%dbname%\nLoad Script Key\t%loadkey%\nSQL User\t%sqluser%\n\n"
 
 :: Check the existence and validity of the specfied release path
-:: If the release folder does not exist try to unzip zip relevant package
+:: If the release folder does not exist but the zip does then unzip the package
 if not exist "%thisRelease%\" (
    if exist %thisRelease%.zip (
       call:printlog "Unzipping release package file:\n\t%thisRelease%.zip"
@@ -108,12 +135,14 @@ setlocal EnableDelayedExpansion
 set tpath=%thisRelease%\Snapshot\Terminology
 set tc_source=""
 set foundfile=""
+:: Locate the snapshot relationships file in the termilogy path.
 call:getFilePath "%tpath%\sct2_Relationship..." "Snapshot" foundfile
 set tc_source=!foundfile!
 
 :: Get the name for the Transitive Closure file based on the name of the relationships file
 set "tc_target=%thisRelease%\xder_transitiveClosure%tc_source:*_Relationship=%"
 
+:: If the Transitive Closure file is already there offer option to rebuild (useful if build was interrupted)
 if exist %tc_target% (
     call:printf "\nTransitive Closure file exists\nUnless an error occured previously you should keep and reuse this file."
     set /P rebuild="Rebuild transitive closure file? (Default=no use existing, Enter Y to rebuild) ? "
@@ -124,6 +153,7 @@ set "rebuild=%rebuild%n"
 if %rebuild:~0,1%==y (
     set "rebuild=Y"
 )
+:: Depening on choices made either delete of retain existing transitive closure
 if %rebuild:~0,1%==Y (
     call:printf "\nDeleting existing transitive closure file."
     call:printLog "Deleting existing transitive closure file."
@@ -133,6 +163,7 @@ if %rebuild:~0,1%==Y (
     call:printLog "Keeping existing transitive closure file."
 )
 
+:: Report error if Snapshot Relationships file cannot be found. This should not happen!
 if not exist %tc_source% (
      call:printf "\nError! No Snapshot Relationship file in release package"
      call:printLog "Error! No Snapshot Relationship file in release package"
@@ -142,11 +173,11 @@ if not exist %tc_source% (
     call:printf "\nStarting transitive closure generator"
     call:printLog "Starting transitive closure generator"
     set foundfile=""
-    CALL:getFilePath perl.exe foundfile
+    call:getFilePath perl.exe foundfile
     set perlpath=!foundfile!
     call:printf "\nPERL Processor Found !perlpath!"
     call:printLog "PERL Processor Found !perlpath!"
-
+    :: Report error is no perl.exe is found.
     if !perlpath!=="NOT FOUND" (
         call:printLog "Unable to find perl.exe"
         call:printf "\nUnable to find perl.exe - Cannot build transitive closure table file.\n\tPlease install Strawberry Perl (http://strawberryperl.com/) and then retry"
@@ -161,7 +192,7 @@ if not exist %tc_source% (
 
 :: Establish the location of MySQL Sever executables
 set foundfile=""
-CALL:getFilePath mysql.exe Server foundfile
+call:getFilePath mysql.exe Server foundfile
 set "mysqlPath=!foundfile!"
 call:printf "\nMySQL Path: !mysqlPath!"
 call:printLog "MySQL Path: !mysqlPath!"
@@ -179,20 +210,39 @@ set "sql_tmp=!loaderFolder!\!mysqlload!\sct_mysql_wtemp.sql"
 call:printf "\nGenerating local SQL import script:\n\t!sql_tmp!\nfrom SQL template: !sql_file!"
 call:printLog "Generating local SQL import script:\n\t!sql_tmp!\nfrom SQL template: !sql_file!"
 
- >"!sql_tmp!" echo -- Generated SQL Load Script --
+:: This section does the substitutions for the three placeholders in templace SQL script
+:: Additional placeholders could be added if required using additional set line statement with a similar
+:: The process is a little obscure using findstr with /v (not matching) and and impossible match
+:: string. This is because simpler options fail to include blank lines (which are needed in some places) 
+:: In each case: 
+::     %phXXXX% variable holds the placeholder text 
+::     %xxxx%   variable hold the replacement text collected from user input
+:: NOTE: Fullstop after echo. is essential in: >>"!sql_tmp!" echo. !line!
+::       without this blank lines in the template get replaced by "ECHO is off" (not valid in SQL!)
 
-for /f tokens^=*^ delims^=^ eol^= %%i in (!sql_file!) do (
+
+type "!sql_file!" > "!sql_file!.tmp"
+ >"!sql_tmp!" echo.-- Generated SQL Load Script (Windows) --
+set nomatch="^ZzZQqQZzZqQq$"
+for /f "tokens=1* delims=:" %%A in ('findstr /n /v %nomatch% "!sql_file!.tmp"') do (
     setlocal EnableDelayedExpansion
-    set line=%%i
-    set "line=!line:%phRelpath%=%thisReleaseSql%!"
-    set "line=!line:%phDbname%=%dbname%!"
-    set "line=!line:%phReldate%=%thisReldate%!"
-    >>"%sql_tmp%" echo !line! 
+    set line=%%B
+    if not !line!a==a (
+        set "line=!line:%phRelpath%=%thisReleaseSql%!"
+        set "line=!line:%phDbname%=%dbname%!"
+        set "line=!line:%phReldate%=%thisReldate%!"
+        >>"!sql_tmp!" echo.!line!
+    ) else (
+        >>"!sql_tmp!" echo.
+    )
     endlocal
-)
+    )
+echo off
+del /f "!sql_file!.tmp"
+:: End of MySQL Script generation from template
 
-call:printLog "Starting the SNOMED CT MySQL import process"
 :: Run the MySQL import process
+call:printLog "Starting the SNOMED CT MySQL import process"
 call:printf "\nStarting the SNOMED CT MySQL import process\n\nPlease enter the MySQL password for you chosen MySQL user account: %mysqluser%\n\nAfter you have done this the process will continue without further user input.\n\nDepending on your system performance this may take between 20 minutes and 90 minutesto complete"
 call:printLog "!mysqlPath! --default-character-set=utf8mb4 --local-infile=1 --comments --password --user !mysqluser!   <!sql_tmp!"
 
@@ -204,10 +254,15 @@ call:printLog "MySQL Import Process complete"
 call:printf "\nProcess complete\n\nYou can now view your database in MySQL Workbench\n"
 exit /b
 
+:: ------------------------::
+:: END OF THE MAIN PROCESS ::
+:: ------------------------::
+
 :: --------------------------------------------::
 ::  PROCEDURES USED IN THE ABOVE BATCH PROCESS ::
 :: --------------------------------------------::
-
+:: This section contains all the procedures called in the script above.
+:: These procedures are essential for the correct operation of the script.
 :: -----------------::
 :: PRINTF PROCEDURE ::
 :: -----------------::
@@ -232,14 +287,14 @@ if %args% gtr 1 (
     exit /b
 endlocal
 )
-
+:: Note the tabfile is used as a source of the TAB character
 set /p tab=<%~dp0\tabfile.tmp
 set tab=%tab:~5,1%
-setlocal enableextensions enabledelayedexpansion
+setlocal EnableDelayedExpansion
 set text=%1
 set text=%text:"=%
 set text=%text:\t=!tab!%
-echo %text:\n= &echo.%
+echo.%text:\n= &echo.%
 exit /b
 
 :: ------------------------::
@@ -304,7 +359,7 @@ if !result!==0 (
     exit /b
 )
 endlocal
-CALL:head "%temp%\prog_path.txt" 1 foundfile
+call:head "%temp%\prog_path.txt" 1 foundfile
 if %args%==2 (
     set "%2=%foundfile%"
 ) else (
@@ -409,9 +464,9 @@ exit /b
 ::------------------::
 :debug
     set foundfile=""
-    CALL:getFilePath mysql.exe Server foundfile
+    call:getFilePath mysql.exe Server foundfile
     echo !foundfile!
-    CALL:getFilePath perl.exe foundfile
+    call:getFilePath perl.exe foundfile
     echo !foundfile!
     call:getFilePath "C:\SnomedCT_ReleaseFiles\SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z%\Snapshot\Terminology\sct2_Relationship..." "Snapshot" foundfile
     echo !foundfile!
