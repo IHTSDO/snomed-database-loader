@@ -57,29 +57,57 @@ set "phDbname=$DBNAME"
 set "phReldate=$RELDATE"
 
 :: Establish the location of Perl executables
+echo on
 call:printf "\nChecking for required software Perl and MySQL Server"
 call:printLog "Checking for required software Perl and MySQL Server"
-set perlpath=""
-call:getFilePath perl.exe perlpath
-:: Report error is no perl.exe is found.
-if "!perlpath!"=="NOT FOUND" (
-    call:printLog "Unable to find perl.exe"
-    call:printf "\nUnable to find perl.exe - Cannot build transitive closure table file.\n\tPlease install Strawberry Perl (http://strawberryperl.com/) and then retry"
-    exit /b 1
-)
-call:printf "\nPERL Processor Found !perlpath!"
-call:printLog "PERL Processor Found !perlpath!"
-:: Establish the location of MySQL Sever executables
-set mysqlPath=""
-call:getFilePath mysql.exe Server mysqlPath
-if "!mysqlPath!"=="NOT FOUND" (
-    call:printLog "Unable to find mysql.exe"
-    call:printf "\nUnable to find mysql.exe - Cannot import the data.\n\tPlease install MySQL Community Server and Workbench\n\t(https://dev.mysql.com/downloads/mysql/).\n\tThen configure in line with SnomedRfsMySql recommendations\n\tbefore retrying this import process".
-    exit /b 1
-)
-call:printf "\nMySQL Path: !mysqlPath!"
-call:printLog "MySQL Path: !mysqlPath!"
 
+if exist "!winpath!perlPath.cfg" (
+    set /p perlPath=<"!winpath!perlPath.cfg"
+    if not exist !perlPath! (
+        set perlPath=
+        del /f "!winpath!perlPath.cfg"
+    )
+)
+
+if not DEFINED perlPath (
+    set perlPath="C:\Strawberry\perl\bin\perl.exe"
+    if not exist !perlPath! (
+        set perlPath=""
+        call:getFilePath perl.exe perlPath
+        :: Report error is no perl.exe is found.
+        if "!perlPath!"=="NOT FOUND" (
+            call:printLog "Unable to find perl.exe"
+            call:printf "\nUnable to find perl.exe\nThis is required to run this process.\n\tPlease install Strawberry Perl (http://strawberryperl.com/) and then retry"
+            exit /b 1
+        )
+    )
+    :: Save path for quick reuse
+    echo !perlPath! >"!winpath!perlPath.cfg"
+)
+call:printf "\tPERL Path:\t !perlPath!"
+call:printLog "PERL Found: !perlPath!"
+
+if exist "!winpath!mysqlPath.cfg" (
+    set /p mysqlPath=<"!winpath!mysqlPath.cfg"
+    if not exist !mysqlPath! (
+        set mysqlPath=
+        del /f "!winpath!mysqlPath.cfg"
+    )
+)
+if not DEFINED mysqlPath (
+:: Establish the location of MySQL Sever executables
+    set mysqlPath=""
+    call:getFilePath mysql.exe Server mysqlPath
+    if "!mysqlPath!"=="NOT FOUND" (
+        call:printLog "Unable to find mysql.exe"
+        call:printf "\nUnable to find mysql.exe - Cannot import the data.\n\tPlease install MySQL Community Server and Workbench\n\t(https://dev.mysql.com/downloads/mysql/).\n\tThen configure in line with SnomedRfsMySql recommendations\n\tbefore retrying this import process".
+        exit /b 1
+    )
+    :: Save path for quick reuse
+    echo !mysqlPath! >"!winpath!mysqlPath.cfg"
+)
+call:printf "\tMySQL Path:\t !mysqlPath!"
+call:printLog "MySQL Found !mysqlPath!"
 :: Get Release Path
 call:printf "\nEnter the full path to the SNOMED CT Release Package folder or zip archive"
 set /P thisRelease="Release folder or zip archive path? "
@@ -193,7 +221,7 @@ if %rebuild:~0,1%==Y (
 if not exist %tc_target% (
     call:printLog "Transitive Closure File generation is in progress."
     call:printf "\nTransitive Closure File generation is in progress.\n\tPlease wait until this completes.\n\tYou will then need to enter your MySQL password to allow the process to continue."
-    "!perlpath!" "!loaderFolder!\lib\transitiveClosureRf2SnapMulti.pl" "!tc_source!" "!tc_target!"
+    "!perlPath!" "!loaderFolder!\lib\transitiveClosureRf2SnapMulti.pl" "!tc_source!" "!tc_target!"
     call:printLog "Transitive Closure File generation completed."
     call:printf "\nTransitive Closure File generation completed."
 )
@@ -216,7 +244,7 @@ call:printLog "Generating local SQL import script:\n\t!sql_tmp!\nfrom SQL templa
 ::     %xxxx%   variable hold the replacement text collected from user input
 
 set sedPattern="s/\$DBNAME/%dbname%/g;s/\$RELDATE/%thisReldate%/g;s#\$RELPATH#%thisReleaseSql%#g"
-type %sql_file% | %perlpath% -pe %sedPattern% >"%sql_tmp%"
+type %sql_file% | %perlPath% -pe %sedPattern% >"%sql_tmp%"
 
 :: End of MySQL Script generation from template
 
