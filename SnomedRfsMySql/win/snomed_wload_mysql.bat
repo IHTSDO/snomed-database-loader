@@ -1,5 +1,4 @@
 @echo off
-
 :: Windows Script for SnomedRfsMySql import of SNOMED CT Release File.
 :: (c) Copyright 2019 SNOMED International 
 :: Licenced under the terms of Apache 2.0 licence.
@@ -57,7 +56,32 @@ set "phRelpath=$RELPATH"
 set "phDbname=$DBNAME"
 set "phReldate=$RELDATE"
 
+:: Establish the location of Perl executables
+call:printf "\nChecking for required software Perl and MySQL Server"
+call:printLog "Checking for required software Perl and MySQL Server"
+set perlpath=""
+call:getFilePath perl.exe perlpath
+:: Report error is no perl.exe is found.
+if "!perlpath!"=="NOT FOUND" (
+    call:printLog "Unable to find perl.exe"
+    call:printf "\nUnable to find perl.exe - Cannot build transitive closure table file.\n\tPlease install Strawberry Perl (http://strawberryperl.com/) and then retry"
+    exit /b 1
+)
+call:printf "\nPERL Processor Found !perlpath!"
+call:printLog "PERL Processor Found !perlpath!"
+:: Establish the location of MySQL Sever executables
+set mysqlPath=""
+call:getFilePath mysql.exe Server mysqlPath
+if "!mysqlPath!"=="NOT FOUND" (
+    call:printLog "Unable to find mysql.exe"
+    call:printf "\nUnable to find mysql.exe - Cannot import the data.\n\tPlease install MySQL Community Server and Workbench\n\t(https://dev.mysql.com/downloads/mysql/).\n\tThen configure in line with SnomedRfsMySql recommendations\n\tbefore retrying this import process".
+    exit /b 1
+)
+call:printf "\nMySQL Path: !mysqlPath!"
+call:printLog "MySQL Path: !mysqlPath!"
+
 :: Get Release Path
+call:printf "\nEnter the full path to the SNOMED CT Release Package folder or zip archive"
 set /P thisRelease="Release folder or zip archive path? "
 
 :: Get valid Unix style version of thisRelease for use in SQL
@@ -134,11 +158,14 @@ pushd %thisRelease%\Snapshot\Terminology
 setlocal EnableDelayedExpansion
 set tpath=%thisRelease%\Snapshot\Terminology
 set tc_source=""
-set foundfile=""
 :: Locate the snapshot relationships file in the termilogy path.
-call:getFilePath "%tpath%\sct2_Relationship..." "Snapshot" foundfile
-set tc_source=!foundfile!
-
+call:getFilePath "%tpath%\sct2_Relationship..." "Snapshot" tc_source
+if "!tc_source!"=="NOT FOUND" (
+:: Report error if Snapshot Relationships file cannot be found. This should not happen!
+    call:printf "\nError! No Snapshot Relationship file in release package"
+    call:printLog "Error! No Snapshot Relationship file in release package"
+    exit /b
+)
 :: Get the name for the Transitive Closure file based on the name of the relationships file
 set "tc_target=%thisRelease%\xder_transitiveClosure%tc_source:*_Relationship=%"
 
@@ -163,26 +190,7 @@ if %rebuild:~0,1%==Y (
     call:printLog "Keeping existing transitive closure file."
 )
 
-:: Report error if Snapshot Relationships file cannot be found. This should not happen!
-if not exist %tc_source% (
-     call:printf "\nError! No Snapshot Relationship file in release package"
-     call:printLog "Error! No Snapshot Relationship file in release package"
-    exit /b
-) else if not exist %tc_target% (
-    :: Establish the location of Perl executables
-    call:printf "\nStarting transitive closure generator"
-    call:printLog "Starting transitive closure generator"
-    set foundfile=""
-    call:getFilePath perl.exe foundfile
-    set perlpath=!foundfile!
-    call:printf "\nPERL Processor Found !perlpath!"
-    call:printLog "PERL Processor Found !perlpath!"
-    :: Report error is no perl.exe is found.
-    if !perlpath!=="NOT FOUND" (
-        call:printLog "Unable to find perl.exe"
-        call:printf "\nUnable to find perl.exe - Cannot build transitive closure table file.\n\tPlease install Strawberry Perl (http://strawberryperl.com/) and then retry"
-        exit /b 1
-    )
+if not exist %tc_target% (
     call:printLog "Transitive Closure File generation is in progress."
     call:printf "\nTransitive Closure File generation is in progress.\n\tPlease wait until this completes.\n\tYou will then need to enter your MySQL password to allow the process to continue."
     "!perlpath!" "!loaderFolder!\lib\transitiveClosureRf2SnapMulti.pl" "!tc_source!" "!tc_target!"
@@ -190,16 +198,6 @@ if not exist %tc_source% (
     call:printf "\nTransitive Closure File generation completed."
 )
 
-:: Establish the location of MySQL Sever executables
-set foundfile=""
-call:getFilePath mysql.exe Server foundfile
-set "mysqlPath=!foundfile!"
-call:printf "\nMySQL Path: !mysqlPath!"
-call:printLog "MySQL Path: !mysqlPath!"
-if "!mysqlPath!"=="NOT FOUND" (
-    call:printf "\nUnable to find mysql.exe - Cannot import the data.\n\tPlease install MySQL Community Server and Workbench\n\t(https://dev.mysql.com/downloads/mysql/).\n\tThen configure in line with SnomedRfsMySql recommendations\n\tbefore retrying this import process".
-    exit /b 1
-)
 :: Process the SQL template source script to generate the script to be run.
 :: Set sql_file and sql_tmp names for SQL file substitution process
 set "sql_file=!loaderFolder!\!mysqlload!\sct_mysql_load_!loadKey!.sql"
@@ -212,33 +210,14 @@ call:printLog "Generating local SQL import script:\n\t!sql_tmp!\nfrom SQL templa
 
 :: This section does the substitutions for the three placeholders in templace SQL script
 :: Additional placeholders could be added if required using additional set line statement with a similar
-:: The process is a little obscure using findstr with /v (not matching) and and impossible match
-:: string. This is because simpler options fail to include blank lines (which are needed in some places) 
+:: The process uses Perl on the basis that this is required anyway for transitive closure processing. 
 :: In each case: 
 ::     %phXXXX% variable holds the placeholder text 
 ::     %xxxx%   variable hold the replacement text collected from user input
-:: NOTE: Fullstop after echo. is essential in: >>"!sql_tmp!" echo. !line!
-::       without this blank lines in the template get replaced by "ECHO is off" (not valid in SQL!)
 
+set sedPattern="s/\$DBNAME/%dbname%/g;s/\$RELDATE/%thisReldate%/g;s#\$RELPATH#%thisReleaseSql%#g"
+type %sql_file% | %perlpath% -pe %sedPattern% >"%sql_tmp%"
 
-type "!sql_file!" > "!sql_file!.tmp"
- >"!sql_tmp!" echo.-- Generated SQL Load Script (Windows) --
-set nomatch="^ZzZQqQZzZqQq$"
-for /f "tokens=1* delims=:" %%A in ('findstr /n /v %nomatch% "!sql_file!.tmp"') do (
-    setlocal EnableDelayedExpansion
-    set line=%%B
-    if not !line!a==a (
-        set "line=!line:%phRelpath%=%thisReleaseSql%!"
-        set "line=!line:%phDbname%=%dbname%!"
-        set "line=!line:%phReldate%=%thisReldate%!"
-        >>"!sql_tmp!" echo.!line!
-    ) else (
-        >>"!sql_tmp!" echo.
-    )
-    endlocal
-    )
-echo off
-del /f "!sql_file!.tmp"
 :: End of MySQL Script generation from template
 
 :: Run the MySQL import process
@@ -320,6 +299,7 @@ set foundfile=""
 set searchvar=%~1
 set filter=%~2
 set searchname=%~nx1
+set searchnameonly=%~n1
 set searchext=%~x1
 setlocal EnableDelayedExpansion
 if %searchvar:*...=X%==X (
@@ -356,14 +336,20 @@ if !result!==0 (
 if !result!==0 (
     endlocal
     set result="!Error file not found: %searchvar%"
+    
+    if %args%==2 (
+        set "%2=NOT FOUND"
+    ) else (
+        set "%3=NOT FOUND"
+    )
     exit /b
 )
 endlocal
 call:head "%temp%\prog_path.txt" 1 foundfile
 if %args%==2 (
-    set "%2=%foundfile%"
+    set "%2=!foundfile!"
 ) else (
-    set "%3=%foundfile%"
+    set "%3=!foundfile!"
 )
 exit /b
 
@@ -463,11 +449,15 @@ exit /b
 :: END OF SCRIPT    ::
 ::------------------::
 :debug
+    setlocal EnableDelayedExpansion
     set foundfile=""
-    call:getFilePath mysql.exe Server foundfile
-    echo !foundfile!
     call:getFilePath perl.exe foundfile
-    echo !foundfile!
+    echo perl.exe!foundfile!
+    call:getFilePath nofile.exe foundfile
+    echo nofile.exe !foundfile!
+    call:getFilePath mysql.exe Server foundfile
+    echo mysql.exe!foundfile!
     call:getFilePath "C:\SnomedCT_ReleaseFiles\SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z%\Snapshot\Terminology\sct2_Relationship..." "Snapshot" foundfile
-    echo !foundfile!
+    echo snap_rels !foundfile!
+    endlocal
 exit /b
