@@ -202,24 +202,6 @@ if [[ $portnumber == '' ]] ; then
 	fi
 fi
 
-# If SQL loader script identifying tag not set prompt for this
-loaderTags=`ls -1 "$loaderFolder/mysql_load"|grep '^sct_mysql_load_[A-Z]\{2\}_.\{0,100\}\.sql$'|sed 's/^sct_mysql_load_//;s/\.sql$//'`
-echo $loaderTags
-if [[ $loaderTags == '' ]] ; then
-	printf 'ERROR! No loader SQL scripts found.\n\n'
-	exit
-elif [[ $loaderTags == 'VP_latest' ]] ; then
-	loadkey=$loaderTags
-elif [[ $loadkey == '' ]] ; then
-	printf "Loader script identifying tag defaults to 'VP_latest' if left blank.\nAlternatively you can specify one of the following scripts:\n$loaderTags\n"
-	read -p "Loader script identifying tag: " loadkey
-fi
-if [[ $loadkey == '' ]] ; then
-	loadkey=$loadkey_default
-fi
-
-sql_file="${loaderFolder}/$mysqlload/sct_mysql_load_${loadkey}.sql"
-
 # BEFORE SET
 
 if [[ "$thisRelease" == "" ]] ; then
@@ -298,6 +280,24 @@ if [[ $dbname == '' ]] ; then
 	fi
 fi
 addLog "Database name:$dbname"
+
+# If SQL loader script identifying tag not set prompt for this
+loaderTags=`ls -1 "$loaderFolder/mysql_load"|grep '^sct_mysql_load_[A-Z]\{2\}_.\{0,100\}\.sql$'|sed 's/^sct_mysql_load_//;s/\.sql$//'`
+echo $loaderTags
+if [[ $loaderTags == '' ]] ; then
+	printf 'ERROR! No loader SQL scripts found.\n\n'
+	exit
+elif [[ $loaderTags == 'VP_latest' ]] ; then
+	loadkey=$loaderTags
+elif [[ $loadkey == '' ]] ; then
+	printf "Loader script identifying tag defaults to 'VP_latest' if left blank.\nAlternatively you can specify one of the following scripts:\n$loaderTags\n"
+	read -p "Loader script identifying tag: " loadkey
+fi
+if [[ $loadkey == '' ]] ; then
+	loadkey=$loadkey_default
+fi
+
+sql_file="${loaderFolder}/$mysqlload/sct_mysql_load_${loadkey}.sql"
 
 # Get MySQL User Name
 getCfgValue 'mysqluser'
