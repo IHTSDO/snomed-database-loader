@@ -1,1 +1,0 @@
-"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql" --default-character-set=utf8mb4 --comments --user root --password  <sct_mysql_windows.sql

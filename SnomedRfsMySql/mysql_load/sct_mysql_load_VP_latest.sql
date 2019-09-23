@@ -2801,7 +2801,7 @@ BEGIN
 --   p_filter: string for either
 --          Regular expression filtering (Starting '!' negates the search) or
 --          Subsumption filtering if starts with '<' followed by id or a shortcut term.
---          See sct_shortcuts table (created and populated in this part of the script)
+--          See config_shortcuts table (created and populated in this part of the script)
 -- Specify using one of the following options:
 -- FULL TEXT SEARCH
 -- p_search (with empty p_filter string)
@@ -2831,9 +2831,9 @@ BEGIN
 
 	IF `p_filter` regexp '^<[a-z]{2,5}' THEN
 		SET @key=CONCAT(TRIM(MID(`p_filter`,2)),'%');
-		SET @matches=(SELECT COUNT(`conceptId`) FROM `sct_shortcuts` WHERE `abbrev` like @key);
+		SET @matches=(SELECT COUNT(`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
 		IF @matches = 1 THEN
-			SET `p_filter`=(SELECT CONCAT('<',`conceptId`) FROM `sct_shortcuts` WHERE `abbrev` like @key);
+			SET `p_filter`=(SELECT CONCAT('<',`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
         END IF;
     END IF;
 
@@ -2889,7 +2889,7 @@ BEGIN
 --   p_filter: string for either
 --          Regular expression filtering (Starting '!' negates the search) or
 --          Subsumption filtering if starts with '<' followed by id or a shortcut term.
---          See sct_shortcuts table (created and populated in this part of the script)
+--          See config_shortcuts table (created and populated in this part of the script)
 -- Specify using one of the following options:
 -- FULL TEXT SEARCH
 -- p_search (with empty p_filter string)
@@ -2919,9 +2919,9 @@ BEGIN
 
 	IF `p_filter` regexp '^<[a-z]{2,5}' THEN
 		SET @key=CONCAT(TRIM(MID(`p_filter`,2)),'%');
-		SET @matches=(SELECT COUNT(`conceptId`) FROM `sct_shortcuts` WHERE `abbrev` like @key);
+		SET @matches=(SELECT COUNT(`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
 		IF @matches = 1 THEN
-			SET `p_filter`=(SELECT CONCAT('<',`conceptId`) FROM `sct_shortcuts` WHERE `abbrev` like @key);
+			SET `p_filter`=(SELECT CONCAT('<',`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
         END IF;
     END IF;
 
@@ -2977,7 +2977,7 @@ BEGIN
 --   p_filter: string for either
 --          Regular expression filtering (Starting '!' negates the search) or
 --          Subsumption filtering if starts with '<' followed by id or a shortcut term.
---          See sct_shortcuts table (created and populated in this part of the script)
+--          See config_shortcuts table (created and populated in this part of the script)
 -- Specify using one of the following options:
 -- FULL TEXT SEARCH
 -- p_search (with empty p_filter string)
@@ -3007,9 +3007,9 @@ BEGIN
 
 	IF `p_filter` regexp '^<[a-z]{2,5}' THEN
 		SET @key=CONCAT(TRIM(MID(`p_filter`,2)),'%');
-		SET @matches=(SELECT COUNT(`conceptId`) FROM `sct_shortcuts` WHERE `abbrev` like @key);
+		SET @matches=(SELECT COUNT(`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
 		IF @matches = 1 THEN
-			SET `p_filter`=(SELECT CONCAT('<',`conceptId`) FROM `sct_shortcuts` WHERE `abbrev` like @key);
+			SET `p_filter`=(SELECT CONCAT('<',`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
         END IF;
     END IF;
 
@@ -3166,14 +3166,14 @@ DELIMITER ;
 
 -- Now Create and Populate Shortcuts Table
 -- Useful for quick use of subsumption limits.
-DROP TABLE IF EXISTS `sct_shortcuts`;
-CREATE TABLE `sct_shortcuts` (
+DROP TABLE IF EXISTS `config_shortcuts`;
+CREATE TABLE `config_shortcuts` (
   `abbrev` varchar(5) NOT NULL,
   `conceptId` bigint(10) NOT NULL,
   PRIMARY KEY (`abbrev`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `sct_shortcuts` (`abbrev`,`conceptId`) 
+INSERT INTO `config_shortcuts` (`abbrev`,`conceptId`) 
 VALUES ('anat',91723000),
 ('attr',246061005),
 ('body',123037004),
