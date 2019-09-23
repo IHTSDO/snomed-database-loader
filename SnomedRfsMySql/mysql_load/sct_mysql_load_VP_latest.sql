@@ -1171,62 +1171,20 @@ SELECT Now() `--`,"Create Unoptimized Views";
 USE `$DBNAME`;
 -- VIEW SNAP CURRENT --
 SELECT Now() '--','VIEW SNAP CURRENT' '--';
-DROP VIEW IF EXISTS `snap0_refset_Simple`;
-CREATE VIEW `snap0_refset_Simple` AS select * from `full_refset_Simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Simple` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+DROP VIEW IF EXISTS `snapAsView_concept`;
+CREATE VIEW `snapAsView_concept` AS select * from `full_concept` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_concept` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 
-DROP VIEW IF EXISTS `snap0_refset_Association`;
-CREATE VIEW `snap0_refset_Association` AS select * from `full_refset_Association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Association` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+DROP VIEW IF EXISTS `snapAsView_description`;
+CREATE VIEW `snapAsView_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 
-DROP VIEW IF EXISTS `snap0_refset_AttributeValue`;
-CREATE VIEW `snap0_refset_AttributeValue` AS select * from `full_refset_AttributeValue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_AttributeValue` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+DROP VIEW IF EXISTS `snapAsView_relationship`;
+CREATE VIEW `snapAsView_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 
-DROP VIEW IF EXISTS `snap0_refset_Language`;
-CREATE VIEW `snap0_refset_Language` AS select * from `full_refset_Language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Language` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+DROP VIEW IF EXISTS `snapAsView_statedRelationship`;
+CREATE VIEW `snapAsView_statedRelationship` AS select * from `full_statedRelationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_statedRelationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 
-DROP VIEW IF EXISTS `snap0_refset_ExtendedMap`;
-CREATE VIEW `snap0_refset_ExtendedMap` AS select * from `full_refset_ExtendedMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ExtendedMap` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_SimpleMap`;
-CREATE VIEW `snap0_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_MRCMModuleScope`;
-CREATE VIEW `snap0_refset_MRCMModuleScope` AS select * from `full_refset_MRCMModuleScope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMModuleScope` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_RefsetDescriptor`;
-CREATE VIEW `snap0_refset_RefsetDescriptor` AS select * from `full_refset_RefsetDescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_RefsetDescriptor` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_DescriptionType`;
-CREATE VIEW `snap0_refset_DescriptionType` AS select * from `full_refset_DescriptionType` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_DescriptionType` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_MRCMAttributeDomain`;
-CREATE VIEW `snap0_refset_MRCMAttributeDomain` AS select * from `full_refset_MRCMAttributeDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeDomain` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_ModuleDependency`;
-CREATE VIEW `snap0_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_MRCMAttributeRange`;
-CREATE VIEW `snap0_refset_MRCMAttributeRange` AS select * from `full_refset_MRCMAttributeRange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeRange` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_MRCMDomain`;
-CREATE VIEW `snap0_refset_MRCMDomain` AS select * from `full_refset_MRCMDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMDomain` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_concept`;
-CREATE VIEW `snap0_concept` AS select * from `full_concept` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_concept` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_description`;
-CREATE VIEW `snap0_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_relationship`;
-CREATE VIEW `snap0_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_statedRelationship`;
-CREATE VIEW `snap0_statedRelationship` AS select * from `full_statedRelationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_statedRelationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_textDefinition`;
-CREATE VIEW `snap0_textDefinition` AS select * from `full_textDefinition` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_textDefinition` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-DROP VIEW IF EXISTS `snap0_refset_OWLExpression`;
-CREATE VIEW `snap0_refset_OWLExpression` AS select * from `full_refset_OWLExpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_OWLExpression` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+DROP VIEW IF EXISTS `snapAsView_textDefinition`;
+CREATE VIEW `snapAsView_textDefinition` AS select * from `full_textDefinition` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_textDefinition` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 USE `$DBNAME`;
 -- VIEW DELTA --
 SELECT Now() '--','VIEW DELTA' '--';
