@@ -2787,6 +2787,10 @@ BEGIN
 --
 -- OPTION to use short cuts in subsumption tests
 
+IF LEFT(`p_filter`,1)='<' AND 'snap'!='snap' THEN
+	SELECT 0,'Subtype tests are only supported for current snapshot view.';
+ELSE
+
 	IF `p_filter` regexp '^<[a-z]{2,5}' THEN
 		SET @key=CONCAT(TRIM(MID(`p_filter`,2)),'%');
 		SET @matches=(SELECT COUNT(`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
@@ -2796,7 +2800,7 @@ BEGIN
     END IF;
 
 	IF `p_search`='' THEN
-		IF p_filter=LEFT(`p_filter`,1)='<' AND 'snap'='snap' THEN
+		IF p_filter=LEFT(`p_filter`,1)='<' THEN
 			SELECT `id`,`term` FROM `snap_rel_child_pref` `p` WHERE `p`.`conceptId`=SUBSTRING_INDEX(`p_filter`,'<',-1) ORDER BY length(`term`) LIMIT 200;
 		ELSE
 			SELECT `conceptId`,`term` FROM `snap_term_search_active` WHERE `term` regexp `p_filter` ORDER BY length(`term`) LIMIT 200;
@@ -2809,12 +2813,12 @@ BEGIN
 			SELECT `conceptId`,`term` FROM `snap_term_search_active` WHERE MATCH (`term`)
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) LIMIT 200;
 		END IF;
-    ELSEIF LEFT(`p_filter`,1)='<'  AND 'snap'='snap' THEN
+    ELSEIF LEFT(`p_filter`,1)='<' THEN
 		IF `p_search` regexp '[+-]' THEN
-			SELECT `conceptId`,`term` FROM `snap_syn` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
+			SELECT `conceptId`,`term` FROM `snap_term_search_active` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
 			AGAINST (`p_search` IN BOOLEAN MODE) AND `term` not regexp MID(`p_filter`,2)  ORDER BY length(`term`) LIMIT 200;
 		ELSE
-			SELECT `conceptId`,`term` FROM `snap_syn` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
+			SELECT `conceptId`,`term` FROM `snap_term_search_active` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) AND `term` not regexp MID(`p_filter`,2) ORDER BY length(`term`) LIMIT 200;
 		END IF;
     ELSEIF LEFT(`p_filter`,1)='!' THEN
@@ -2834,6 +2838,7 @@ BEGIN
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) AND `term` regexp `p_filter`  LIMIT 200;
 		END IF;
 	END IF;
+END IF;
 END;;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `snap1_SearchPlus`;
@@ -2875,6 +2880,10 @@ BEGIN
 --
 -- OPTION to use short cuts in subsumption tests
 
+IF LEFT(`p_filter`,1)='<' AND 'snap1'!='snap' THEN
+	SELECT 0,'Subtype tests are only supported for current snapshot view.';
+ELSE
+
 	IF `p_filter` regexp '^<[a-z]{2,5}' THEN
 		SET @key=CONCAT(TRIM(MID(`p_filter`,2)),'%');
 		SET @matches=(SELECT COUNT(`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
@@ -2884,7 +2893,7 @@ BEGIN
     END IF;
 
 	IF `p_search`='' THEN
-		IF p_filter=LEFT(`p_filter`,1)='<' AND 'snap1'='snap' THEN
+		IF p_filter=LEFT(`p_filter`,1)='<' THEN
 			SELECT `id`,`term` FROM `snap_rel_child_pref` `p` WHERE `p`.`conceptId`=SUBSTRING_INDEX(`p_filter`,'<',-1) ORDER BY length(`term`) LIMIT 200;
 		ELSE
 			SELECT `conceptId`,`term` FROM `snap1_term_search_active` WHERE `term` regexp `p_filter` ORDER BY length(`term`) LIMIT 200;
@@ -2897,12 +2906,12 @@ BEGIN
 			SELECT `conceptId`,`term` FROM `snap1_term_search_active` WHERE MATCH (`term`)
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) LIMIT 200;
 		END IF;
-    ELSEIF LEFT(`p_filter`,1)='<'  AND 'snap1'='snap' THEN
+    ELSEIF LEFT(`p_filter`,1)='<' THEN
 		IF `p_search` regexp '[+-]' THEN
-			SELECT `conceptId`,`term` FROM `snap_syn` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
+			SELECT `conceptId`,`term` FROM `snap1_term_search_active` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
 			AGAINST (`p_search` IN BOOLEAN MODE) AND `term` not regexp MID(`p_filter`,2)  ORDER BY length(`term`) LIMIT 200;
 		ELSE
-			SELECT `conceptId`,`term` FROM `snap_syn` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
+			SELECT `conceptId`,`term` FROM `snap1_term_search_active` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) AND `term` not regexp MID(`p_filter`,2) ORDER BY length(`term`) LIMIT 200;
 		END IF;
     ELSEIF LEFT(`p_filter`,1)='!' THEN
@@ -2922,6 +2931,7 @@ BEGIN
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) AND `term` regexp `p_filter`  LIMIT 200;
 		END IF;
 	END IF;
+END IF;
 END;;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `snap2_SearchPlus`;
@@ -2963,6 +2973,10 @@ BEGIN
 --
 -- OPTION to use short cuts in subsumption tests
 
+IF LEFT(`p_filter`,1)='<' AND 'snap2'!='snap' THEN
+	SELECT 0,'Subtype tests are only supported for current snapshot view.';
+ELSE
+
 	IF `p_filter` regexp '^<[a-z]{2,5}' THEN
 		SET @key=CONCAT(TRIM(MID(`p_filter`,2)),'%');
 		SET @matches=(SELECT COUNT(`conceptId`) FROM `config_shortcuts` WHERE `abbrev` like @key);
@@ -2972,7 +2986,7 @@ BEGIN
     END IF;
 
 	IF `p_search`='' THEN
-		IF p_filter=LEFT(`p_filter`,1)='<' AND 'snap2'='snap' THEN
+		IF p_filter=LEFT(`p_filter`,1)='<' THEN
 			SELECT `id`,`term` FROM `snap_rel_child_pref` `p` WHERE `p`.`conceptId`=SUBSTRING_INDEX(`p_filter`,'<',-1) ORDER BY length(`term`) LIMIT 200;
 		ELSE
 			SELECT `conceptId`,`term` FROM `snap2_term_search_active` WHERE `term` regexp `p_filter` ORDER BY length(`term`) LIMIT 200;
@@ -2985,12 +2999,12 @@ BEGIN
 			SELECT `conceptId`,`term` FROM `snap2_term_search_active` WHERE MATCH (`term`)
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) LIMIT 200;
 		END IF;
-    ELSEIF LEFT(`p_filter`,1)='<'  AND 'snap2'='snap' THEN
+    ELSEIF LEFT(`p_filter`,1)='<' THEN
 		IF `p_search` regexp '[+-]' THEN
-			SELECT `conceptId`,`term` FROM `snap_syn` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
+			SELECT `conceptId`,`term` FROM `snap2_term_search_active` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
 			AGAINST (`p_search` IN BOOLEAN MODE) AND `term` not regexp MID(`p_filter`,2)  ORDER BY length(`term`) LIMIT 200;
 		ELSE
-			SELECT `conceptId`,`term` FROM `snap_syn` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
+			SELECT `conceptId`,`term` FROM `snap2_term_search_active` `s` JOIN `snap_transclose` `t` ON `t`.`subtypeId`=`s`.`conceptId` WHERE `t`.`supertypeId`=SUBSTRING_INDEX(`p_filter`,'<',-1) AND MATCH (`term`)
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) AND `term` not regexp MID(`p_filter`,2) ORDER BY length(`term`) LIMIT 200;
 		END IF;
     ELSEIF LEFT(`p_filter`,1)='!' THEN
@@ -3010,6 +3024,7 @@ BEGIN
 			AGAINST (`p_search` IN NATURAL LANGUAGE MODE) AND `term` regexp `p_filter`  LIMIT 200;
 		END IF;
 	END IF;
+END IF;
 END;;
 DELIMITER ;
 DELIMITER ;
@@ -3022,6 +3037,8 @@ BEGIN
 -- So with International Release can be tested with following call.
 --   CALL snap_ShowLanguages(80146002,'en-GB','en-US');
 --
+DECLARE `v_defaultLanguage` text;
+SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=0);
 DROP TABLE IF EXISTS `tmp_concept_terms`;
 CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` BIGINT,`type_and_lang` text,`term` text);
 CALL setLanguage(0,`p_langCodeA`);
@@ -3045,7 +3062,7 @@ UNION
 SELECT `conceptid`,CONCAT('Synonyms',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap_syn`
     WHERE `conceptid`=`p_conceptId`;
 SELECT * FROM `tmp_concept_terms`;
-CALL setLanguage(0,'en-US');
+CALL setLanguage(0,`v_defaultLanguage`);
 END;;
 DELIMITER ;
 DELIMITER ;
@@ -3058,6 +3075,8 @@ BEGIN
 -- So with International Release can be tested with following call.
 --   CALL snap_ShowLanguages(80146002,'en-GB','en-US');
 --
+DECLARE `v_defaultLanguage` text;
+SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=1);
 DROP TABLE IF EXISTS `tmp_concept_terms`;
 CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` BIGINT,`type_and_lang` text,`term` text);
 CALL setLanguage(1,`p_langCodeA`);
@@ -3081,7 +3100,7 @@ UNION
 SELECT `conceptid`,CONCAT('Synonyms',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap1_syn`
     WHERE `conceptid`=`p_conceptId`;
 SELECT * FROM `tmp_concept_terms`;
-CALL setLanguage(1,'en-US');
+CALL setLanguage(1,`v_defaultLanguage`);
 END;;
 DELIMITER ;
 DELIMITER ;
@@ -3094,6 +3113,8 @@ BEGIN
 -- So with International Release can be tested with following call.
 --   CALL snap_ShowLanguages(80146002,'en-GB','en-US');
 --
+DECLARE `v_defaultLanguage` text;
+SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=2);
 DROP TABLE IF EXISTS `tmp_concept_terms`;
 CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` BIGINT,`type_and_lang` text,`term` text);
 CALL setLanguage(2,`p_langCodeA`);
@@ -3117,7 +3138,7 @@ UNION
 SELECT `conceptid`,CONCAT('Synonyms',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap2_syn`
     WHERE `conceptid`=`p_conceptId`;
 SELECT * FROM `tmp_concept_terms`;
-CALL setLanguage(2,'en-US');
+CALL setLanguage(2,`v_defaultLanguage`);
 END;;
 DELIMITER ;
 
