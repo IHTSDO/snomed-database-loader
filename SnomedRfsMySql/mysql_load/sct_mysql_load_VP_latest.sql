@@ -2208,14 +2208,14 @@ ADD INDEX `Language_rc` (`refsetId`,`referencedComponentId`);
 ALTER TABLE `full_refset_ExtendedMap`
 ADD INDEX `ExtendedMap_c` (`referencedComponentId`),
 ADD INDEX `ExtendedMap_rc` (`refsetId`,`referencedComponentId`),
-ADD INDEX `ExtendedMap_map` (`mapTarget`);
+ADD INDEX `ExtendedMap_map` (`refsetId`,`mapTarget`);
 
 -- Index `full_refset_SimpleMap` 
 
 ALTER TABLE `full_refset_SimpleMap`
 ADD INDEX `SimpleMap_c` (`referencedComponentId`),
 ADD INDEX `SimpleMap_rc` (`refsetId`,`referencedComponentId`),
-ADD INDEX `SimpleMap_map` (`mapTarget`);
+ADD INDEX `SimpleMap_map` (`refsetId`,`mapTarget`);
 
 -- Index `full_refset_MRCMModuleScope` 
 
@@ -2331,14 +2331,14 @@ ADD INDEX `Language_rc` (`refsetId`,`referencedComponentId`);
 ALTER TABLE `snap_refset_ExtendedMap`
 ADD INDEX `ExtendedMap_c` (`referencedComponentId`),
 ADD INDEX `ExtendedMap_rc` (`refsetId`,`referencedComponentId`),
-ADD INDEX `ExtendedMap_map` (`mapTarget`);
+ADD INDEX `ExtendedMap_map` (`refsetId`,`mapTarget`);
 
 -- Index `snap_refset_SimpleMap` 
 
 ALTER TABLE `snap_refset_SimpleMap`
 ADD INDEX `SimpleMap_c` (`referencedComponentId`),
 ADD INDEX `SimpleMap_rc` (`refsetId`,`referencedComponentId`),
-ADD INDEX `SimpleMap_map` (`mapTarget`);
+ADD INDEX `SimpleMap_map` (`refsetId`,`mapTarget`);
 
 -- Index `snap_refset_MRCMModuleScope` 
 
