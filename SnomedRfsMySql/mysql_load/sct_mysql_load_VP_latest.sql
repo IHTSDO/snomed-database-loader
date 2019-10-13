@@ -2266,10 +2266,11 @@ ALTER TABLE `full_concept`;
 
 ALTER TABLE `full_description`
 ADD INDEX `description_concept` (`conceptId`),
-ADD INDEX `description_lang` (`conceptId`,`languageCode`);
+ADD INDEX `description_lang` (`conceptId`,`languageCode`),
+ADD INDEX `description_term` (`term`(100));
 
 
-ALTER TABLE `full_description`ADD FULLTEXT INDEX `description_term` (`term`);
+ALTER TABLE `full_description`ADD FULLTEXT INDEX `description_ft` (`term`);
 
 -- Index `full_relationship` 
 
@@ -2287,10 +2288,11 @@ ADD INDEX `statedRelationship_dest` (`destinationId`,`typeId`,`sourceId`);
 
 ALTER TABLE `full_textDefinition`
 ADD INDEX `textDefinition_concept` (`conceptId`),
-ADD INDEX `textDefinition_lang` (`conceptId`,`languageCode`);
+ADD INDEX `textDefinition_lang` (`conceptId`,`languageCode`),
+ADD INDEX `textDefinition_term` (`term`(100));
 
 
-ALTER TABLE `full_textDefinition`ADD FULLTEXT INDEX `textDefinition_term` (`term`);
+ALTER TABLE `full_textDefinition`ADD FULLTEXT INDEX `textDefinition_ft` (`term`);
 
 -- Index `full_refset_OWLExpression` 
 
@@ -2389,10 +2391,11 @@ ALTER TABLE `snap_concept`;
 
 ALTER TABLE `snap_description`
 ADD INDEX `description_concept` (`conceptId`),
-ADD INDEX `description_lang` (`conceptId`,`languageCode`);
+ADD INDEX `description_lang` (`conceptId`,`languageCode`),
+ADD INDEX `description_term` (`term`(100));
 
 
-ALTER TABLE `snap_description`ADD FULLTEXT INDEX `description_term` (`term`);
+ALTER TABLE `snap_description`ADD FULLTEXT INDEX `description_ft` (`term`);
 
 -- Index `snap_relationship` 
 
@@ -2410,10 +2413,11 @@ ADD INDEX `statedRelationship_dest` (`destinationId`,`typeId`,`sourceId`);
 
 ALTER TABLE `snap_textDefinition`
 ADD INDEX `textDefinition_concept` (`conceptId`),
-ADD INDEX `textDefinition_lang` (`conceptId`,`languageCode`);
+ADD INDEX `textDefinition_lang` (`conceptId`,`languageCode`),
+ADD INDEX `textDefinition_term` (`term`(100));
 
 
-ALTER TABLE `snap_textDefinition`ADD FULLTEXT INDEX `textDefinition_term` (`term`);
+ALTER TABLE `snap_textDefinition`ADD FULLTEXT INDEX `textDefinition_ft` (`term`);
 
 -- Index `snap_refset_OWLExpression` 
 
