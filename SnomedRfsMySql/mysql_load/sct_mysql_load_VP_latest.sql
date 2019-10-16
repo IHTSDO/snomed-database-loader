@@ -1046,7 +1046,7 @@ VALUES
 DROP TABLE IF EXISTS `config_settings`;
 CREATE TABLE `config_settings` (
   `id` tinyint(1) NOT NULL DEFAULT '1',
-  `languageId` bigint(20) DEFAULT '900000000000509007',
+  `languageId` bigint DEFAULT '900000000000509007',
   `languageName` varchar(255) NOT NULL DEFAULT 'US English',
   `snapshotTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `deltaStartTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1102,11 +1102,9 @@ END;;
 CREATE PROCEDURE `setLanguage` (IN `p_id` tinyint, IN `p_lang_code` varchar(5))
 BEGIN
 -- This procedure sets the language using the language-dialect code (e.g. en-GB etc)
--- There are two configurable rows id=1 and id=2 which affect different views with prefixes rsnap_ (and if used rsnap2_)
-IF `p_id`<2 THEN
-	SET `p_id`=1;
-ELSEIF `p_id`>1 THEN
-	SET `p_id`=2;
+-- This can be applied to any of the numbered views.
+IF `p_lang_code`='' THEN 
+	SET `p_lang_code`='en-US';
 END IF;
 UPDATE `config_settings` `s`, `config_language` `l`
 	SET `s`.`languageId`=`l`.`id`,
@@ -1615,31 +1613,17 @@ CREATE VIEW `snap_syn_search_active` AS
 	AND `c`.`active` = 1
 	AND `cfg`.`id`=0);
 
-DROP VIEW IF EXISTS `snap_rel_pref`;
-
-CREATE VIEW `snap_rel_pref` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap_relationship` `r`
-	JOIN `snap_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1)));
-
-DROP VIEW IF EXISTS `snap_rel_fsn`;
-
-CREATE VIEW `snap_rel_fsn` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap_relationship` `r`
-	JOIN `snap_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1)));
-
 DROP VIEW IF EXISTS `snap_rel_def_pref`;
 
 CREATE VIEW `snap_rel_def_pref` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
 	FROM (((`snap_relationship` `r`
 	JOIN `snap_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
 
 DROP VIEW IF EXISTS `snap_rel_def_fsn`;
 
 CREATE VIEW `snap_rel_def_fsn` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
 	FROM (((`snap_relationship` `r`
 	JOIN `snap_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
 
@@ -1808,31 +1792,17 @@ CREATE VIEW `snap1_syn_search_active` AS
 	AND `c`.`active` = 1
 	AND `cfg`.`id`=1);
 
-DROP VIEW IF EXISTS `snap1_rel_pref`;
-
-CREATE VIEW `snap1_rel_pref` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap1_relationship` `r`
-	JOIN `snap1_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap1_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1)));
-
-DROP VIEW IF EXISTS `snap1_rel_fsn`;
-
-CREATE VIEW `snap1_rel_fsn` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap1_relationship` `r`
-	JOIN `snap1_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap1_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1)));
-
 DROP VIEW IF EXISTS `snap1_rel_def_pref`;
 
 CREATE VIEW `snap1_rel_def_pref` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
 	FROM (((`snap1_relationship` `r`
 	JOIN `snap1_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap1_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
 
 DROP VIEW IF EXISTS `snap1_rel_def_fsn`;
 
 CREATE VIEW `snap1_rel_def_fsn` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
 	FROM (((`snap1_relationship` `r`
 	JOIN `snap1_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap1_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
 
@@ -2001,31 +1971,17 @@ CREATE VIEW `snap2_syn_search_active` AS
 	AND `c`.`active` = 1
 	AND `cfg`.`id`=2);
 
-DROP VIEW IF EXISTS `snap2_rel_pref`;
-
-CREATE VIEW `snap2_rel_pref` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap2_relationship` `r`
-	JOIN `snap2_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap2_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1)));
-
-DROP VIEW IF EXISTS `snap2_rel_fsn`;
-
-CREATE VIEW `snap2_rel_fsn` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap2_relationship` `r`
-	JOIN `snap2_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap2_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1)));
-
 DROP VIEW IF EXISTS `snap2_rel_def_pref`;
 
 CREATE VIEW `snap2_rel_def_pref` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
 	FROM (((`snap2_relationship` `r`
 	JOIN `snap2_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap2_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
 
 DROP VIEW IF EXISTS `snap2_rel_def_fsn`;
 
 CREATE VIEW `snap2_rel_def_fsn` AS
-(SELECT `r`.`sourceId` `src_id`,`src`.`Term` `src_term`,`r`.`typeId` `type_id`,`typ`.`Term` `type_term`,`r`.`destinationId` `dest_id`,`dest`.`Term` `dest_term`,`r`.`relationshipGroup` `relationshipGroup`
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
 	FROM (((`snap2_relationship` `r`
 	JOIN `snap2_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap2_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
 
@@ -2146,21 +2102,71 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Create Transitive Closure and Proximal Primitive Views" '--';
 
--- CREATE VIEWS
+-- CREATE TRANSITIVE CLOSURE VIEWS
 
--- Create view of transclosure with preferred terms
-CREATE  OR REPLACE VIEW `snap_transclose_pref` AS
-SELECT `t`.`supertypeId`,`p2`.`term` `supertypeTerm`, `t`.`subtypeId`, `p`.`term` `subtypeTerm`
-	FROM `snap_transclose` `t`
-	JOIN `snap_pref` `p` ON `t`.`subtypeId`=`p`.`conceptId`
-	JOIN `snap_pref` `p2` ON `t`.`supertypeId`=`p2`.`conceptId`;
+DROP VIEW IF EXISTS `snap_tc_descendant_fsn`;
 
--- Create view of proximal primitives with preferred terms	
-CREATE  OR REPLACE VIEW `snap_proxprim_pref` AS
-SELECT `t`.`supertypeId`,`p2`.`term` `supertypeTerm`, `t`.`subtypeId`, `p`.`term` `subtypeTerm`
-	FROM `snap_proximal_primitives` `t`
-	JOIN `snap_pref` `p` ON `t`.`subtypeId`=`p`.`conceptId`
-	JOIN `snap_pref` `p2` ON `t`.`supertypeId`=`p2`.`conceptId`;
+CREATE VIEW `snap_tc_descendant_fsn` AS
+(SELECT `r`.`subtypeId` `id`,`d`.`term` `term`,`r`.`supertypeId` `conceptId`
+	FROM  `snap_transclose` `r`
+	JOIN `snap_fsn` `d` ON (`r`.`subtypeId` = `d`.`conceptId`));
+
+DROP VIEW IF EXISTS `snap_tc_descendant_pref`;
+
+CREATE VIEW `snap_tc_descendant_pref` AS
+(SELECT `r`.`subtypeId` `id`,`d`.`term` `term`,`r`.`supertypeId` `conceptId`
+	FROM  `snap_transclose` `r`
+	JOIN `snap_pref` `d` ON (`r`.`subtypeId` = `d`.`conceptId`));
+
+DROP VIEW IF EXISTS `snap_tc_ancestor_fsn`;
+
+CREATE VIEW `snap_tc_ancestor_fsn` AS
+(SELECT `r`.`supertypeId` `id`,`d`.`term` `term`,`r`.`subtypeId` `conceptId`
+	FROM  `snap_transclose` `r`
+	JOIN `snap_fsn` `d` ON (`r`.`supertypeId` = `d`.`conceptId`));
+
+DROP VIEW IF EXISTS `snap_tc_ancestor_pref`;
+
+CREATE VIEW `snap_tc_ancestor_pref` AS
+(SELECT `r`.`supertypeId` `id`,`d`.`term` `term`,`r`.`subtypeId` `conceptId`
+	FROM  `snap_transclose` `r`
+JOIN `snap_pref` `d` ON (`r`.`supertypeId` = `d`.`conceptId`));
+
+-- PROXIMAL PRIMITIVE VIEWS
+
+DROP VIEW IF EXISTS `snap_pp_child_fsn`;
+
+CREATE VIEW `snap_pp_child_fsn` AS
+(SELECT `r`.`subtypeId` `id`,`d`.`term` `term`,`r`.`supertypeId` `conceptId`
+	FROM  `snap_proximal_primitives` `r`
+	JOIN `snap_fsn` `d` ON (`r`.`subtypeId` = `d`.`conceptId`));
+
+DROP VIEW IF EXISTS `snap_pp_child_pref`;
+
+CREATE VIEW `snap_pp_child_pref` AS
+(SELECT `r`.`subtypeId` `id`,`d`.`term` `term`,`r`.`supertypeId` `conceptId`
+	FROM  `snap_proximal_primitives` `r`
+	JOIN `snap_pref` `d` ON (`r`.`subtypeId` = `d`.`conceptId`));
+
+DROP VIEW IF EXISTS `snap_pp_parent_fsn`;
+
+CREATE VIEW `snap_pp_parent_fsn` AS
+(SELECT `r`.`supertypeId` `id`,`d`.`term` `term`,`r`.`subtypeId` `conceptId`
+	FROM  `snap_proximal_primitives` `r`
+	JOIN `snap_fsn` `d` ON (`r`.`supertypeId` = `d`.`conceptId`));
+
+DROP VIEW IF EXISTS `snap_pp_parent_pref`;
+
+CREATE VIEW `snap_pp_parent_pref` AS
+(SELECT `r`.`supertypeId` `id`,`d`.`term` `term`,`r`.`subtypeId` `conceptId`
+	FROM  `snap_proximal_primitives` `r`
+JOIN `snap_pref` `d` ON (`r`.`supertypeId` = `d`.`conceptId`));
+
+
+
+
+
+
 
 -- fiTC
 -- Previous line replace by end block comment if no Transitive Closure
@@ -2457,22 +2463,22 @@ DROP TABLE IF EXISTS `snap_supertypes_primprim`;
 DROP TABLE IF EXISTS `snap_supertypes_prim_nonprox`;
 
 CREATE TEMPORARY TABLE `snap_supertypes_defprim` (
-  `subtypeId` bigint(20) NOT NULL DEFAULT '0',
-  `supertypeId` bigint(20) NOT NULL DEFAULT '0',
+  `subtypeId` bigint NOT NULL DEFAULT '0',
+  `supertypeId` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`subtypeId`,`supertypeId`),
   KEY `p_rev` (`supertypeId`,`subtypeId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 CREATE TEMPORARY TABLE `snap_supertypes_primprim` (
-  `subtypeId` bigint(20) NOT NULL DEFAULT '0',
-  `supertypeId` bigint(20) NOT NULL DEFAULT '0',
+  `subtypeId` bigint NOT NULL DEFAULT '0',
+  `supertypeId` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`subtypeId`,`supertypeId`),
   KEY `pp_rev` (`supertypeId`,`subtypeId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 CREATE TEMPORARY TABLE `snap_supertypes_prim_nonprox` (
-  `subtypeId` bigint(20) NOT NULL DEFAULT '0',
-  `supertypeId` bigint(20) NOT NULL DEFAULT '0',
+  `subtypeId` bigint NOT NULL DEFAULT '0',
+  `supertypeId` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`subtypeId`,`supertypeId`),
   KEY `p_rev` (`supertypeId`,`subtypeId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
@@ -2564,10 +2570,10 @@ DECLARE `v_focus_symbol` text;
 DECLARE `v_refine1` text;
 DECLARE `v_refine2` text;
 DECLARE `v_ref2` text;
-DECLARE `v_value1_id` bigint(18);
-DECLARE `v_value2_id` bigint(18);
-DECLARE `v_attr1_id` bigint(18);
-DECLARE `v_attr2_id` bigint(18);
+DECLARE `v_value1_id` bigint;
+DECLARE `v_value2_id` bigint;
+DECLARE `v_attr1_id` bigint;
+DECLARE `v_attr2_id` bigint;
 DECLARE `v_value1_symbol` text;
 DECLARE `v_value2_symbol` text;
 DECLARE `v_pos` int;
@@ -2658,17 +2664,17 @@ DROP TABLE IF EXISTS tmp_ref2;
 
 -- Create temporary tables
 CREATE TEMPORARY TABLE IF NOT EXISTS tmp_focus (
-  `id` bigint(20) NOT NULL DEFAULT '0',
+  `id` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 CREATE TEMPORARY TABLE IF NOT EXISTS tmp_ref1 (
-  `id` bigint(20) NOT NULL DEFAULT '0',
+  `id` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 CREATE TEMPORARY TABLE IF NOT EXISTS tmp_ref2 (
-  `id` bigint(20) NOT NULL DEFAULT '0',
+  `id` bigint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 -- END OF PREPARATION STEPS
@@ -3034,7 +3040,7 @@ DELIMITER ;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `snap_ShowLanguages`;
 DELIMITER ;;
-CREATE PROCEDURE `snap_ShowLanguages`(`p_conceptId` BIGINT,`p_langCodeA` text,`p_langCodeB` text)
+CREATE PROCEDURE `snap_ShowLanguages`(`p_conceptId` bigint,`p_langCodeA` text,`p_langCodeB` text)
 BEGIN
 -- Procedure that generates a query showing the FSN, preferred and acceptable synonyms
 -- in two languages or dialects. Only works for languages/dialects in the release files.
@@ -3044,7 +3050,7 @@ BEGIN
 DECLARE `v_defaultLanguage` text;
 SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=0);
 DROP TABLE IF EXISTS `tmp_concept_terms`;
-CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` BIGINT,`type_and_lang` text,`term` text);
+CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
 CALL setLanguage(0,`p_langCodeA`);
 INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
 SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap_fsn` 
@@ -3072,7 +3078,7 @@ DELIMITER ;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `snap1_ShowLanguages`;
 DELIMITER ;;
-CREATE PROCEDURE `snap1_ShowLanguages`(`p_conceptId` BIGINT,`p_langCodeA` text,`p_langCodeB` text)
+CREATE PROCEDURE `snap1_ShowLanguages`(`p_conceptId` bigint,`p_langCodeA` text,`p_langCodeB` text)
 BEGIN
 -- Procedure that generates a query showing the FSN, preferred and acceptable synonyms
 -- in two languages or dialects. Only works for languages/dialects in the release files.
@@ -3082,7 +3088,7 @@ BEGIN
 DECLARE `v_defaultLanguage` text;
 SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=1);
 DROP TABLE IF EXISTS `tmp_concept_terms`;
-CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` BIGINT,`type_and_lang` text,`term` text);
+CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
 CALL setLanguage(1,`p_langCodeA`);
 INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
 SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap1_fsn` 
@@ -3110,7 +3116,7 @@ DELIMITER ;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `snap2_ShowLanguages`;
 DELIMITER ;;
-CREATE PROCEDURE `snap2_ShowLanguages`(`p_conceptId` BIGINT,`p_langCodeA` text,`p_langCodeB` text)
+CREATE PROCEDURE `snap2_ShowLanguages`(`p_conceptId` bigint,`p_langCodeA` text,`p_langCodeB` text)
 BEGIN
 -- Procedure that generates a query showing the FSN, preferred and acceptable synonyms
 -- in two languages or dialects. Only works for languages/dialects in the release files.
@@ -3120,7 +3126,7 @@ BEGIN
 DECLARE `v_defaultLanguage` text;
 SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=2);
 DROP TABLE IF EXISTS `tmp_concept_terms`;
-CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` BIGINT,`type_and_lang` text,`term` text);
+CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
 CALL setLanguage(2,`p_langCodeA`);
 INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
 SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap2_fsn` 
@@ -3149,14 +3155,14 @@ DELIMITER ;
 
 -- Now Create and Populate Shortcuts Table
 -- Useful for quick use of subsumption limits.
-DROP TABLE IF EXISTS `config_shortcuts`;
-CREATE TABLE `config_shortcuts` (
+DROP TABLE IF EXISTS `sct_shortcuts`;
+CREATE TABLE `sct_shortcuts` (
   `abbrev` varchar(5) NOT NULL,
-  `conceptId` bigint(10) NOT NULL,
+  `conceptId` bigint NOT NULL,
   PRIMARY KEY (`abbrev`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `config_shortcuts` (`abbrev`,`conceptId`) 
+INSERT INTO `sct_shortcuts` (`abbrev`,`conceptId`) 
 VALUES ('anat',91723000),
 ('attr',246061005),
 ('body',123037004),
