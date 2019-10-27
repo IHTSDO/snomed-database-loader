@@ -1067,7 +1067,7 @@ SET @RELDATE=TIMESTAMP(CONCAT('$RELDATE','235959'));
 
 INSERT INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
 VALUES 
-(0,900000000000509007,'US English', DATE_SUB(@RELDATE,INTERVAL 6 MONTH), DATE_SUB(@RELDATE,INTERVAL 6 MONTH),@RELDATE);
+(0,900000000000509007,'US English', @RELDATE, DATE_SUB(@RELDATE,INTERVAL 6 MONTH),@RELDATE);
 
 
 DROP PROCEDURE IF EXISTS `setLanguage`;
@@ -1099,13 +1099,46 @@ END;;
 
 --
 
-CREATE PROCEDURE `setLanguage` (IN `p_id` tinyint, IN `p_lang_code` varchar(5))
-BEGIN
+DELIMITER ;;
+DROP PROCEDURE IF EXISTS `setLanguage`;;
+CREATE PROCEDURE `setLanguage`(IN `p_id` tinyint, IN `p_lang_code` varchar(5))
+proc:BEGIN
 -- This procedure sets the language using the language-dialect code (e.g. en-GB etc)
 -- This can be applied to any of the numbered views.
+DECLARE `languageId` BIGINT;
+DECLARE `langRefsetName` text;
+DECLARE `msg` text;
+DECLARE specialty CONDITION FOR SQLSTATE '45000';
+
+-- DEFAULT TO en-US
 IF `p_lang_code`='' THEN 
 	SET `p_lang_code`='en-US';
 END IF;
+
+-- GET Language refsetId from config_language for the Language Code
+SET `languageId`=(SELECT `id` FROM `config_language` WHERE `prefix`=`p_lang_code`);
+IF ISNULL(`languageId`) THEN
+    -- Error if no record for this lang_code in config_language
+	SET `msg`=CONCAT('Language Code Not Found: ',`p_lang_code`);
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+END IF;
+
+-- GET Preferred Synonym for the refsetId from snap_pref
+SET `langRefsetName`=(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`languageId`);
+IF ISNULL(`langRefsetName`) THEN
+    -- Error if no preferred synonym in snap_pref
+    set `msg`=CONCAT('ERR: Language Refset Name Not Found for : ',`p_lang_code`,' RefsetId: ',`languageId`);
+ 	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+END IF;
+
+-- CHECK if any members in the snap_refset_language for this refsetId
+SET @test=(SELECT `id` FROM `snap_refset_language` WHERE `refsetId`=`languageId` LIMIT 1);
+IF ISNULL(@test) THEN
+    -- Error if no members
+	set `msg`= CONCAT('ERR: No Language Refset Members Found for : ',`p_lang_code`,' RefsetId: ',`languageId`,'Name: ',`langRefsetName`);
+ 	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+END IF;
+
 UPDATE `config_settings` `s`, `config_language` `l`
 	SET `s`.`languageId`=`l`.`id`,
 	`s`.`languageName`=`l`.`name`
@@ -1154,7 +1187,7 @@ END;;
 CREATE PROCEDURE `showConfig`()
 BEGIN
 -- This trivial procedure just shows the config_settings table content (included for completeness)
-SELECT * FROM `config_settings`;
+SELECT `c`.`id`,`languageId`,`languageName`, `term` `refsetName`,DATE(TIMESTAMP(`snapshotTime`)) `snapshotTime`,DATE(TIMESTAMP(`deltaStartTime`)) `deltaStartTime`,DATE(TIMESTAMP(`deltaEndTime`)) `deltaEndTime` FROM `config_settings` `c` JOIN `snap_fsn` on `c`.`languageId`=`conceptId` ORDER BY `c`.`id`;
 END;;
 
 DELIMITER ;
@@ -2525,6 +2558,329 @@ DELIMITER ;
 -- END TC --
 
 -- START EXTRAS --
+-- CONTAINS eclQuery and the Older version eclSimple
+USE `$DBNAME`;
+DELIMITER ;;
+DROP PROCEDURE IF EXISTS eclQuery;;
+CREATE PROCEDURE eclQuery(p_ecl text)
+proc:BEGIN
+
+DECLARE `v_ecltrim` text DEFAULT '';
+DECLARE `v_eclClause` text DEFAULT '';
+DECLARE `v_focus` text DEFAULT '';
+DECLARE `v_refine` text DEFAULT '';
+DECLARE `v_item` text DEFAULT '';
+DECLARE `v_clauseNum` int DEFAULT 1;
+DECLARE `v_testNum` int DEFAULT 1;
+DECLARE `v_refineCount` int DEFAULT 1;
+DECLARE `v_clauseCount` int DEFAULT 1;
+DECLARE `v_clauseRule`  char(1) DEFAULT '';
+DECLARE `v_valSymbol` char(4) DEFAULT '';
+DECLARE `v_attSymbol` char(4) DEFAULT '';
+DECLARE `v_attId` BIGINT DEFAULT 0;
+DECLARE `v_valId` BIGINT DEFAULT 0;
+DECLARE `v_value` text DEFAULT '';
+DECLARE `v_attrib` text DEFAULT '';
+DECLARE `v_prevSetRule` char(1) DEFAULT '';
+DECLARE `v_id` int DEFAULT 0;
+DECLARE `v_ClauseTable` text DEFAULT '';
+DECLARE `v_InSource` text DEFAULT '';
+DECLARE `v_targetTable` text DEFAULT '';
+DECLARE `v_diagnostic` BOOLEAN DEFAULT FALSE;
+DECLARE `done` BOOLEAN DEFAULT FALSE;
+DECLARE specialty CONDITION FOR SQLSTATE '45000';
+DECLARE `msg` text;
+
+DECLARE `curClause` CURSOR FOR SELECT `clauseNum`,max(`clauseRule`), count(`id`) FROM `tmpEcl` GROUP BY `clauseNum` ORDER BY `clauseNum`;
+DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET `done` := TRUE;
+
+SET @ver=(SELECT VERSION());
+IF @ver<8 THEN
+	SET `msg`='The eclQuery procedure requires MySQL 8.0+. Please use eclSimple() with earlier versions.';
+	SELECT `msg`;
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+END IF;
+
+-- IF p_ecl STARTS WITH ? outputs diagnostics from parsing into tmpEcl table
+IF LEFT(`p_ecl`,1)='?' THEN
+    SET `v_diagnostic`=TRUE;
+    SET `p_ecl`=TRIM(MID(`p_ecl`,2));
+END IF;
+
+DROP TABLE IF EXISTS `tmpEcl`;
+CREATE TEMPORARY TABLE `tmpEcl` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `clauseNum` INT NOT NULL DEFAULT 0,
+  `testNum` INT NOT NULL DEFAULT 0,
+  `clauseRule` CHAR(1) DEFAULT '',
+  `attId` BIGINT NOT NULL DEFAULT 0,
+  `attSymbol` CHAR(4) NOT NULL DEFAULT '',
+  `valId` BIGINT NOT NULL DEFAULT 0,
+  `valSymbol` CHAR(4) NOT NULL DEFAULT '',
+  `count` BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`));
+
+DROP TABLE IF EXISTS `tmpSourceIds`;
+DROP TABLE IF EXISTS `tmpIds`;
+CREATE TEMPORARY TABLE tmpIds (
+    `id` bigint NOT NULL DEFAULT '0',
+    PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- NESTED REPLACEMENTS DO THE FOLLOWING
+-- 1. Remove text between paired pipes
+-- 2. Replace alternative representations of AND with ',a'
+-- 3. Replace alternative representations of OR with ',o'
+-- 4. Replace alternative representations or MINUS with ',m'
+-- 5. Remove all spaces (this must be done after 2,3,4 as these rely on spaces around words/symbols)
+SET `v_ecltrim`=regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(`p_ecl`,'[|][^|]*[|]',''),' +(AND|[Aa]nd|&+) +',',a'),' +([oO][rR]|\\|+) +',',o'),' +(minus|[Mm]inus|-) +',',m'),' *','');
+
+-- IF NOT ENCLOSED IN BRACKETS ADD OUTER BRACKETS FOR CONSISTENT SUBSEQUENT PROCESSING
+IF `v_ecltrim` not regexp '^\\(.*\\)$' THEN
+	SET `v_ecltrim`=CONCAT('(',`v_ecltrim`,')');
+END IF;
+
+-- CHECK THAT BRACKETS ARE BALANCED AND NOT MISPLACED
+IF `v_ecltrim` not regexp '^\\([^\\(\\)]*(\\),[aom]?\\([^\\(\\)]*)*\\)$' THEN
+	SELECT "ERR: Unbalanced or Misplaced Brackets";
+    LEAVE proc;
+END IF;
+-- TRIMMED SYMBOLIC VERSION CREATED AND ALL OK
+
+-- Loop to extract ECL clauses enclosed in brackets (allows multiply constraint with AND / OR / MINUS)
+getClause: LOOP
+    -- Each iteration get the next ECL clause
+    SET `v_eclClause`=regexp_substr(`v_ecltrim`,'[aom]?\\([^\\(\\)]*\\),?',1,`v_clauseNum`);
+    IF ISNULL(`v_eclClause`) OR `v_clauseNum`>20 THEN
+        LEAVE getClause;
+    END IF;
+    -- Get the rule letter a=and o=or m=minus between this and ECL clause (if any)
+    IF `v_eclClause` regexp '^[aom]' THEN 
+        SET `v_clauseRule`= LEFT(`v_eclClause`,1);
+        -- remove rule letter and leading bracket
+        SET `v_eclClause`=MID(`v_eclClause`,3);
+    ELSE
+        -- Just remove leading bracket
+        SET `v_eclClause`=MID(`v_eclClause`,2);
+    END IF;
+    -- Trim ECL clause to contents of brackets
+    SET `v_eclClause`=substring_index(`v_eclClause`,')',1);
+    -- Check the ECL clause is processable (no nesting or grouping present in ECL Clause)
+    IF `v_eclClause` regexp '\\(' THEN
+        SELECT 'ERR: Nesting constraint not supported. Character "(" in an ECL Clause',`v_eclClause`;
+        LEAVE proc;
+    END IF;
+    IF `v_eclClause` regexp ':.*:' THEN
+        SELECT 'ERR: Nesting constraint not supported. More than one ":" in an ECL Clause',`v_eclClause`;
+        LEAVE proc;
+    END IF;
+    IF `v_eclClause` regexp '[\\{\\}]' THEN
+        SELECT 'ERR: Grouping constraints not supported. Characters "{" or "}" in an ECL Clause',`v_eclClause`;
+        LEAVE proc;
+    END IF;
+    -- If the ECL clause contains a : split the focus and refinement at that point. Otherwise it is just a focus constraint
+    IF `v_eclClause` regexp ':' THEN
+        SET `v_focus`=substring_index(`v_eclClause`,':',1);
+        SET `v_refine`=substring_index(`v_eclClause`,':',-1);
+    ELSE
+        SET `v_focus`=`v_eclClause`;
+        SET `v_refine`='';
+    END IF;
+    SET `v_testNum`=1;
+    -- Get the symbol and id for the focus concept and add this as a record in a temporary ECL table (tmpEcl)
+    SET `v_valSymbol`=IFNULL(regexp_substr(`v_focus`,'(\\*|\\^|<[<!]?|>[>!]?)'),'=');
+    SET `v_valId`=IFNULL(regexp_substr(`v_focus`,'[1-9][0-9]{5,17}'),0);
+    INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`);
+    
+    IF `v_refine`!='' THEN
+        -- to simplify iteration add a comma before the refinement (this allows simple regexp pattern iteration)
+        SET `v_refine`=CONCAT(',',`v_refine`);
+        getRefine: LOOP
+            -- Iterate through the refinement constraints spliting a the commas
+            SET `v_item`=regexp_substr(`v_refine`,',[^,]+',1,`v_testNum`);
+            SET `v_testNum`=`v_testNum`+1;
+            IF ISNULL(`v_item`) OR `v_testNum`>20 THEN
+                -- exit here when no more refinements (or after a maximum number of iterations as an error catcher)
+                LEAVE getRefine;
+            END IF;
+            SET `v_item`=mid(`v_item`,2);
+            -- SELECT `v_testNum`,`v_item`;
+            SET `v_attrib`=substring_index(`v_item`,'=',1);
+            SET `v_value`=substring_index(`v_item`,'=',-1);
+            -- SELECT `v_attrib`,`v_value`;
+            SET `v_valSymbol`=IFNULL(regexp_substr(`v_value`,'(\\*|\\^|<<?)'),'=');
+            SET `v_valId`=IFNULL(regexp_substr(`v_value`,'[1-9][0-9]{5,17}'),0);
+            SET `v_attSymbol`=IFNULL(regexp_substr(`v_attrib`,'(\\*\\^|<<?)'),'=');
+            SET `v_attId`=IFNULL(regexp_substr(`v_attrib`,'[1-9][0-9]{5,17}'),0);
+            -- SELECT `v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
+            INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`);
+        END LOOP getRefine;
+    END IF;
+    SET `v_clauseNum`=`v_clauseNum`+1;
+END LOOP getClause;
+
+SET `v_clauseCount`=(SELECT max(`clauseNum`) FROM `tmpEcl`);
+
+OPEN `curClause`;
+SET `done`=FALSE;
+
+clauseLoop: LOOP
+    FETCH `curClause` INTO `v_clauseNum`,`v_clauseRule`,`v_refineCount`;
+    IF `done` then
+        LEAVE clauseLoop;
+    END IF;
+    -- SELECT `v_clauseNum`;
+    SET `v_ClauseTable`=IF(`v_clauseNum`=1,'tmpResultIds','tmpClauseIds');
+    SET `v_inSource`='';
+    OPEN `curRefine`;
+    refineLoop: LOOP
+        FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
+        IF `done` then
+            SET `done`=FALSE;
+            CLOSE `curRefine`;
+            LEAVE refineLoop;
+        END IF;
+        IF `v_testNum`=`v_refineCount` THEN
+            SET `v_targetTable`=`v_ClauseTable`;
+        ELSE
+            SET `v_targetTable`=CONCAT('tmpRefineIds_',`v_testNum`);
+        END IF;
+
+        SET @dropTable=CONCAT('DROP TABLE IF EXISTS ',`v_targetTable`);
+        PREPARE s_dropTable FROM @dropTable;
+        EXECUTE s_dropTable;
+        DEALLOCATE PREPARE s_dropTable;
+
+        SET @createTable=CONCAT('CREATE TEMPORARY TABLE `',`v_targetTable`,'` LIKE `tmpIds`');
+        PREPARE s_createTable FROM @createTable;
+        EXECUTE s_createTable;
+        DEALLOCATE PREPARE s_createTable;
+        SET @insertIds=CONCAT('INSERT IGNORE INTO `',`v_targetTable`,'` (`id`) ');
+
+        IF `v_attId`=0 THEN
+            -- Focus concept test
+            CASE `v_valSymbol`
+                WHEN '=' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_concept` WHERE `id`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+                WHEN '^' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',IF(`v_inSource`!='',CONCAT(' AND `referencedComponentId`',`v_inSource`),''));
+                WHEN '<' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `subtypeId`',`v_inSource`),''));
+                WHEN '<<' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005))',IF(`v_inSource`!='',CONCAT(' AND `subtypeId`',`v_inSource`),''));
+                WHEN '<!' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+                WHEN '>' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `supertypeId`',`v_inSource`),''));
+                WHEN '>>' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005))',IF(`v_inSource`!='',CONCAT(' AND `supertypeId`',`v_inSource`),''));
+                WHEN '>!' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+                WHEN '*' THEN
+                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_concept` WHERE `active`=1',IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+                ELSE
+                    SELECT CONCAT('ERR: Invalid focus concept symbol: ',`v_valSymbol`);
+                    LEAVE proc;
+            END CASE;
+        -- Check that the attribute specified is a valid attribute or * for any attribute
+        -- Valid attributes are subtypes of 410662002 | Concept model attribute |              
+        ELSEIF `v_attSymbol`='*' OR `v_attId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=410662002) THEN
+            -- General Source for Inserting Ids is same for refinements the other settings only add conditions
+            SET @insertIds=CONCAT(@insertIds,'SELECT `sourceId` FROM `snap_relationship` WHERE active=1',IF(`v_inSource`!='',CONCAT(' AND `sourceId`',`v_inSource`),''));
+
+            -- ADD CONDITIONS FOR typeId
+            CASE `v_attSymbol`
+                WHEN '=' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId`=',`v_attId`);
+                WHEN '<' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_attId`,')');
+                WHEN '<<' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_attId`,' or (`subtypeId`=',`v_attId`,' and `supertypeId`=410662002)))');
+                WHEN '<!' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_attId`,')');
+                WHEN '>' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_attId`,')');
+                WHEN '>>' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_attId`,' or (`subtypeId`=',`v_attId`,' and `supertypeId`=138875005))',')');
+                WHEN '>!' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_attId`,')');
+                ELSE
+                    -- Symbol * implies any attribute type. Other symbols are errors
+                    IF `v_attSymbol`!='*' THEN
+                        SELECT CONCAT('ERR: Invalid attribute type symbol: ',`v_attSymbol`);
+                        LEAVE proc;
+                    END IF;
+            END CASE;
+            -- ADD CONDITIONS FOR destinationId
+            CASE `v_valSymbol`
+                WHEN '=' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
+                WHEN '<' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
+                WHEN '<<' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+                WHEN '<!' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
+                WHEN '>' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
+                WHEN '>>' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+                WHEN '>!' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
+                WHEN '^' THEN
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1');
+                ELSE
+                    IF `v_valSymbol`!='*' THEN
+                        -- Symbol * implies any value. Other symbols are errors
+                        SELECT CONCAT('ERR: Invalid attribute value symbol: ',`v_valSymbol`);
+                        LEAVE proc;
+                    END IF;
+            END CASE;
+        ELSE
+            SELECT CONCAT('ERR: Invalid attributeId Specified: ',`v_attid`);
+            LEAVE proc;
+        END IF;
+        PREPARE s_insertIds FROM @insertIds;
+        EXECUTE s_insertIds;
+        UPDATE `tmpEcl` SET `count`=ROW_COUNT() where `id`=`v_id`;
+        DEALLOCATE PREPARE s_insertIds;
+
+        -- v_inSource is '' for first loop then becomes v_targetTable from previous iteration
+        SET `v_inSource`=CONCAT(' IN (SELECT `id` FROM ',`v_targetTable`,')');
+
+    END LOOP refineLoop;
+    IF `v_clauseNum`>1 THEN
+        CASE `v_clauseRule`
+            WHEN 'o' THEN -- OR
+                INSERT IGNORE INTO `tmpResultIds` (`id`) SELECT `id` FROM `tmpClauseIds`;
+            WHEN 'a' THEN -- AND
+				ALTER TABLE `tmpResultIds` RENAME TO  `tmpSourceIds` ;
+                CREATE TEMPORARY TABLE `tmpResultIds` LIKE `tmpIds`;
+                INSERT IGNORE INTO `tmpResultIds` (`id`) SELECT `c`.`id` FROM `tmpClauseIds` `c` JOIN `tmpSourceIds` `s` ON `s`.`id`=`c`.`id` ;
+                DROP TABLE `tmpSourceIds`;
+            WHEN 'm' THEN -- MINUS
+				ALTER TABLE `tmpResultIds` RENAME TO  `tmpSourceIds` ;
+                CREATE TEMPORARY TABLE `tmpResultIds` LIKE `tmpIds`;
+                INSERT IGNORE INTO `tmpResultIds` (`id`) SELECT `s`.`id` FROM `tmpSourceIds` `s` LEFT OUTER JOIN `tmpClauseIds` `c` ON `s`.`id`=`c`.`id` 
+					WHERE ISNULL(`c`.`id`);
+                DROP TABLE `tmpSourceIds`;
+            ELSE
+                SELECT CONCAT("ERR: Invalid Clause Rule: ",`v_clauseRule`);
+                LEAVE proc;
+        END CASE;
+    END IF;
+END LOOP clauseLoop;
+IF `v_diagnostic` THEN
+    SELECT * FROM `tmpEcl`;
+END IF;
+SET @output=CONCAT('SELECT `t`.`conceptId`,`t`.`term` FROM `snap_pref` `t` JOIN `tmpResultIds` `r` ON `r`.`id`=`t`.`conceptId`');
+-- SELECT @output;
+PREPARE s_output FROM @output;
+EXECUTE s_output;
+DEALLOCATE PREPARE s_output;
+END;;
+
 -- Create eclSimple() Procedure
 -- This procedure only works with current snapshot
 DELIMITER ;
@@ -2532,7 +2888,6 @@ DELIMITER ;
 -- Next line replace by start block comment if no Transitive Closure
 -- ifTC
 
-USE `$DBNAME`;
 SELECT Now() `--`,"Create eclSimple() Procedure" '--';
 DROP PROCEDURE IF EXISTS `eclSimple`;
 DELIMITER ;;
@@ -2578,6 +2933,15 @@ DECLARE `v_value1_symbol` text;
 DECLARE `v_value2_symbol` text;
 DECLARE `v_pos` int;
 DECLARE `v_count` int DEFAULT 0;
+DECLARE specialty CONDITION FOR SQLSTATE '45000';
+DECLARE `msg` text;
+
+SET @ver=(SELECT VERSION());
+IF @ver>=8 THEN
+	SET `msg`='With MySQL 8.0+. Please use the more powerful eclQuery() procedure.';
+	SELECT `msg`;
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+END IF;
 
 SET `v_ecl`='';
 
@@ -3037,121 +3401,66 @@ ELSE
 END IF;
 END;;
 DELIMITER ;
-DELIMITER ;
-DROP PROCEDURE IF EXISTS `snap_ShowLanguages`;
+DROP PROCEDURE IF EXISTS `snap_termsInLanguages`;
 DELIMITER ;;
-CREATE PROCEDURE `snap_ShowLanguages`(`p_conceptId` bigint,`p_langCodeA` text,`p_langCodeB` text)
-BEGIN
--- Procedure that generates a query showing the FSN, preferred and acceptable synonyms
--- in two languages or dialects. Only works for languages/dialects in the release files.
--- So with International Release can be tested with following call.
---   CALL snap_ShowLanguages(80146002,'en-GB','en-US');
+CREATE PROCEDURE `snap_termsInLanguages`(`p_conceptIds` text,`p_langCodes` text)
+proc:BEGIN
+-- Procedure that generates a query showing the FSN, preferred and acceptable synonyms for
+-- Concepts in a comma separated list of ids
+-- In languages or dialects in a comma separated list of language codes.
+-- Only works for languages/dialects in the release files.
+-- So with International Release can be tested with calls like the following.
+--   CALL snap_termsInLanguages('80146002,49438003','en-GB,en-US');
+-- However, if other language description files and language refsets are imported those can also be included.
 --
+-- SAVE CURRENT LANGUAGE SETTING - so it can be restored later.
+DECLARE `v_conceptId` text;
+DECLARE `v_langCode` text;
 DECLARE `v_defaultLanguage` text;
-SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=0);
-DROP TABLE IF EXISTS `tmp_concept_terms`;
-CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
-CALL setLanguage(0,`p_langCodeA`);
-INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
-SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap_fsn` 
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Preferred',' ', `p_langCodeA`) `type and lang`,`term` FROM `snap_pref`
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Synonyms',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap_syn` 
-    WHERE `conceptid`=`p_conceptId`;
-CALL setLanguage(0,`p_langCodeB`);
-INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
-SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeB`) `type and lang`,`term` FROM `snap_fsn` 
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Preferred',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap_pref`
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Synonyms',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap_syn`
-    WHERE `conceptid`=`p_conceptId`;
-SELECT * FROM `tmp_concept_terms`;
-CALL setLanguage(0,`v_defaultLanguage`);
-END;;
-DELIMITER ;
-DELIMITER ;
-DROP PROCEDURE IF EXISTS `snap1_ShowLanguages`;
-DELIMITER ;;
-CREATE PROCEDURE `snap1_ShowLanguages`(`p_conceptId` bigint,`p_langCodeA` text,`p_langCodeB` text)
-BEGIN
--- Procedure that generates a query showing the FSN, preferred and acceptable synonyms
--- in two languages or dialects. Only works for languages/dialects in the release files.
--- So with International Release can be tested with following call.
---   CALL snap_ShowLanguages(80146002,'en-GB','en-US');
---
-DECLARE `v_defaultLanguage` text;
-SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=1);
-DROP TABLE IF EXISTS `tmp_concept_terms`;
-CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
-CALL setLanguage(1,`p_langCodeA`);
-INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
-SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap1_fsn` 
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Preferred',' ', `p_langCodeA`) `type and lang`,`term` FROM `snap1_pref`
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Synonyms',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap1_syn` 
-    WHERE `conceptid`=`p_conceptId`;
-CALL setLanguage(1,`p_langCodeB`);
-INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
-SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeB`) `type and lang`,`term` FROM `snap1_fsn` 
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Preferred',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap1_pref`
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Synonyms',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap1_syn`
-    WHERE `conceptid`=`p_conceptId`;
-SELECT * FROM `tmp_concept_terms`;
-CALL setLanguage(1,`v_defaultLanguage`);
-END;;
-DELIMITER ;
-DELIMITER ;
-DROP PROCEDURE IF EXISTS `snap2_ShowLanguages`;
-DELIMITER ;;
-CREATE PROCEDURE `snap2_ShowLanguages`(`p_conceptId` bigint,`p_langCodeA` text,`p_langCodeB` text)
-BEGIN
--- Procedure that generates a query showing the FSN, preferred and acceptable synonyms
--- in two languages or dialects. Only works for languages/dialects in the release files.
--- So with International Release can be tested with following call.
---   CALL snap_ShowLanguages(80146002,'en-GB','en-US');
---
-DECLARE `v_defaultLanguage` text;
-SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=2);
-DROP TABLE IF EXISTS `tmp_concept_terms`;
-CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
-CALL setLanguage(2,`p_langCodeA`);
-INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
-SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap2_fsn` 
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Preferred',' ', `p_langCodeA`) `type and lang`,`term` FROM `snap2_pref`
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Synonyms',' ',`p_langCodeA`) `type and lang`,`term` FROM `snap2_syn` 
-    WHERE `conceptid`=`p_conceptId`;
-CALL setLanguage(2,`p_langCodeB`);
-INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
-SELECT `conceptid`,CONCAT('FSN',' ',`p_langCodeB`) `type and lang`,`term` FROM `snap2_fsn` 
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Preferred',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap2_pref`
-    WHERE `conceptid`=`p_conceptId`
-UNION
-SELECT `conceptid`,CONCAT('Synonyms',' ', `p_langCodeB`) `type and lang`,`term` FROM `snap2_syn`
-    WHERE `conceptid`=`p_conceptId`;
-SELECT * FROM `tmp_concept_terms`;
-CALL setLanguage(2,`v_defaultLanguage`);
-END;;
-DELIMITER ;
+DECLARE `v_cptcount` INT DEFAULT 1;
+DECLARE `v_langcount` INT DEFAULT 1;
+SET `v_defaultLanguage`=(SELECT `prefix` FROM `config_language` `cl` JOIN `config_settings` `cs` ON `cl`.`id`=`cs`.`languageId` WHERE `cs`.`id`=$CFG);
 
+-- CREATE TEMPORARY TABLE - for terms from the two languages
+DROP TABLE IF EXISTS `tmp_concept_terms`;
+CREATE TEMPORARY TABLE `tmp_concept_terms` (`conceptId` bigint,`type_and_lang` text,`term` text);
+
+SET `p_conceptIds`=CONCAT(`p_conceptIds`,',');
+SET `p_langCodes`=CONCAT(`p_langCodes`,',');
+
+-- LOOP FOR CONCEPTS
+    SET `v_cptcount`=1;
+conceptIds:LOOP
+    SET `v_conceptId`=SUBSTRING_INDEX(SUBSTRING_INDEX(`p_conceptIds`,',',`v_cptcount`),',',-1);
+    IF `v_conceptId` not regexp '[1-9][0-9]{5,17}' THEN
+        LEAVE conceptIds;
+    END IF;
+    SET `v_cptcount`=`v_cptcount`+1;
+
+    -- LOOP FOR LANGUAGES
+    SET `v_langcount`=1;
+    langCodes:LOOP
+        SET `v_langCode`=SUBSTRING_INDEX(SUBSTRING_INDEX(`p_langCodes`,',',`v_langcount`),',',-1);
+        IF `v_langCode` not regexp '^[a-z]{2}' THEN
+            LEAVE langCodes;
+        END IF;
+        SET `v_langcount`=`v_langcount`+1;
+
+        CALL setLanguage($CFG,`v_langCode`);
+INSERT INTO `tmp_concept_terms` (`conceptId`,`type_and_lang`,`term`)
+        SELECT `conceptid`,CONCAT('FSN',' ',`v_langCode`) `type and lang`,`term` FROM `snap_fsn` 
+            WHERE `conceptId`=`v_conceptId`
+UNION
+        SELECT `conceptid`,CONCAT('Preferred',' ', `v_langCode`) `type and lang`,`term` FROM `snap_pref`
+            WHERE `conceptId`=`v_conceptId`
+UNION
+        SELECT `conceptid`,CONCAT('Synonyms',' ',`v_langCode`) `type and lang`,`term` FROM `snap_syn` 
+            WHERE `conceptId`=`v_conceptId`;
+    END LOOP;
+END LOOP;
+SELECT * FROM `tmp_concept_terms`;
+CALL setLanguage($CFG,`v_defaultLanguage`);
+END;;
 
 -- Now Create and Populate Shortcuts Table
 -- Useful for quick use of subsumption limits.
