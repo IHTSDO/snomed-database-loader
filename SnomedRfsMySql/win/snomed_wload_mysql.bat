@@ -108,25 +108,34 @@ if not DEFINED mysqlPath (
 )
 call:printf "\tMySQL Path:\t !mysqlPath!"
 call:printLog "MySQL Found !mysqlPath!"
-:: Get Release Path
-call:printf "\nEnter the full path to the SNOMED CT Release Package folder or zip archive"
-set /P thisRelease="Release folder or zip archive path? "
 
-:: Get valid Unix style version of thisRelease for use in SQL
-:: Then revise theRelease to ensure it uses only backslashes
-set thisRelease=%thisRelease:.zip=%
-set thisReleaseSql=%thisRelease:\=/%
-set thisRelease=%thisRelease:/=\%
+:: Get source script prefix from input or default
+set /P loadKey="Loader script identifying tag (default: create_latest): "
+if "a%loadKey%"=="a" (
+    set "loadkey=create_latest"
+)
+echo %loadKey%
 
-:: Set releasePackage and releaseRoot variables from thisRelease
-for %%A in (%thisRelease%) do (
-    set releasePackage=%%~nA
-    set releaseRoot=%%~dpA
+if "%loadKey:~0,6%" neq "update" (
+    :: Get Release Path
+    call:printf "\nEnter the full path to the SNOMED CT Release Package folder or zip archive"
+    set /P thisRelease="Release folder or zip archive path: "
+    echo  !thisRelease!
+    :: Get valid Unix style version of thisRelease for use in SQL
+    :: Then revise theRelease to ensure it uses only backslashes
+    set thisRelease=!thisRelease:.zip=!
+    set thisReleaseSql=!thisRelease:\=/!
+    set thisRelease=!thisRelease:/=\!
+    :: Set releasePackage and releaseRoot variables from thisRelease
+    for %%A in (!thisRelease!) do (
+        set releasePackage=%%~nA
+        set releaseRoot=%%~dpA
+    )
+    :: Set thisReldate from releasePackage
+    set "thisReldate=!releasePackage:*20=!"
+    set thisReldate=20!thisReldate:~0,6!
 )
 
-:: Set thisReldate from releasePackage
-set "thisReldate=%releasePackage:*20=%"
-set thisReldate=20%thisReldate:~0,6%
 
 :: Get database name from input or default
 set /P dbname="Database name (default: snomedct): "
@@ -134,21 +143,13 @@ if "a%dbname%"=="a" (
     set dbname=snomedct
 )
 
-:: Get source script prefix from input or default
-set /P loadKey="SQL Script (default: VP_latest): "
-if "a%loadKey%"=="a" (
-    set "loadkey=VP_latest"
-)
-
 :: Get MySql username from input or default
 set /P mysqluser="MySQL User Name (default: root): "
 if "a%mysqluser%"=="a" (
     set "mysqluser=root"
 )
-
 :: Add selected options to logfile
-call:printlog "Release Path\t%thisRelease%\nDatabase Name\t%dbname%\nLoad Script Key\t%loadkey%\nSQL User\t%sqluser%\n\n"
-
+call:printlog "Release Path\t!thisRelease!\nDatabase Name\t%dbname%\nLoad Script Key\t%loadkey%\nSQL User\t%sqluser%\n\n"
 :: Check the existence and validity of the specfied release path
 :: If the release folder does not exist but the zip does then unzip the package
 if not exist "%thisRelease%\" (
@@ -226,6 +227,14 @@ if not exist %tc_target% (
     call:printf "\nTransitive Closure File generation completed."
 )
 
+if exist %tc_target% (
+	set "notc="
+) else (
+	set "notc=-- NO TC"
+)
+
+echo %notc%
+
 :: Process the SQL template source script to generate the script to be run.
 :: Set sql_file and sql_tmp names for SQL file substitution process
 set "sql_file=!loaderFolder!\!mysqlload!\sct_mysql_load_!loadKey!.sql"
@@ -243,7 +252,7 @@ call:printLog "Generating local SQL import script:\n\t!sql_tmp!\nfrom SQL templa
 ::     %phXXXX% variable holds the placeholder text 
 ::     %xxxx%   variable hold the replacement text collected from user input
 
-set sedPattern="s/\$DBNAME/%dbname%/g;s/\$RELDATE/%thisReldate%/g;s#\$RELPATH#%thisReleaseSql%#g"
+set sedPattern="s#\$DBNAME#%dbname%#g;s#\$RELDATE#%thisReldate%#g;s#\$RELPATH#%thisReleaseSql%#g;s#\$NOTC#%notc%#g"
 type %sql_file% | %perlPath% -pe %sedPattern% >"%sql_tmp%"
 
 :: End of MySQL Script generation from template
@@ -488,4 +497,4 @@ exit /b
     call:getFilePath "C:\SnomedCT_ReleaseFiles\SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z%\Snapshot\Terminology\sct2_Relationship..." "Snapshot" foundfile
     echo snap_rels !foundfile!
     endlocal
-exit /b
+	exit /b

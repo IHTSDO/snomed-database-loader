@@ -1,5 +1,5 @@
 --
--- Find the Preferred Term of subtypes of the concept with id “19829001” 
+-- Find the lung disorders
 -- Expression Constraint: < 19829001
 --
 SELECT tc.subtypeId, pt.term -- select these columns
