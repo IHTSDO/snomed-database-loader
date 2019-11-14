@@ -433,9 +433,9 @@ if ! [[ "$PATH" =~ mysql/bin ]] ; then
    PATH=${PATH}:/usr/local/mysql/bin
 fi
 
-# mysql --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --user $mysqluser --password  < "${sql_tmp}"
+# mysql --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --comment --user $mysqluser --password  < "${sql_tmp}"
 
-${mysqlrun} --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --user $mysqluser --password  < "${sql_tmp}"
+${mysqlrun} --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --comment --user $mysqluser --password  < "${sql_tmp}"
 err=$?
 
 if [[ $err != 0 ]] ; then
