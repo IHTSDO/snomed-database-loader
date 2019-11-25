@@ -1,5 +1,5 @@
 # SNOMED CT MySQL Release Files Loader with Optimized Views
-## SnomedRfsMySql 2019-09-12
+## SnomedRfsMySql 2019-11-25
 
 ## IMPORTANT NOTES
 
@@ -11,15 +11,15 @@ Use with MySQL version 8.x requires the server to reference a copy of the file *
 
 The package includes two bash scripts for use on a Mac.
 
-## bash/snomed_mysql_config
+## bash/snomed_config_mysql
 
 * Applies the required MySQL configuration settings in *cnf/my_snomedserver.cnf* to the server.
 
-## bash/snomed_mysql_load
+## bash/snomed_load_mysql
 
 1. Collects user input to configure the following settings:
-    - Name of the SQL import script to be used (default: VP_latest)
-        - Note VP_latest refers to the file *mysql_load/sct_mysql_load_VP_latest.sql*
+    - Name of the SQL import script to be used (default: create_latest)
+        - Note VP_latest refers to the file *mysql_load/sct_mysql_load_create_latest.sql*
     - Path to SNOMED CT release file package
     - Name of the database schema to be created (default: snomedct)
     - MySQL database username for running the SNOMED CT import script (default: root)
@@ -33,7 +33,7 @@ The package includes two bash scripts for use on a Mac.
 In other environments the following steps may need to be carried out manually.
 * MySQL configuration changes
 * Running the Perl script to generate the Transitive Closure snapshot file.
-* Modifying and running the SNOMED CT MySQL import script *mysql_load/sct_mysql_load_VP_latest.sql*.
+* Modifying and running the SNOMED CT MySQL import script *mysql_load/sct_mysql_load_create_latest.sql*.
 
 The notes below outline the extent to which the scripts may be useful in other environments and outline steps required to run the processes manually.
 
@@ -52,7 +52,22 @@ If it does not work please refer to the notes on use on Widnows systems below fo
 
 ## Support for Use on Windows
 
-No scripting support is currently provided for use in the Windows environment.
+## win/snomed_wconfig_mysql.bat
+
+* Applies the required MySQL configuration settings in *win/snomed_win_my.cnf* to the server.
+
+## win/snomed_wload_mysql.bat
+
+1. Collects user input to configure the following settings:
+    - Name of the SQL import script to be used (default: create_latest)
+        - Note VP_latest refers to the file *mysql_load/sct_mysql_load_create_latest.sql*
+    - Path to SNOMED CT release file package
+    - Name of the database schema to be created (default: snomedct)
+    - MySQL database username for running the SNOMED CT import script (default: root)
+2. Configures the import script to use the chosen settings
+3. Builds a Transitive Closure snapshot file (from the relationships release file)
+4. Prompts for the MySQL password
+5. Runs the SNOMED CT MySQL import script
 
 ### Configuration Settings on Windows Systems
 
