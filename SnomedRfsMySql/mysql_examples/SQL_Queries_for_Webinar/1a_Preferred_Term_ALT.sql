@@ -3,5 +3,5 @@
 -- Uses SNAPSHOT view of preferred synonyms
 --
 SELECT conceptId, term 
-FROM snomedct.snap_pref
+FROM snap_pref
 WHERE conceptId = 80146002;
