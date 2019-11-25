@@ -1,6 +1,6 @@
 --
 -- Find the lung disorders
--- Expression Constraint: < 19829001
+-- Expression Constraint: < 19829001 |disorder of lung|
 --
 SELECT tc.subtypeId, pt.term -- select these columns
 FROM snap_transclose as tc, snap_pref as pt -- from snapshot transitive closure table and snapshot of preferred terms
