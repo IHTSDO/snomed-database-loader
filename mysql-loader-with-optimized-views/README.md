@@ -1,6 +1,10 @@
 # SNOMED CT MySQL Release Files Loader with Optimized Views
 ## SnomedRfsMySql 2019-11-25
 
+## INSTRUCTION ON USE
+
+See http://snomed.org/snomedmysql for detailed instruction on use of this package.
+
 ## IMPORTANT NOTES
 
 This loader has been tested to work with MySQL 8.x and with the earlier version 5.7.
