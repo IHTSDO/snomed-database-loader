@@ -1,0 +1,8 @@
+[mysql]
+local-infile=1
+[client]
+local-infile=1
+protocol=tcp
+host=localhost
+port=3306
+
