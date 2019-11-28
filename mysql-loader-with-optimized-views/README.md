@@ -97,8 +97,3 @@ Manually adjust the settings to include the settings in the *cnf/my_snomedserver
   - "*mysql_load_local.sql*"
 - The *mysql_username* must either be **root** or another account with rights to drop and create database schemas. You will be required to enter the password for this account when running the command.
 - There are spaces before each of the double dashes in the command line.
-
-
-
-
-
