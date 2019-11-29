@@ -1,0 +1,15 @@
+-- Step By Step Development of a Snapshot Views from the Full Table - Introduction
+
+-- This folder contains a series of queries that illustrate the steps in going from
+-- a FULL release file to to a SNAPSHOT view of one or more concepts.
+--
+-- Each step is explained and illustrated in a separate SQL script file containing
+-- notes accompanied by an SQL query that can be run in the SNOMED CT Example Database.
+-- 
+-- All the scripts have the same name followed by a number indicating the order of the steps.
+--
+-- The idea of these files is to illustrate each of the key points in this logical process.
+-- If you are only interested in using the database for access to the terminology this
+-- is not for you. However, if you are interested in understanding how snapshot views can be
+-- derived from a full release tables you may find this helpful.
+--
