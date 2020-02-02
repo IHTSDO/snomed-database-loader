@@ -180,7 +180,7 @@ def db_build(arglist):
     print('*** Output directory [%s] isn\'t empty or doesn\'t exist ***' % opts.output_dir)
     sys.exit(1)
   # make sure a Terminology folder exists in the opts.rf2 folder
-  if not (os.path.isdir(opts.rf2) and 'Terminology' in os.listdir(opts.rf2):
+  if not (os.path.isdir(opts.rf2) and 'Terminology' in os.listdir(opts.rf2)):
     print('*** The --rf2 option [%s] must specify a folder, which must contain a Terminology subfolder' % opts.rf2)
     sys.exit(1)
   # open logfile
