@@ -44,15 +44,17 @@ NOTE: the database load will fail if these requirements are not met.
 
 ##### Syntax to create the NEO4J database from an RF2 release using the python scripts from this project:
 
-`python snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw <password> --output_dir <output-directory-path>`
+```
+python snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw <password> --output_dir <output-directory-path>
+```
 
 NOTE:
 
-<rf2-release-directory> is the RF2 folder containing the "Terminology" folder
+`<rf2-release-directory>` is the RF2 folder containing the "Terminology" folder
 
-<output-directory-path> needs to be an empty folder which the python scripts will create CSV files needed to load the NEO4J database. This folder may be deleted after the database has been successfully loaded.
+`<output-directory-path>` needs to be an empty folder which the python scripts will create CSV files needed to load the NEO4J database. This folder may be deleted after the database has been successfully loaded.
 
-<password> is the password which is used to log into NEO4J
+`<password>` is the password which is used to log into NEO4J
 
 ##### NEO4J configuration requirements:
 
@@ -64,23 +66,26 @@ If the NEO4J desktop is being used, then the neo4j.conf file associated with any
 
 The changes to neo4j.conf are as follows:
 
-- Comment out import directory setting.  This allows importing from the --output_dir folder.
+##### Comment out import directory setting. This allows importing from the --output_dir folder.
 
 `#dbms.directories.import=import`
 
-- Configure at least 4 gigabytes of heap memory
+##### Configure at least 4 gigabytes of heap memory
 
 `dbms.memory.heap.max_size=4G`
 
 ##### Building the NEO4J database from the RF2 release:
 
-`cd <path-to-snomed_g-bin>`
+```
+cd <path-to-snomed_g-bin>`
 
-`python snomed_g_graphdb_build_tools.py db_build --release_type full --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB' --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z`
+python snomed_g_graphdb_build_tools.py db_build --release_type full --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB' --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z
+```
 
-#### Output that you should see in a successful execution
+##### Output that you should see in a successful execution
 
-`sequence did not exist, primed
+```
+sequence did not exist, primed
 JOB_START
 FIND_ROLENAMES
 FIND_ROLEGROUPS
@@ -92,13 +97,14 @@ TEMPLATE_PROCESSING
 CYPHER_EXECUTION
 CHECK_RESULT
 JOB_END
-RESULT: SUCCESS`
+RESULT: SUCCESS
+```
 
 ##### build.log contents in a successful execution
 
-The following is an example of the beginning portion of a build.log file in a successful build.  This can be compared to what is seen in build.log if the database build fails.
+The following is an example of the beginning portion of a build.log file for a successful build. This file contains thousands of lines in a successful build, so only a portion is shown here. The idea is that this build.log can be compared to what is seen in a failure case.
 
-`
+```
 count of RF2 ids: 471023
 count of FSNs in RF2: 471023
 Total RF2 elements: 471023, NEW: 471023, CHANGE: 0, NO CHANGE: 0
@@ -127,119 +133,8 @@ Total RF2 elements: 1969615, NEW: 1969615, CHANGE: 0, NO CHANGE: 0
 1. // -----------------------------------------------------------------------------------------
 2. // Module:  snomed_g_graphdb_create.cypher
 3. // Author: Jay Pedersen, University of Nebraska, August 2015
-4. // Concept: Update a SNOMED_G Graph Database from input CSV files which describe the changes
-5. //          to concepts, descriptions, ISA relationships and defining relationships.
-6. // Input Files:
-7. //          concept_new.csv
-8. //          descrip_new.csv
-9. //          isa_rel_new.csv
-10. //          defining_rel_new.csv
-11. 
-12. // NEXT STEP -- create INDEXES
-13. 
-14. CREATE CONSTRAINT ON (c:ObjectConcept) ASSERT c.id [c.id] IS UNIQUE;
-Sending CYPHER:[CREATE CONSTRAINT ON (c:ObjectConcept) ASSERT c.id [c.id] IS UNIQUE;]
-
-
-CYPHER execution time: 0:00:00.348271
-15. CREATE CONSTRAINT ON (c:ObjectConcept) ASSERT c.sctid IS UNIQUE;
-Sending CYPHER:[CREATE CONSTRAINT ON (c:ObjectConcept) ASSERT c.sctid IS UNIQUE;]
-
-
-CYPHER execution time: 0:00:00.062710
-16. // id,sctid index created, requiring uniqueness
-17. // Note: Can't have "FSN is UNIQUE"" constraint, can have dups (inactive concepts)
-18. //       for example -- "retired procedure" is FSN of multiple inactive concepts
-19. CREATE CONSTRAINT ON (c:Description) ASSERT c.id [c.id] IS UNIQUE;
-Sending CYPHER:[CREATE CONSTRAINT ON (c:Description) ASSERT c.id [c.id] IS UNIQUE;]
-
-
-CYPHER execution time: 0:00:00.062374
 
 <snip-resuming-at-the-end-of-build-dot-log>
-
-2407. // HAS_REALIZATION defining relationships
-2408. RETURN 'NEW Defining relationships of type HAS_REALIZATION';
-2409. 
-2410. USING PERIODIC COMMIT 200
-2411. LOAD CSV with headers from "file:///Users/jay/sno/build/20190731/DR_719722006_new.csv" as line
-2412. with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id
-2413. MERGE (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id });
-Sending CYPHER:[USING PERIODIC COMMIT 200 LOAD CSV with headers from "file:///Users/jay/sno/build/20190731/DR_719722006_new.csv" as line with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id MERGE (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id });]
-
-
-CYPHER execution time: 0:00:00.027079
-2414. 
-2415. // Add defining relationship edge in 2nd step, Java memory issue
-2416. USING PERIODIC COMMIT 200
-2417. LOAD CSV with headers from "file:///Users/jay/sno/build/20190731/DR_719722006_new.csv" as line
-2418. with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id
-2419. MATCH (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id })
-2420. WITH line,rg,source_id,dest_id,rolegroup_id
-2421. MATCH (c:ObjectConcept { sctid: dest_id })
-2422. CREATE UNIQUE (rg)-[:HAS_REALIZATION { id: line.id [line.id], active: line.active, sctid: source_id,
-2423. typeId: line.typeId,
-2424. rolegroup: rolegroup_id, effectiveTime: line.effectiveTime,
-2425. moduleId: line.moduleId, characteristicTypeId: line.characteristicTypeId,
-2426. modifierId: line.modifierId,
-2427. history: line.history }]->(c);
-Sending CYPHER:[USING PERIODIC COMMIT 200 LOAD CSV with headers from "file:///Users/jay/sno/build/20190731/DR_719722006_new.csv" as line with line, line.sctid as source_id, line.destinationId as dest_id, line.rolegroup as rolegroup_id MATCH (rg:RoleGroup { sctid: source_id, rolegroup: rolegroup_id }) WITH line,rg,source_id,dest_id,rolegroup_id MATCH (c:ObjectConcept { sctid: dest_id }) CREATE UNIQUE (rg)-[:HAS_REALIZATION { id: line.id [line.id], active: line.active, sctid: source_id, typeId: line.typeId, rolegroup: rolegroup_id, effectiveTime: line.effectiveTime, moduleId: line.moduleId, characteristicTypeId: line.characteristicTypeId, modifierId: line.modifierId, history: line.history }]->(c);]
-
-
-CYPHER execution time: 0:00:00.187543
-2428. // Finito
-SUCCESS (231 commands)
-1. return 'CHECKING FOR SNOMED_G_UPDATE_FAILURE NODE WHICH INDICATES FAILURE';
-Sending CYPHER:[return 'CHECKING FOR SNOMED_G_UPDATE_FAILURE NODE WHICH INDICATES FAILURE';]
- 'CHECKING FOR SNOMED_G_UPDATE_FAILURE NODE WHICH INDICATES FAILURE' 
----------------------------------------------------------------------
- CHECKING FOR SNOMED_G_UPDATE_FAILURE NODE WHICH INDICATES FAILURE   
-CYPHER execution time: 0:00:00.019240
-2. 
-3. match (a:SNOMED_G_UPDATE_FAILURE)
-4. LOAD CSV with headers from "UPDATE FAILURE DETECTED" as line create (b:UPDATE_FAILED)
-5. return 'SNOMED_G GRAPH UPDATE SUCCEEDED';
-Sending CYPHER:[match (a:SNOMED_G_UPDATE_FAILURE) LOAD CSV with headers from "UPDATE FAILURE DETECTED" as line create (b:UPDATE_FAILED) return 'SNOMED_G GRAPH UPDATE SUCCEEDED';]
- 'SNOMED_G GRAPH UPDATE SUCCEEDED' 
------------------------------------
-CYPHER execution time: 0:00:00.014054
-SUCCESS (2 commands)
-JOB_START
-FIND_ROLENAMES
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py find_rolenames --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --language_code en --language_name Language
-FIND_ROLEGROUPS
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py find_rolegroups --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --language_code en --language_name Language
-MAKE_CONCEPT_CSVS
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element concept --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language
-MAKE_DESCRIPTION_CSVS
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element description --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language
-MAKE_ISA_REL_CSVS
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element isa_rel --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language
-MAKE_DEFINING_REL_CSVS
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element defining_rel --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language
-TEMPLATE_PROCESSING
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_template_tools.py instantiate /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_graphdb_cypher_create.template build.cypher --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --release_type full
-CYPHER_EXECUTION
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_neo4j_tools.py run_cypher build.cypher --verbose --neopw test1234
-CHECK_RESULT
-python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_neo4j_tools.py run_cypher /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_graphdb_update_failure_check.cypher --verbose --neopw test1234
-JOB_END
-
-RESULT: SUCCESS
-
-SUMMARY:
-
-JOB_START                 : SUCCESS                  , duration:0:00:00.000016
-FIND_ROLENAMES            : SUCCESS                  , duration:0:00:11.298340
-FIND_ROLEGROUPS           : SUCCESS                  , duration:0:00:09.425625
-MAKE_CONCEPT_CSVS         : SUCCESS                  , duration:0:00:10.653972
-MAKE_DESCRIPTION_CSVS     : SUCCESS                  , duration:0:00:48.219992
-MAKE_ISA_REL_CSVS         : SUCCESS                  , duration:0:00:22.193563
-MAKE_DEFINING_REL_CSVS    : SUCCESS                  , duration:0:00:57.835610
-TEMPLATE_PROCESSING       : SUCCESS                  , duration:0:00:00.080631
-CYPHER_EXECUTION          : SUCCESS                  , duration:0:05:41.053754
-CHECK_RESULT              : SUCCESS                  , duration:0:00:00.278629
-JOB_END                   : SUCCESS                  , duration:0:08:21.041281
 
 DETAILS:
 
@@ -248,36 +143,44 @@ step:[JOB_START],result:[SUCCESS],command:[None],status/expected:0/0,duration:0:
 step:[FIND_ROLENAMES],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py find_rolenames --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --language_code en --language_name Language],status/expected:0/0,duration:0:00:11.298340,output:[],error:[],cmd_start:[2020-01-30 12:49:15.039617],cmd_end:[2020-01-30 12:49:26.337957]
 step:[FIND_ROLEGROUPS],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py find_rolegroups --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --language_code en --language_name Language],status/expected:0/0,duration:0:00:09.425625,output:[],error:[],cmd_start:[2020-01-30 12:49:26.337996],cmd_end:[2020-01-30 12:49:35.763621]
 step:[MAKE_CONCEPT_CSVS],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element concept --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language],status/expected:0/0,duration:0:00:10.653972,output:[],error:[],cmd_start:[2020-01-30 12:49:35.763657],cmd_end:[2020-01-30 12:49:46.417629]
-step:[MAKE_DESCRIPTION_CSVS],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element description --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language],status/expected:0/0,duration:0:00:48.219992,output:[],error:[],cmd_start:[2020-01-30 12:49:46.417677],cmd_end:[2020-01-30 12:50:34.637669]
-step:[MAKE_ISA_REL_CSVS],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element isa_rel --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language],status/expected:0/0,duration:0:00:22.193563,output:[],error:[],cmd_start:[2020-01-30 12:50:34.637764],cmd_end:[2020-01-30 12:50:56.831327]
-step:[MAKE_DEFINING_REL_CSVS],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_rf2_tools.py make_csv --element defining_rel --release_type full --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --neopw test1234 --action create --relationship_file Relationship --language_code en --language_name Language],status/expected:0/0,duration:0:00:57.835610,output:[],error:[],cmd_start:[2020-01-30 12:50:56.831364],cmd_end:[2020-01-30 12:51:54.666974]
+<snip>
 step:[TEMPLATE_PROCESSING],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_template_tools.py instantiate /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_graphdb_cypher_create.template build.cypher --rf2 /Users/jay/sno/snomedct_rf2/20190731/Full/ --release_type full],status/expected:0/0,duration:0:00:00.080631,output:[],error:[],cmd_start:[2020-01-30 12:51:54.667031],cmd_end:[2020-01-30 12:51:54.747662]
 step:[CYPHER_EXECUTION],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_neo4j_tools.py run_cypher build.cypher --verbose --neopw test1234],status/expected:0/0,duration:0:05:41.053754,output:[],error:[],cmd_start:[2020-01-30 12:51:54.747706],cmd_end:[2020-01-30 12:57:35.801460]
 step:[CHECK_RESULT],result:[SUCCESS],command:[python /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_neo4j_tools.py run_cypher /Users/jay/src/snomed-database-loader/NEO4J//snomed_g_graphdb_update_failure_check.cypher --verbose --neopw test1234],status/expected:0/0,duration:0:00:00.278629,output:[],error:[],cmd_start:[2020-01-30 12:57:35.801498],cmd_end:[2020-01-30 12:57:36.080127]
 step:[JOB_END],result:[SUCCESS],command:[None],status/expected:0/0,duration:0:08:21.041281,output:[JOB-END],error:[],cmd_start:[2020-01-30 12:49:15.038936],cmd_end:[2020-01-30 12:57:36.080217]
-`
+```
 
 ## Language support
 
 ##### Specific Steps
 
-1. Change to the working directory
-   `cd <path-to-snomed_g-bin>`
+1. Change to the NEO4J directory with snomed_g python scripts:
 
-2. Execute the build script. Following the general syntax from above here is an exampple with optional flags set
-   `python snomed_g_graphdb_build_tools.py db_build --release_type full --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB' --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z`
+```
+cd <NEO4J-python-scripts-folder>
+```
+
+This folder contains the `snomed_g_graphdb_build_tools.py` file, among others.
+
+2. Execute the build script. Following the general syntax from above here is an example with optional flags set
+
+```
+python snomed_g_graphdb_build_tools.py db_build --release_type full --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB' --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z
+```
 
 3. By default, the language designation is "en" and the language is simply "Language", which is used in the filename of the Description file and the Language files.
 
-`--language_code 'en-us' --language_name 'USEnglish'`
+```
+--language_code 'en-us' --language_name 'USEnglish'
+```
 
-    **NOTE**: the `--output_dir` specifies a directory for creating temporary CSV files for use in database creation, it is not the location of the database itself.
+**NOTE**: the `--output_dir` specifies a directory for creating temporary CSV files for use in database creation, it is not the location of the database itself.
 
-##### Example
+##### Example (Jan 31, 2015 International Edition, on a windows machine)
 
-    Example: (using the Jan 31, 2015 International Edition, on a windows machine)
-
-    `python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_build_tools.py db_build --action create --rf2 c:/sno/snomedct/nelex/SnomedCT_RF2Release_INT_20150131/ --release_type full --neopw <password> --output_dir c:/build/20150131 --language_code 'en-us' --language_name 'USEnglish'`
+```
+python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_build_tools.py db_build --action create --rf2 c:/sno/snomedct/nelex/SnomedCT_RF2Release_INT_20150131/ --release_type full --neopw <password> --output_dir c:/build/20150131 --language_code 'en-us' --language_name 'USEnglish'
+```
 
 ================================================================
 
@@ -311,13 +214,17 @@ NOTE: the database load will fail if these requirements are not met.
 
 General syntax:
 
-`python <path-to-snomed_g-bin>/snomed_g_graphdb_tools.py db_build --action update --rf2 <path-to-snomedct-release> --release_type full --neopw <password> --output_dir <path-to-output-folder-for-csv-files> --logfile <path-to-filename-to-hold-log-file>`
+```
+python <path-to-snomed_g-bin>/snomed_g_graphdb_tools.py db_build --action update --rf2 <path-to-snomedct-release> --release_type full --neopw <password> --output_dir <path-to-output-folder-for-csv-files> --logfile <path-to-filename-to-hold-log-file>
+```
 
 **NOTE:** the `--output_dir` specifies a directory for creating temporary CSV files for use in database creation, it is not the location of the database itself.
 
 Example: (_UPDATE to US 2016 0301 (from INT 20150131)_)
 
-`python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_tools.py db_build --action update --rf2 /sno/snomedct/SnomedCT_RF2Release_US1000124_20160301 --release_type full --neopw <password> --output_dir /sno/build/upd_to_us20160301 --logfile /sno/build/int_20150131/sct_build_20160301.log`
+```
+python c:/apps/snomed_g_v1_01/bin/snomed_g_graphdb_tools.py db_build --action update --rf2 /sno/snomedct/SnomedCT_RF2Release_US1000124_20160301 --release_type full --neopw <password> --output_dir /sno/build/upd_to_us20160301 --logfile /sno/build/int_20150131/sct_build_20160301.log
+```
 
 ==============================================================
 
@@ -325,11 +232,15 @@ Example: (_UPDATE to US 2016 0301 (from INT 20150131)_)
 
 Syntax:
 
-`python <path-to-snomed_g-bin>/snomed_g_TC_tools.py TC_from_graph <output-transitive-closure-file> --neopw <password>`
+```
+python <path-to-snomed_g-bin>/snomed_g_TC_tools.py TC_from_graph <output-transitive-closure-file> --neopw <password>
+```
 
 Example: `base64-neo4j-password` must be replaced by the Base64 representation of the Neo4j password):
 
-`python /sno/bin/snomed_g/snomed_g_TC_tools.py TC_from_graph TC_20150131_graph.txt --neopw <password>`
+```
+python /sno/bin/snomed_g/snomed_g_TC_tools.py TC_from_graph TC_20150131_graph.txt --neopw <password>
+```
 
 This creates the file TC_20150131_graph.txt.
 
