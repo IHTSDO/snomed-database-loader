@@ -179,6 +179,10 @@ def db_build(arglist):
   if not (os.path.isdir(opts.output_dir) and len(os.listdir(opts.output_dir)) == 0):
     print('*** Output directory [%s] isn\'t empty or doesn\'t exist ***' % opts.output_dir)
     sys.exit(1)
+  # make sure a Terminology folder exists in the opts.rf2 folder
+  if not os.path.isdir(opts.rf2) or 'Terminology' not in os.listdir(opts.rf2):
+    print('*** The --rf2 option [%s] must specify a folder, which must contain a Terminology subfolder' % opts.rf2)
+    sys.exit(1)
   # open logfile
   logfile = open(opts.output_dir+'build.log', 'w') if not opts.logfile else \
             (sys.output if opts.logfile == '-' else open(opts.logfile, 'w'))

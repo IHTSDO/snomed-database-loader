@@ -4,7 +4,6 @@ This upload script has been kindly donated by Scott Campbell and his team from t
 
 **NOTE:** This script is not directly supported by SNOMED International and has not been tested by the SNOMED International team.
 
-
 ## For attribution:
 
 **Pedersen JG, Campbell WS**. Graph database build of SNOMED CT files. University of Nebraska Medical Center, Omaha, NE. 2017
@@ -17,88 +16,81 @@ This is a Linux or Windows command-line operation requiring a Python 2.7 or Pyth
 
 Requirements:
 
-<<<<<<< HEAD
 1. Python requirements
-    - Requires python 2.7 or python 3.5 or above
-    - NOTE: Has been tested with python 2.7 and python 3.6 and 3.7
-    - Requires the py2neo python library to be installed
-      - For python 3, the latest version of py2neo is supported (4.X)
-      - For python 2.7, py2neo 3.1.2 is currently required
-          - One way to install py2neo 3.1.2 is to use the python pip utility:
-              - pip install py2neo==3.1.2
-          - This is a temporary requirement, awaiting a py2neo bugfix 
-=======
-1. Requires python 2.7 or python 3.5 (or above)
-    - NOTE: has been tested with python 2.7 and python 3.6
-    - Requires the py2neo python library v3.1.2 to be installed. This can be accomplished via:
-    `pip install py2neo==3.1.2`
->>>>>>> Update Readme.md
+   - Requires python 2.7 or python 3.5 or above
+   - NOTE: Has been tested with python 2.7 and python 3.6 and 3.7
+   - Requires the py2neo python library
+     - For python 3, the latest version of py2neo is supported (4.X)
+     - For python 2.7, py2neo 3.1.2 is currently required
+       - One way to install py2neo 3.1.2 is to use the python pip utility:
+         - pip install py2neo==3.1.2
+       - This is a temporary requirement, awaiting a py2neo bugfix
 2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
-    - Log files and CSV files are created there and we do not want to accidentally remove the files from a previous build.
+   - Log files and temporary CSV files are created there and we do not want to accidentally remove the files from a previous build.
+   - After the NEO4J database is successfully built, the --output_dir folder containing these temporary files can be deleted to free up disk space.
 3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
 4. Requires Java version 8 or above, as needed by NEO4J version 3 installations
 5. Requires NEO4J version 3.2 or above to be installed and running (preferable with an empty NEO4J database)
-    - Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
-      - Controlled by the NEO4J configuration option dbms.directories.import=import
-        - That option should be commented out, at least for the duration of the database load
-        - `#dbms.directories.import=import`
-    - Requires 4GB of Java heap memory be configured in the NEO4J configuration
-      - A system with 16GB of memory or above will probably not have to explicitly configure this.
-      - See NEO4J operations documentation for configuring memory parameters.
-        - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
+   - Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
+     - Controlled by the NEO4J configuration option dbms.directories.import=import
+       - That option should be commented out, at least for the duration of the database load
+       - `#dbms.directories.import=import`
+   - Requires 4GB of Java heap memory be configured in the NEO4J configuration
+     - A system with 16GB of memory or above will probably not have to explicitly configure this.
+     - See NEO4J operations documentation for configuring memory parameters.
+       - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
 
 NOTE: the database load will fail if these requirements are not met.
 
-<<<<<<< HEAD
-General syntax:
+## Syntax to create the NEO4J database from an RF2 release using the python scripts from this project:
 
 `python snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw <password> --output_dir <output-directory-path>`
 
+NOTE:
+
+<rf2-release-directory> is the RF2 folder containing the "Terminology" folder
+
+<output-directory-path> needs to be an empty folder which the python scripts will create CSV files needed to load the NEO4J database. This folder may be deleted after the database has been successfully loaded.
+
+<password> is the password which is used to log into NEO4J
+
 ## NEO4J configuration requirements:
-=======
 
-### Preliminary Steps:
->>>>>>> Update Readme.md
+There are NEO4J configuration requirements needed to successfully use this software. NEO must be configured to allow import from any directory (specifically, it needs to import from the directory specified by --output_dir). It also needs significant heap memory to be able to process and load the over one million definitions that exist in any SNOMED CT release.
 
-Assuming you download desktop version of neo4j, create a database, then find neo4j.conf for that database by clicking on open folder, then select configuration
+The configuration changes are made to the neo4j.conf file in the conf subfolder where NEO4J was installed.
 
-- Comment out import directory variable
+If the NEO4J desktop is being used, then the neo4j.conf file associated with any database can be found by clicking on the "Settings" tab associated with the NEO4J database you are loading.
 
- `#dbms.directories.import=import`
+The changes to neo4j.conf are as follows:
 
-- Configure it so that it has at least 4g memory
+- Comment out import directory setting.  This allows importing from the --output_dir folder.
 
- `dbms.memory.heap.max_size=4G`
+`#dbms.directories.import=import`
 
-<<<<<<< HEAD
- `cd <path-to-snomed_g-bin>`
+- Configure at least 4 gigabytes of heap memory
 
- `python snomed_g_graphdb_build_tools.py db_build --release_type full  --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB'  --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z `
+`dbms.memory.heap.max_size=4G`
+
+## Building the NEO4J database from the RF2 release:
+
+`cd <path-to-snomed_g-bin>`
+
+`python snomed_g_graphdb_build_tools.py db_build --release_type full --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB' --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z`
 
 ## Language support
-=======
-### Main Procedure:
-
-##### General syntax
-
-`python <path-to-snomed_g-bin>/snomed_g_graphdb_build_tools.py db_build --action create --rf2 <rf2-release-directory> --release_type full --neopw <password> --output_dir <output-directory-path>`
->>>>>>> Update Readme.md
 
 ##### Specific Steps
+
 1. Change to the working directory
-     `cd <path-to-snomed_g-bin>`
+   `cd <path-to-snomed_g-bin>`
 
 2. Execute the build script. Following the general syntax from above here is an exampple with optional flags set
-`python snomed_g_graphdb_build_tools.py db_build --release_type full  --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB'  --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z `
+   `python snomed_g_graphdb_build_tools.py db_build --release_type full --mode build --action create --rf2 /Users/<user>/Documents/SnomedCT/SnomedCT_UKClinicalRF2_Production_20171001T000001Z/Full/ --release_type full --neopw <password> --language_code 'en-GB' --output_dir /var/tmp/SnomedCT_UKClinicalRF2_Production_20171001T000001Z`
 
 3. By default, the language designation is "en" and the language is simply "Language", which is used in the filename of the Description file and the Language files.
 
-<<<<<<< HEAD
- `--language_code 'en-us' --language_name 'USEnglish'`
-=======
-3. If that is not what was used, the following parameters need to be specified (assume "en-us" and "USEnglish" values should be used):
 `--language_code 'en-us' --language_name 'USEnglish'`
->>>>>>> Update Readme.md
 
     **NOTE**: the `--output_dir` specifies a directory for creating temporary CSV files for use in database creation, it is not the location of the database itself.
 
@@ -115,24 +107,24 @@ This is a Linux or Windows command-line operation requiring Python 2.7 and the S
 Requirements:
 
 1. Requires python 2.7 or python 3.5 (or above)
-    - NOTE: has been tested with python 2.7 and python 3.6
-    - Requires the py2neo python library to be installed
+   - NOTE: has been tested with python 2.7 and python 3.6
+   - Requires the py2neo python library to be installed
 2. Requires the directory specified by `--output_dir` parameter to the snomed_g_graphdb_build_tools.py to be an empty directory.
-    - The purpose of this directory is to for writing log files and temporary CSV files.
-    - It is not a directory that NEO4J needs for its normal operation.
-    - The contents of these CSV files are loaded into NEO4J.
-    - After the database load completes, the CSV files are no longer needed and can then be removed.
+   - The purpose of this directory is to for writing log files and temporary CSV files.
+   - It is not a directory that NEO4J needs for its normal operation.
+   - The contents of these CSV files are loaded into NEO4J.
+   - After the database load completes, the CSV files are no longer needed and can then be removed.
 3. Requires a FULL format RF2 release of SNOMED CT, which includes historical SNOMED CT codes and full change history.
 4. Requires Java version 8 or above, as needed by NEO4J version 3 installations
 5. Requires NEO4J version 3.2 or above to be installed and running (holding the NEO4J database to be updated)
-    - Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
-      - Controlled by the NEO4J configuration option dbms.directories.import=import
-        - That option should be commented out, at least for the duration of the database load
-           - \#dbms.directories.import=import
-    - Requires 4GB of Java heap memory be configured in the NEO4J configuration
-      - A system with 16GB of memory or above will probably not have to explicitly configure this.
-      - See NEO4J operations documentation for configuring memory parameters.
-        - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
+   - Requires the LOAD CSV command not be limited to the import directory of the NEO4J installation
+     - Controlled by the NEO4J configuration option dbms.directories.import=import
+       - That option should be commented out, at least for the duration of the database load
+         - \#dbms.directories.import=import
+   - Requires 4GB of Java heap memory be configured in the NEO4J configuration
+     - A system with 16GB of memory or above will probably not have to explicitly configure this.
+     - See NEO4J operations documentation for configuring memory parameters.
+       - Currently exists at: https://neo4j.com/docs/operations-manual/current/performance/memory-configuration/
 
 NOTE: the database load will fail if these requirements are not met.
 
@@ -160,15 +152,14 @@ Example: `base64-neo4j-password` must be replaced by the Base64 representation o
 
 This creates the file TC_20150131_graph.txt.
 
-
 ## Versions
 
 1. Version 1.3. 2018-10-18,
-    - Support for py2neo version 4.x for python 3, version 4.1 tested (current version)
-    - Support for py2neo version 4.x for python 2.7 is awaiting py2neo bugfix
+   - Support for py2neo version 4.x for python 3, version 4.1 tested (current version)
+   - Support for py2neo version 4.x for python 2.7 is awaiting py2neo bugfix
 2. Version 1.2, 2018-04-18,
-    - Support python 3 in addition to python 2.7.  (Tested with python 3.6 and python 2.7).
-    - Support --neopw <password> in addition to --neopw64 <base64-password> (deprecated, but still supported).
-    - Bug fix -- bug existed in update processing, related to defining relationship differences determination.
+   - Support python 3 in addition to python 2.7. (Tested with python 3.6 and python 2.7).
+   - Support --neopw <password> in addition to --neopw64 <base64-password> (deprecated, but still supported).
+   - Bug fix -- bug existed in update processing, related to defining relationship differences determination.
 3. Version 1.1, 2018-04-13
-    - Fix FSN issue in some ObjectConcept nodes -- require that the description have the active='1' attribute value.
+   - Fix FSN issue in some ObjectConcept nodes -- require that the description have the active='1' attribute value.
