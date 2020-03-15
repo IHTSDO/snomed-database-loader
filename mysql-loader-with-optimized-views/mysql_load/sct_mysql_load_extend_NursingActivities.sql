@@ -1,8 +1,412 @@
 
 
 -- ===========================================
--- Update Views and Procedures
+-- Load Extension into Database
 -- ===========================================
+
+-- IMPORTS SNOMED CT RF2 FULL RELEASE INTO MYSQL DATA BASE
+
+-- MySQL Script for Loading and Optimizing SNOMED CT Release Files
+-- Apache 2.0 license applies
+-- 
+-- =======================================================
+-- Copyright of this version 2019: SNOMED International www.snomed.org
+-- Based on work by David Markwell between 2011 and 2019
+-- 
+-- All these versions are licensed as follows:
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+
+--     http://www.apache.org/licenses/LICENSE-2.0
+
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+-- =======================================================
+--
+-- 1. RELEASE PACKAGE AND VERSION 
+-- ==============================
+-- This MySQL script file is designed to load the following SNOMED CT release package
+-- into a MySQL database.
+-- Release Package: $PACKAGE 
+--
+-- If you are working with another version of the same release package
+-- this script MAY work with that package. 
+-- However:
+-- a) if the release package being imported contains file types not present in
+--    the version for which this is configured those files will not be imported.
+-- b) if the release package being imported does not contains files of the types
+--    present in the original version the import process will fail when attempting
+--    to import missing files.
+-- 
+-- 2. IF YOU ARE MANUALLY EDITING THIS FILE
+-- ========================================
+-- Make a copy of the file and then:
+-- 
+-- a) Replace all instances of the following placeholders with appropriate values:
+--
+--  $RELPATH : The path to the release package folder.
+--  $DBNAME  : The name of database to be created      (e.g. snomedct )
+--  $RELDATE : The release date in the YYYYMMDD format (e.g. 20190731)
+--
+-- b) If you have NOT created the transitive closure table
+--    Replace all instances of 
+--     '-- ifTC'  with '/*'
+--    and replace all instances of 
+--     '-- fiTC'  with '*/'
+--
+-- 3. SAVE AND RUN THE SCRIPT
+-- ==========================
+-- Save a copy of the SQL script with any modifications you have made.
+-- Run this script in MySQL (e.g. through the MySQL Workbench).
+--
+/*
+
+USE A TERMINAL COMMAND LIKE THE FOLLOWING TO RUN THE IMPORT
+
+ mysql --defaults-file="$mysql_cnf_filename"  --protocol=tcp --host=localhost --port=$portnumber default-character-set=utf8mb4 --password  < "$sct_mysql_load_filename"
+
+REPLACEMENTS IN THE COMMAND LINE
+
+$mysql_cnf_filename :  The full path of the MySQL configuration file to be used when running the script (e.g. /etct/my.cnf)
+
+$portnumber :  The portnumber on which the MySQL server is running.
+
+$sct_mysql_load_filename : The full path to your copy of this file with the modification noted above.
+
+RECOMMENDED SETTINGS FOR THE my.cnf FILE
+
+[mysqld]
+local-infile=1
+ft_stopword_file = ''
+ft_min_word_len = 2
+disable-log-bin
+skip-log-bin
+default-authentication-plugin=mysql_native_password
+[mysql]
+local-infile=1
+ft_stopword_file = '' 
+ft_min_word_len = 2
+[client]
+local-infile=1
+protocol=tcp
+host=localhost
+port=3306
+
+ END OF HEADER */
+ -- END OF HEADER
+
+-- 
+-- PACKAGE AND OPTION SETTINGS USED TO PRODUCING THIS SCRIPT
+-- 
+-- Release Package: SnomedCT_NursingActivities_PRODUCTION_20191030T120000
+-- Package Code: NURSINGACTIVITIES
+-- Release Date: 20191030
+-- Extension not including root concept
+-- RFS Specification Creation: 20200115172416
+-- 
+-- CHECK MySQL Server Settings
+
+-- INITIALIZE SETTINGS
+SET GLOBAL net_write_timeout = 60;
+SET GLOBAL net_read_timeout=120;
+SET GLOBAL sql_mode ='';
+SET SESSION sql_mode ='';
+
+-- CREATE THE CHECK SETTINGS PROCEDURE
+DELIMITER ;;
+DROP PROCEDURE IF EXISTS CheckMySqlSettings;;
+CREATE PROCEDURE CheckMySqlSettings()
+BEGIN
+DECLARE specialty CONDITION FOR SQLSTATE '45000';
+DECLARE `msg` text;
+SELECT "CHECKING MySQL CONFIGURATION SETTINGS";
+SET @req_len=2;
+SET @req_stop='';
+SET @req_infile=1;
+
+SELECT * FROM (
+SELECT IF(@@GLOBAL.ft_min_word_len=@req_len,'MySQL Fulltext minimum word length OK',CONCAT('WARNING! Fulltext minimum word length (ft_min_word_len) must be ',@req_len,' but has value: ', @@GLOBAL.ft_min_word_len)) 'Message'
+UNION
+SELECT IF(@@GLOBAL.ft_min_word_len=@req_len,'','* This will cause short words and abbreviations to omitted from search results.') 'MySQL Config Check'
+UNION
+SELECT IF(@@GLOBAL.ft_stopword_file=@req_stop,'MySQL Fulltext stopword file OK',CONCAT('WARNING! Fulltext stopword file (ft_stopword_file) must be empty string but has value: ', @@GLOBAL.ft_stopword_file))
+UNION
+SELECT IF(@@GLOBAL.ft_stopword_file=@req_stop,'','* This will cause some significant clinical words to be omitted from search results!')
+UNION
+SELECT IF(@@GLOBAL.local_infile=@req_infile,'MySQL Local Infile setting OK',CONCAT('ERROR! Local file load (local_infile) must be 1 but has value: ', @@GLOBAL.local_infile))
+UNION
+SELECT IF(@@GLOBAL.local_infile=@req_infile,'','* This will prevent SNOMED CT release files being loaded into the database!')
+UNION
+SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','1. See instructions on setting required configuration.')
+UNION
+SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','2. Restart MySQL Server after setting the required configuration.')
+UNION
+SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','3. Then rerun the snomed_load_mysql script.')
+) data
+WHERE Message!='';
+IF @@GLOBAL.ft_min_word_len!=@req_len OR @@GLOBAL.ft_stopword_file!=@req_stop OR @@GLOBAL.local_infile!=@req_infile THEN
+	SET `msg`='MySQL Configuration Error! See messages above for details. Script Terminated.';
+	SELECT `msg`;
+	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+END IF;
+END;;
+
+-- CALL THE CHECK SETTINGS PROCEDURE
+DELIMITER ;
+CALL CheckMySqlSettings();
+SELECT 'MySQL Settings - OK.';
+
+-- Create Tables --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Create Tables";
+
+
+-- Create Tables with Prefix: full --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Create Tables with Prefix: full";
+
+
+-- CREATE TABLE: full_refset_Simple --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: full_refset_Simple";
+
+CREATE TABLE IF NOT EXISTS `full_refset_Simple` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: full_refset_RefsetDescriptor --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: full_refset_RefsetDescriptor";
+
+CREATE TABLE IF NOT EXISTS `full_refset_RefsetDescriptor` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`attributeDescription` BIGINT NOT NULL DEFAULT  0,
+	`attributeType` BIGINT NOT NULL DEFAULT  0,
+	`attributeOrder` INT NOT NULL DEFAULT 0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: full_refset_ModuleDependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: full_refset_ModuleDependency";
+
+CREATE TABLE IF NOT EXISTS `full_refset_ModuleDependency` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`sourceEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`targetEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- Create Tables with Prefix: snap --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Create Tables with Prefix: snap";
+
+
+-- CREATE TABLE: snap_refset_Simple --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: snap_refset_Simple";
+
+CREATE TABLE IF NOT EXISTS `snap_refset_Simple` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: snap_refset_RefsetDescriptor --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: snap_refset_RefsetDescriptor";
+
+CREATE TABLE IF NOT EXISTS `snap_refset_RefsetDescriptor` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`attributeDescription` BIGINT NOT NULL DEFAULT  0,
+	`attributeType` BIGINT NOT NULL DEFAULT  0,
+	`attributeOrder` INT NOT NULL DEFAULT 0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: snap_refset_ModuleDependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: snap_refset_ModuleDependency";
+
+CREATE TABLE IF NOT EXISTS `snap_refset_ModuleDependency` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`sourceEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`targetEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- Create Transitive Tables --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Create Transitive Tables";
+
+-- CREATE TABLE `snap_transclose` 
+
+CREATE TABLE IF NOT EXISTS `snap_transclose` (
+	`subtypeId` BIGINT NOT NULL DEFAULT  0,
+	`supertypeId` BIGINT NOT NULL DEFAULT  0,
+	        PRIMARY KEY (`subtypeId`,`supertypeId`),
+	KEY `t_rev` (`supertypeId`,`subtypeId`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- CREATE TABLE snap_proximal_primitives 
+
+CREATE TABLE IF NOT EXISTS snap_proximal_primitives (
+	`subtypeId` BIGINT NOT NULL DEFAULT  0,
+	`supertypeId` BIGINT NOT NULL DEFAULT  0,
+	        PRIMARY KEY (`subtypeId`,`supertypeId`),
+	KEY `t_rev` (`supertypeId`,`subtypeId`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+
+-- ===========================================
+-- START LOAD DATA
+-- ===========================================
+
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"START LOAD DATA";
+
+
+-- Load Tables with Prefix: full --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Tables with Prefix: full";
+
+
+-- Load Table Data: full_refset_Simple --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: full_refset_Simple";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_NursingActivitiesSimpleFull_INT_$RELDATE.txt'
+INTO TABLE `full_refset_Simple`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`);
+
+
+-- Load Table Data: full_refset_RefsetDescriptor --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: full_refset_RefsetDescriptor";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_NursingActivitiesRefsetDescriptorFull_INT_$RELDATE.txt'
+INTO TABLE `full_refset_RefsetDescriptor`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`);
+
+
+-- Load Table Data: full_refset_ModuleDependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: full_refset_ModuleDependency";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_NursingActivitiesModuleDependencyFull_INT_$RELDATE.txt'
+INTO TABLE `full_refset_ModuleDependency`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
+
+
+-- Load Tables with Prefix: snap --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Tables with Prefix: snap";
+
+
+-- Load Table Data: snap_refset_Simple --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: snap_refset_Simple";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_Refset_NursingActivitiesSimpleSnapshot_INT_$RELDATE.txt'
+INTO TABLE `snap_refset_Simple`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`);
+
+
+-- Load Table Data: snap_refset_RefsetDescriptor --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: snap_refset_RefsetDescriptor";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cciRefset_NursingActivitiesRefsetDescriptorSnapshot_INT_$RELDATE.txt'
+INTO TABLE `snap_refset_RefsetDescriptor`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`);
+
+
+-- Load Table Data: snap_refset_ModuleDependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: snap_refset_ModuleDependency";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_NursingActivitiesModuleDependencySnapshot_INT_$RELDATE.txt'
+INTO TABLE `snap_refset_ModuleDependency`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
+
+
+-- END LOAD DATA --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"END LOAD DATA";
 
 
 
@@ -14,6 +418,65 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"START CONFIGURATION";
 
+USE `$DBNAME`;
+-- Create Configuration Tables and Initial Settings
+DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS `config_language` (
+ `id` bigint,
+ `prefix` varchar(5),
+ `name` VARCHAR (255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  INDEX pfx (`prefix`)
+) ENGINE=MyISAM CHARSET=utf8mb4;
+
+INSERT IGNORE INTO `config_language` (`prefix`,`id`,`name`)
+VALUES
+('en-US', 900000000000509007, 'US English'),
+('en-GB', 900000000000508004, 'GB English'),
+('es', 448879004, 'Spanish'),
+('xx-GM', 608771002, 'GMDN'),
+('xh', 722128001, 'Chinese'),
+('ja', 722129009, 'Japanese'),
+('de', 722130004, 'German'),
+('fr', 722131000, 'French'),
+('en', 900000000000507009, 'English'),
+('en-AU', 32570271000036106, 'Australian English'),
+('es-XL', 450828004, 'Latin American Spanish'),
+('nl-BE', 31000172101, 'Belgian Dutch'),
+('fr-CA', 20581000087109, 'Canadian French'),
+('en-CA', 19491000087109, 'Canadian English'),
+('dk', 554461000005103, 'Danish'),
+('sv', 999991, 'Swedish'),
+('no', 999992, 'Norwegian'),
+('nl', 999993, 'Dutch');
+
+CREATE TABLE IF NOT EXISTS `config_settings` (
+  `id` tinyint(1) NOT NULL DEFAULT '1',
+  `languageId` bigint DEFAULT '900000000000509007',
+  `languageName` varchar(255) NOT NULL DEFAULT 'US English',
+  `snapshotTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deltaStartTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deltaEndTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+-- Release date is set here and end of the day of release
+-- This avoids issues if effectiveTime contain a time element.
+SET @RELDATE=TIMESTAMP(CONCAT('$RELDATE','235959'));
+
+-- The row with id=0 is not used directly except as default values to refresh other rows
+-- Row 0 set on database load: 
+--			snapshotTime and deltaEndTime set to release date 
+--          deltaStartTime set to 6 month earlier
+-- Other values are reset by resetConfig() 6 and 12 months later than the row with id=0
+-- and can be set to specific values using the setDeltaRange and setSnapshotTime procedures.
+
+DELETE FROM `config_settings` WHERE `id`=0;
+
+INSERT IGNORE INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
+VALUES 
+(0,900000000000509007,'US English', @RELDATE, DATE_SUB(@RELDATE,INTERVAL 6 MONTH),@RELDATE);
 USE `$DBNAME`;
 -- Create Configuration Procedures
 
@@ -176,30 +639,6 @@ USE `$DBNAME`;
 SELECT Now() `--`,"VIEW SNAP CURRENT";
 
 
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snapAsView_concept`;
-CREATE VIEW `snapAsView_concept` AS select * from `full_concept` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_concept` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snapAsView_description`;
-CREATE VIEW `snapAsView_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snapAsView_relationship`;
-CREATE VIEW `snapAsView_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snapAsView_description`;
-CREATE VIEW `snapAsView_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-
 -- VIEW DELTA --
 DELIMITER ;
 USE `$DBNAME`;
@@ -214,104 +653,14 @@ CREATE VIEW `delta_refset_Simple` AS select `tbl`.* from `full_refset_Simple` `t
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_Association`;
-CREATE VIEW `delta_refset_Association` AS select `tbl`.* from `full_refset_Association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_AttributeValue`;
-CREATE VIEW `delta_refset_AttributeValue` AS select `tbl`.* from `full_refset_AttributeValue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_Language`;
-CREATE VIEW `delta_refset_Language` AS select `tbl`.* from `full_refset_Language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_ExtendedMap`;
-CREATE VIEW `delta_refset_ExtendedMap` AS select `tbl`.* from `full_refset_ExtendedMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_SimpleMap`;
-CREATE VIEW `delta_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_MRCMModuleScope`;
-CREATE VIEW `delta_refset_MRCMModuleScope` AS select `tbl`.* from `full_refset_MRCMModuleScope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `delta_refset_RefsetDescriptor`;
 CREATE VIEW `delta_refset_RefsetDescriptor` AS select `tbl`.* from `full_refset_RefsetDescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_DescriptionType`;
-CREATE VIEW `delta_refset_DescriptionType` AS select `tbl`.* from `full_refset_DescriptionType` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_MRCMAttributeDomain`;
-CREATE VIEW `delta_refset_MRCMAttributeDomain` AS select `tbl`.* from `full_refset_MRCMAttributeDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `delta_refset_ModuleDependency`;
 CREATE VIEW `delta_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_MRCMAttributeRange`;
-CREATE VIEW `delta_refset_MRCMAttributeRange` AS select `tbl`.* from `full_refset_MRCMAttributeRange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_MRCMDomain`;
-CREATE VIEW `delta_refset_MRCMDomain` AS select `tbl`.* from `full_refset_MRCMDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_concept`;
-CREATE VIEW `delta_concept` AS select `tbl`.* from `full_concept` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_description`;
-CREATE VIEW `delta_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_relationship`;
-CREATE VIEW `delta_relationship` AS select `tbl`.* from `full_relationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_description`;
-CREATE VIEW `delta_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_OWLExpression`;
-CREATE VIEW `delta_refset_OWLExpression` AS select `tbl`.* from `full_refset_OWLExpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- VIEW SNAP ALT --
@@ -328,104 +677,14 @@ CREATE VIEW `snap1_refset_Simple` AS select * from `full_refset_Simple` `tbl` wh
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_Association`;
-CREATE VIEW `snap1_refset_Association` AS select * from `full_refset_Association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Association` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_AttributeValue`;
-CREATE VIEW `snap1_refset_AttributeValue` AS select * from `full_refset_AttributeValue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_AttributeValue` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_Language`;
-CREATE VIEW `snap1_refset_Language` AS select * from `full_refset_Language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_ExtendedMap`;
-CREATE VIEW `snap1_refset_ExtendedMap` AS select * from `full_refset_ExtendedMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ExtendedMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_SimpleMap`;
-CREATE VIEW `snap1_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_MRCMModuleScope`;
-CREATE VIEW `snap1_refset_MRCMModuleScope` AS select * from `full_refset_MRCMModuleScope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMModuleScope` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `snap1_refset_RefsetDescriptor`;
 CREATE VIEW `snap1_refset_RefsetDescriptor` AS select * from `full_refset_RefsetDescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_RefsetDescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_DescriptionType`;
-CREATE VIEW `snap1_refset_DescriptionType` AS select * from `full_refset_DescriptionType` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_DescriptionType` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_MRCMAttributeDomain`;
-CREATE VIEW `snap1_refset_MRCMAttributeDomain` AS select * from `full_refset_MRCMAttributeDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `snap1_refset_ModuleDependency`;
 CREATE VIEW `snap1_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_MRCMAttributeRange`;
-CREATE VIEW `snap1_refset_MRCMAttributeRange` AS select * from `full_refset_MRCMAttributeRange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeRange` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_MRCMDomain`;
-CREATE VIEW `snap1_refset_MRCMDomain` AS select * from `full_refset_MRCMDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_concept`;
-CREATE VIEW `snap1_concept` AS select * from `full_concept` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_concept` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_description`;
-CREATE VIEW `snap1_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_relationship`;
-CREATE VIEW `snap1_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_description`;
-CREATE VIEW `snap1_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_OWLExpression`;
-CREATE VIEW `snap1_refset_OWLExpression` AS select * from `full_refset_OWLExpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_OWLExpression` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 -- VIEW DELTA --
@@ -442,104 +701,14 @@ CREATE VIEW `delta1_refset_Simple` AS select `tbl`.* from `full_refset_Simple` `
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_Association`;
-CREATE VIEW `delta1_refset_Association` AS select `tbl`.* from `full_refset_Association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_AttributeValue`;
-CREATE VIEW `delta1_refset_AttributeValue` AS select `tbl`.* from `full_refset_AttributeValue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_Language`;
-CREATE VIEW `delta1_refset_Language` AS select `tbl`.* from `full_refset_Language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_ExtendedMap`;
-CREATE VIEW `delta1_refset_ExtendedMap` AS select `tbl`.* from `full_refset_ExtendedMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_SimpleMap`;
-CREATE VIEW `delta1_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_MRCMModuleScope`;
-CREATE VIEW `delta1_refset_MRCMModuleScope` AS select `tbl`.* from `full_refset_MRCMModuleScope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `delta1_refset_RefsetDescriptor`;
 CREATE VIEW `delta1_refset_RefsetDescriptor` AS select `tbl`.* from `full_refset_RefsetDescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_DescriptionType`;
-CREATE VIEW `delta1_refset_DescriptionType` AS select `tbl`.* from `full_refset_DescriptionType` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_MRCMAttributeDomain`;
-CREATE VIEW `delta1_refset_MRCMAttributeDomain` AS select `tbl`.* from `full_refset_MRCMAttributeDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `delta1_refset_ModuleDependency`;
 CREATE VIEW `delta1_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_MRCMAttributeRange`;
-CREATE VIEW `delta1_refset_MRCMAttributeRange` AS select `tbl`.* from `full_refset_MRCMAttributeRange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_MRCMDomain`;
-CREATE VIEW `delta1_refset_MRCMDomain` AS select `tbl`.* from `full_refset_MRCMDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_concept`;
-CREATE VIEW `delta1_concept` AS select `tbl`.* from `full_concept` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_description`;
-CREATE VIEW `delta1_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_relationship`;
-CREATE VIEW `delta1_relationship` AS select `tbl`.* from `full_relationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_description`;
-CREATE VIEW `delta1_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_OWLExpression`;
-CREATE VIEW `delta1_refset_OWLExpression` AS select `tbl`.* from `full_refset_OWLExpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- VIEW SNAP ALT --
@@ -556,104 +725,14 @@ CREATE VIEW `snap2_refset_Simple` AS select * from `full_refset_Simple` `tbl` wh
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_Association`;
-CREATE VIEW `snap2_refset_Association` AS select * from `full_refset_Association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Association` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_AttributeValue`;
-CREATE VIEW `snap2_refset_AttributeValue` AS select * from `full_refset_AttributeValue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_AttributeValue` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_Language`;
-CREATE VIEW `snap2_refset_Language` AS select * from `full_refset_Language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_ExtendedMap`;
-CREATE VIEW `snap2_refset_ExtendedMap` AS select * from `full_refset_ExtendedMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ExtendedMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_SimpleMap`;
-CREATE VIEW `snap2_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_MRCMModuleScope`;
-CREATE VIEW `snap2_refset_MRCMModuleScope` AS select * from `full_refset_MRCMModuleScope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMModuleScope` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `snap2_refset_RefsetDescriptor`;
 CREATE VIEW `snap2_refset_RefsetDescriptor` AS select * from `full_refset_RefsetDescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_RefsetDescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_DescriptionType`;
-CREATE VIEW `snap2_refset_DescriptionType` AS select * from `full_refset_DescriptionType` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_DescriptionType` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_MRCMAttributeDomain`;
-CREATE VIEW `snap2_refset_MRCMAttributeDomain` AS select * from `full_refset_MRCMAttributeDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `snap2_refset_ModuleDependency`;
 CREATE VIEW `snap2_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_MRCMAttributeRange`;
-CREATE VIEW `snap2_refset_MRCMAttributeRange` AS select * from `full_refset_MRCMAttributeRange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeRange` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_MRCMDomain`;
-CREATE VIEW `snap2_refset_MRCMDomain` AS select * from `full_refset_MRCMDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_concept`;
-CREATE VIEW `snap2_concept` AS select * from `full_concept` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_concept` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_description`;
-CREATE VIEW `snap2_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_relationship`;
-CREATE VIEW `snap2_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_description`;
-CREATE VIEW `snap2_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_OWLExpression`;
-CREATE VIEW `snap2_refset_OWLExpression` AS select * from `full_refset_OWLExpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_OWLExpression` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 -- VIEW DELTA --
@@ -670,104 +749,14 @@ CREATE VIEW `delta2_refset_Simple` AS select `tbl`.* from `full_refset_Simple` `
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_Association`;
-CREATE VIEW `delta2_refset_Association` AS select `tbl`.* from `full_refset_Association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_AttributeValue`;
-CREATE VIEW `delta2_refset_AttributeValue` AS select `tbl`.* from `full_refset_AttributeValue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_Language`;
-CREATE VIEW `delta2_refset_Language` AS select `tbl`.* from `full_refset_Language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_ExtendedMap`;
-CREATE VIEW `delta2_refset_ExtendedMap` AS select `tbl`.* from `full_refset_ExtendedMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_SimpleMap`;
-CREATE VIEW `delta2_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_MRCMModuleScope`;
-CREATE VIEW `delta2_refset_MRCMModuleScope` AS select `tbl`.* from `full_refset_MRCMModuleScope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `delta2_refset_RefsetDescriptor`;
 CREATE VIEW `delta2_refset_RefsetDescriptor` AS select `tbl`.* from `full_refset_RefsetDescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_DescriptionType`;
-CREATE VIEW `delta2_refset_DescriptionType` AS select `tbl`.* from `full_refset_DescriptionType` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_MRCMAttributeDomain`;
-CREATE VIEW `delta2_refset_MRCMAttributeDomain` AS select `tbl`.* from `full_refset_MRCMAttributeDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
 DROP VIEW IF EXISTS `delta2_refset_ModuleDependency`;
 CREATE VIEW `delta2_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_MRCMAttributeRange`;
-CREATE VIEW `delta2_refset_MRCMAttributeRange` AS select `tbl`.* from `full_refset_MRCMAttributeRange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_MRCMDomain`;
-CREATE VIEW `delta2_refset_MRCMDomain` AS select `tbl`.* from `full_refset_MRCMDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_concept`;
-CREATE VIEW `delta2_concept` AS select `tbl`.* from `full_concept` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_description`;
-CREATE VIEW `delta2_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_relationship`;
-CREATE VIEW `delta2_relationship` AS select `tbl`.* from `full_relationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_description`;
-CREATE VIEW `delta2_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_OWLExpression`;
-CREATE VIEW `delta2_refset_OWLExpression` AS select `tbl`.* from `full_refset_OWLExpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- END VERSIONED VIEWS --
@@ -1797,7 +1786,7 @@ clauseLoop: LOOP
                 WHEN '>!' THEN
                     SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
                 WHEN '^' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1');
                 ELSE
                     IF `v_valSymbol`!='*' THEN
                         -- Symbol * implies any value. Other symbols are errors
@@ -2695,57 +2684,6 @@ SELECT Now() `--`,"Index full_refset_Simple";
 CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_c','referencedComponentId');
 CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
 
--- Index full_refset_Association --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_Association";
-
-CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_tgt','refsetId,targetComponentId');
-
--- Index full_refset_AttributeValue --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_AttributeValue";
-
-CALL CreateIndexIfNotExists('full_refset_AttributeValue','sct_refset_AttributeValue_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_AttributeValue','sct_refset_AttributeValue_rc','refsetId,referencedComponentId');
-
--- Index full_refset_Language --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_Language";
-
-CALL CreateIndexIfNotExists('full_refset_Language','sct_refset_Language_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Language','sct_refset_Language_rc','refsetId,referencedComponentId');
-
--- Index full_refset_ExtendedMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_ExtendedMap";
-
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_map','mapTarget');
-
--- Index full_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_SimpleMap";
-
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
-
--- Index full_refset_MRCMModuleScope --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMModuleScope";
-
-CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_rc','refsetId,referencedComponentId');
-
 -- Index full_refset_RefsetDescriptor --
 DELIMITER ;
 USE `$DBNAME`;
@@ -2754,21 +2692,6 @@ SELECT Now() `--`,"Index full_refset_RefsetDescriptor";
 CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
 CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
 
--- Index full_refset_DescriptionType --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_DescriptionType";
-
-
--- Index full_refset_MRCMAttributeDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMAttributeDomain";
-
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_dom','domainId');
-
 -- Index full_refset_ModuleDependency --
 DELIMITER ;
 USE `$DBNAME`;
@@ -2776,62 +2699,6 @@ SELECT Now() `--`,"Index full_refset_ModuleDependency";
 
 CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
 CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
-
--- Index full_refset_MRCMAttributeRange --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMAttributeRange";
-
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_rc','refsetId,referencedComponentId');
-
--- Index full_refset_MRCMDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMDomain";
-
-CALL CreateIndexIfNotExists('full_refset_MRCMDomain','sct_refset_MRCMDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMDomain','sct_refset_MRCMDomain_rc','refsetId,referencedComponentId');
-
--- Index full_concept --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_concept";
-
-
--- Index full_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_description";
-
-CALL CreateIndexIfNotExists('full_description','sct_description_concept','conceptId');
-CALL CreateIndexIfNotExists('full_description','sct_description_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('full_description','sct_description_term_ft','term');
-
--- Index full_relationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_relationship";
-
-CALL CreateIndexIfNotExists('full_relationship','sct_relationship_source','sourceId,typeId,destinationId');
-CALL CreateIndexIfNotExists('full_relationship','sct_relationship_dest','destinationId,typeId,sourceId');
-
--- Index full_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_description";
-
-CALL CreateIndexIfNotExists('full_description','sct_description_concept','conceptId');
-CALL CreateIndexIfNotExists('full_description','sct_description_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('full_description','sct_description_term_ft','term');
-
--- Index full_refset_OWLExpression --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_OWLExpression";
-
-CALL CreateIndexIfNotExists('full_refset_OWLExpression','sct_refset_OWLExpression_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_OWLExpression','sct_refset_OWLExpression_rc','refsetId,referencedComponentId');
 ;
 
 
@@ -2849,57 +2716,6 @@ SELECT Now() `--`,"Index snap_refset_Simple";
 CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_c','referencedComponentId');
 CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_Association --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_Association";
-
-CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_tgt','refsetId,targetComponentId');
-
--- Index snap_refset_AttributeValue --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_AttributeValue";
-
-CALL CreateIndexIfNotExists('snap_refset_AttributeValue','sct_refset_AttributeValue_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_AttributeValue','sct_refset_AttributeValue_rc','refsetId,referencedComponentId');
-
--- Index snap_refset_Language --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_Language";
-
-CALL CreateIndexIfNotExists('snap_refset_Language','sct_refset_Language_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Language','sct_refset_Language_rc','refsetId,referencedComponentId');
-
--- Index snap_refset_ExtendedMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_ExtendedMap";
-
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_map','mapTarget');
-
--- Index snap_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_SimpleMap";
-
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
-
--- Index snap_refset_MRCMModuleScope --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMModuleScope";
-
-CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_rc','refsetId,referencedComponentId');
-
 -- Index snap_refset_RefsetDescriptor --
 DELIMITER ;
 USE `$DBNAME`;
@@ -2908,21 +2724,6 @@ SELECT Now() `--`,"Index snap_refset_RefsetDescriptor";
 CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
 CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_DescriptionType --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_DescriptionType";
-
-
--- Index snap_refset_MRCMAttributeDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMAttributeDomain";
-
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_dom','domainId');
-
 -- Index snap_refset_ModuleDependency --
 DELIMITER ;
 USE `$DBNAME`;
@@ -2930,62 +2731,6 @@ SELECT Now() `--`,"Index snap_refset_ModuleDependency";
 
 CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
 CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
-
--- Index snap_refset_MRCMAttributeRange --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMAttributeRange";
-
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_rc','refsetId,referencedComponentId');
-
--- Index snap_refset_MRCMDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMDomain";
-
-CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','sct_refset_MRCMDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','sct_refset_MRCMDomain_rc','refsetId,referencedComponentId');
-
--- Index snap_concept --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_concept";
-
-
--- Index snap_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_description";
-
-CALL CreateIndexIfNotExists('snap_description','sct_description_concept','conceptId');
-CALL CreateIndexIfNotExists('snap_description','sct_description_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('snap_description','sct_description_term_ft','term');
-
--- Index snap_relationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_relationship";
-
-CALL CreateIndexIfNotExists('snap_relationship','sct_relationship_source','sourceId,typeId,destinationId');
-CALL CreateIndexIfNotExists('snap_relationship','sct_relationship_dest','destinationId,typeId,sourceId');
-
--- Index snap_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_description";
-
-CALL CreateIndexIfNotExists('snap_description','sct_description_concept','conceptId');
-CALL CreateIndexIfNotExists('snap_description','sct_description_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('snap_description','sct_description_term_ft','term');
-
--- Index snap_refset_OWLExpression --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_OWLExpression";
-
-CALL CreateIndexIfNotExists('snap_refset_OWLExpression','sct_refset_OWLExpression_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_OWLExpression','sct_refset_OWLExpression_rc','refsetId,referencedComponentId');
 ;
 
 
