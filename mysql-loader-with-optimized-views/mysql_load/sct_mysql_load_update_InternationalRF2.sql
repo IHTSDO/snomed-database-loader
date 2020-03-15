@@ -1,1397 +1,8 @@
 
 
 -- ===========================================
--- Load Extension into Database
+-- Update Views and Procedures
 -- ===========================================
-
--- IMPORTS SNOMED CT RF2 FULL RELEASE INTO MYSQL DATA BASE
-
--- MySQL Script for Loading and Optimizing SNOMED CT Release Files
--- Apache 2.0 license applies
--- 
--- =======================================================
--- Copyright of this version 2019: SNOMED International www.snomed.org
--- Based on work by David Markwell between 2011 and 2019
--- 
--- All these versions are licensed as follows:
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
-
---     http://www.apache.org/licenses/LICENSE-2.0
-
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
--- =======================================================
---
--- 1. RELEASE PACKAGE AND VERSION 
--- ==============================
--- This MySQL script file is designed to load the following SNOMED CT release package
--- into a MySQL database.
--- Release Package: $PACKAGE 
---
--- If you are working with another version of the same release package
--- this script MAY work with that package. 
--- However:
--- a) if the release package being imported contains file types not present in
---    the version for which this is configured those files will not be imported.
--- b) if the release package being imported does not contains files of the types
---    present in the original version the import process will fail when attempting
---    to import missing files.
--- 
--- 2. IF YOU ARE MANUALLY EDITING THIS FILE
--- ========================================
--- Make a copy of the file and then:
--- 
--- a) Replace all instances of the following placeholders with appropriate values:
---
---  $RELPATH : The path to the release package folder.
---  $DBNAME  : The name of database to be created      (e.g. snomedct )
---  $RELDATE : The release date in the YYYYMMDD format (e.g. 20190731)
---
--- b) If you have NOT created the transitive closure table
---    Replace all instances of 
---     '-- ifTC'  with '/*'
---    and replace all instances of 
---     '-- fiTC'  with '*/'
---
--- 3. SAVE AND RUN THE SCRIPT
--- ==========================
--- Save a copy of the SQL script with any modifications you have made.
--- Run this script in MySQL (e.g. through the MySQL Workbench).
---
-/*
-
-USE A TERMINAL COMMAND LIKE THE FOLLOWING TO RUN THE IMPORT
-
- mysql --defaults-file="$mysql_cnf_filename"  --protocol=tcp --host=localhost --port=$portnumber default-character-set=utf8mb4 --password  < "$sct_mysql_load_filename"
-
-REPLACEMENTS IN THE COMMAND LINE
-
-$mysql_cnf_filename :  The full path of the MySQL configuration file to be used when running the script (e.g. /etct/my.cnf)
-
-$portnumber :  The portnumber on which the MySQL server is running.
-
-$sct_mysql_load_filename : The full path to your copy of this file with the modification noted above.
-
-RECOMMENDED SETTINGS FOR THE my.cnf FILE
-
-[mysqld]
-local-infile=1
-ft_stopword_file = ''
-ft_min_word_len = 2
-disable-log-bin
-skip-log-bin
-default-authentication-plugin=mysql_native_password
-[mysql]
-local-infile=1
-ft_stopword_file = '' 
-ft_min_word_len = 2
-[client]
-local-infile=1
-protocol=tcp
-host=localhost
-port=3306
-
- END OF HEADER */
- -- END OF HEADER
-
-/*
-	OPTION SETTINGS USED WHEN PRODUCING THIS VERSION
-	
-	Release Package: SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z
-	Build Options
-	{"reltype":"full","tablePrefix":"full","fileType":"Full","dbengine":"MyISAM","charset":"utf8mb4","optimization":"concrete","optimizationCol":"","extension":false,"uuid":"char(36)","rfsFolder":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/rfs","sqlFolder":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/sql","templateFolder":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/templates","sqlLoaderFolder":"$EPSDRIVE/SnomedRfs/SnomedRfsMySql/mysql_load","rfsGetinfo":"getinfo_latest","rfsReference":"reference_latest","releaseRoot":"$HOME/SnomedCT_ReleaseFiles","releasePackage":"","releaseDate":"","pathTag":"","releasePackagePath":"$HOME/SnomedCT_ReleaseFiles","rfsGetinfoPath":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/rfs/rfs_getinfo_latest.json","rfsRefPath":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/rfs/rfs_reference_latest.json","rfsOutPath":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/rfs/rfs_output_latest.json","rfsLatestPath":"$EPSDRIVE/SnomedRfs/SnomedRfsFactory/rfs/rfs_getinfo_latest.json","extraTemplates":"proc_ecl,proc_search,proc_languages,table_shortcuts","extras":[]}
-*/
-
--- CHECK MySQL Server Settings
-
--- INITIALIZE SETTINGS
-SET GLOBAL net_write_timeout = 60;
-SET GLOBAL net_read_timeout=120;
-SET GLOBAL sql_mode ='';
-SET SESSION sql_mode ='';
-
--- CREATE THE CHECK SETTINGS PROCEDURE
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS CheckMySqlSettings;;
-CREATE PROCEDURE CheckMySqlSettings()
-BEGIN
-DECLARE specialty CONDITION FOR SQLSTATE '45000';
-DECLARE `msg` text;
-SELECT "CHECKING MySQL CONFIGURATION SETTINGS";
-SET @req_len=2;
-SET @req_stop='';
-SET @req_infile=1;
-
-SELECT * FROM (
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len,'MySQL Fulltext minimum word length OK',CONCAT('WARNING! Fulltext minimum word length (ft_min_word_len) must be ',@req_len,' but has value: ', @@GLOBAL.ft_min_word_len)) 'Message'
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len,'','* This will cause short words and abbreviations to omitted from search results.') 'MySQL Config Check'
-UNION
-SELECT IF(@@GLOBAL.ft_stopword_file=@req_stop,'MySQL Fulltext stopword file OK',CONCAT('WARNING! Fulltext stopword file (ft_stopword_file) must be empty string but has value: ', @@GLOBAL.ft_stopword_file))
-UNION
-SELECT IF(@@GLOBAL.ft_stopword_file=@req_stop,'','* This will cause some significant clinical words to be omitted from search results!')
-UNION
-SELECT IF(@@GLOBAL.local_infile=@req_infile,'MySQL Local Infile setting OK',CONCAT('ERROR! Local file load (local_infile) must be 1 but has value: ', @@GLOBAL.local_infile))
-UNION
-SELECT IF(@@GLOBAL.local_infile=@req_infile,'','* This will prevent SNOMED CT release files being loaded into the database!')
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','1. See instructions on setting required configuration.')
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','2. Restart MySQL Server after setting the required configuration.')
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','3. Then rerun the snomed_load_mysql script.')
-) data
-WHERE Message!='';
-IF @@GLOBAL.ft_min_word_len!=@req_len OR @@GLOBAL.ft_stopword_file!=@req_stop OR @@GLOBAL.local_infile!=@req_infile THEN
-	SET `msg`='MySQL Configuration Error! See messages above for details. Script Terminated.';
-	SELECT `msg`;
-	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
-END IF;
-END;;
-
--- CALL THE CHECK SETTINGS PROCEDURE
-DELIMITER ;
-CALL CheckMySqlSettings();
-SELECT 'MySQL Settings - OK.';
-
--- Create Tables --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Tables";
-
-
--- Create Tables with Prefix: full --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Tables with Prefix: full";
-
-
--- CREATE TABLE: full_refset_Simple --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_Simple";
-
-CREATE TABLE IF NOT EXISTS `full_refset_Simple` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_Association --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_Association";
-
-CREATE TABLE IF NOT EXISTS `full_refset_Association` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`targetComponentId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_AttributeValue --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_AttributeValue";
-
-CREATE TABLE IF NOT EXISTS `full_refset_AttributeValue` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`valueId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_Language --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_Language";
-
-CREATE TABLE IF NOT EXISTS `full_refset_Language` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`acceptabilityId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_ExtendedMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_ExtendedMap";
-
-CREATE TABLE IF NOT EXISTS `full_refset_ExtendedMap` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapGroup` INT NOT NULL DEFAULT 0,
-	`mapPriority` INT NOT NULL DEFAULT 0,
-	`mapRule` TEXT NOT NULL,
-	`mapAdvice` TEXT NOT NULL,
-	`mapTarget` VARCHAR (200) NOT NULL DEFAULT '',
-	`correlationId` BIGINT NOT NULL DEFAULT  0,
-	`mapCategoryId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_SimpleMap";
-
-CREATE TABLE IF NOT EXISTS `full_refset_SimpleMap` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapTarget` VARCHAR (200) NOT NULL DEFAULT '',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_MRCMModuleScope --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_MRCMModuleScope";
-
-CREATE TABLE IF NOT EXISTS `full_refset_MRCMModuleScope` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mrcmRuleRefsetId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_RefsetDescriptor --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_RefsetDescriptor";
-
-CREATE TABLE IF NOT EXISTS `full_refset_RefsetDescriptor` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`attributeDescription` BIGINT NOT NULL DEFAULT  0,
-	`attributeType` BIGINT NOT NULL DEFAULT  0,
-	`attributeOrder` INT NOT NULL DEFAULT 0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_DescriptionType --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_DescriptionType";
-
-CREATE TABLE IF NOT EXISTS `full_refset_DescriptionType` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`descriptionFormat` BIGINT NOT NULL DEFAULT  0,
-	`descriptionLength` INT NOT NULL DEFAULT 0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_MRCMAttributeDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_MRCMAttributeDomain";
-
-CREATE TABLE IF NOT EXISTS `full_refset_MRCMAttributeDomain` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`domainId` BIGINT NOT NULL DEFAULT  0,
-	`grouped` INT NOT NULL DEFAULT 0,
-	`attributeCardinality` TEXT NOT NULL,
-	`attributeInGroupCardinality` TEXT NOT NULL,
-	`ruleStrengthId` BIGINT NOT NULL DEFAULT  0,
-	`contentTypeId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_ModuleDependency";
-
-CREATE TABLE IF NOT EXISTS `full_refset_ModuleDependency` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`sourceEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`targetEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_MRCMAttributeRange --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_MRCMAttributeRange";
-
-CREATE TABLE IF NOT EXISTS `full_refset_MRCMAttributeRange` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`rangeConstraint` TEXT NOT NULL,
-	`attributeRule` TEXT NOT NULL,
-	`ruleStrengthId` BIGINT NOT NULL DEFAULT  0,
-	`contentTypeId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_MRCMDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_MRCMDomain";
-
-CREATE TABLE IF NOT EXISTS `full_refset_MRCMDomain` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`domainConstraint` TEXT NOT NULL,
-	`parentDomain` TEXT NOT NULL,
-	`proximalPrimitiveConstraint` TEXT NOT NULL,
-	`proximalPrimitiveRefinement` TEXT NOT NULL,
-	`domainTemplateForPrecoordination` TEXT NOT NULL,
-	`domainTemplateForPostcoordination` TEXT NOT NULL,
-	`guideURL` TEXT NOT NULL,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_concept --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_concept";
-
-CREATE TABLE IF NOT EXISTS `full_concept` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`definitionStatusId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_description";
-
-CREATE TABLE IF NOT EXISTS `full_description` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`conceptId` BIGINT NOT NULL DEFAULT  0,
-	`languageCode` VARCHAR (3) NOT NULL DEFAULT '',
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`term` TEXT NOT NULL,
-	`caseSignificanceId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_relationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_relationship";
-
-CREATE TABLE IF NOT EXISTS `full_relationship` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`sourceId` BIGINT NOT NULL DEFAULT  0,
-	`destinationId` BIGINT NOT NULL DEFAULT  0,
-	`relationshipGroup` INT NOT NULL DEFAULT 0,
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`characteristicTypeId` BIGINT NOT NULL DEFAULT  0,
-	`modifierId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_statedRelationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_statedRelationship";
-
-CREATE TABLE IF NOT EXISTS `full_statedRelationship` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`sourceId` BIGINT NOT NULL DEFAULT  0,
-	`destinationId` BIGINT NOT NULL DEFAULT  0,
-	`relationshipGroup` INT NOT NULL DEFAULT 0,
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`characteristicTypeId` BIGINT NOT NULL DEFAULT  0,
-	`modifierId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_textDefinition --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_textDefinition";
-
-CREATE TABLE IF NOT EXISTS `full_textDefinition` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`conceptId` BIGINT NOT NULL DEFAULT  0,
-	`languageCode` VARCHAR (3) NOT NULL DEFAULT '',
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`term` TEXT NOT NULL,
-	`caseSignificanceId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_OWLExpression --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_OWLExpression";
-
-CREATE TABLE IF NOT EXISTS `full_refset_OWLExpression` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`owlExpression` TEXT NOT NULL,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- Create Tables with Prefix: snap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Tables with Prefix: snap";
-
-
--- CREATE TABLE: snap_refset_Simple --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_Simple";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_Simple` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_Association --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_Association";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_Association` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`targetComponentId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_AttributeValue --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_AttributeValue";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_AttributeValue` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`valueId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_Language --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_Language";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_Language` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`acceptabilityId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_ExtendedMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_ExtendedMap";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_ExtendedMap` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapGroup` INT NOT NULL DEFAULT 0,
-	`mapPriority` INT NOT NULL DEFAULT 0,
-	`mapRule` TEXT NOT NULL,
-	`mapAdvice` TEXT NOT NULL,
-	`mapTarget` VARCHAR (200) NOT NULL DEFAULT '',
-	`correlationId` BIGINT NOT NULL DEFAULT  0,
-	`mapCategoryId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_SimpleMap";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_SimpleMap` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapTarget` VARCHAR (200) NOT NULL DEFAULT '',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_MRCMModuleScope --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_MRCMModuleScope";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_MRCMModuleScope` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mrcmRuleRefsetId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_RefsetDescriptor --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_RefsetDescriptor";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_RefsetDescriptor` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`attributeDescription` BIGINT NOT NULL DEFAULT  0,
-	`attributeType` BIGINT NOT NULL DEFAULT  0,
-	`attributeOrder` INT NOT NULL DEFAULT 0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_DescriptionType --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_DescriptionType";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_DescriptionType` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`descriptionFormat` BIGINT NOT NULL DEFAULT  0,
-	`descriptionLength` INT NOT NULL DEFAULT 0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_MRCMAttributeDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_MRCMAttributeDomain";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_MRCMAttributeDomain` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`domainId` BIGINT NOT NULL DEFAULT  0,
-	`grouped` INT NOT NULL DEFAULT 0,
-	`attributeCardinality` TEXT NOT NULL,
-	`attributeInGroupCardinality` TEXT NOT NULL,
-	`ruleStrengthId` BIGINT NOT NULL DEFAULT  0,
-	`contentTypeId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_ModuleDependency";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_ModuleDependency` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`sourceEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`targetEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_MRCMAttributeRange --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_MRCMAttributeRange";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_MRCMAttributeRange` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`rangeConstraint` TEXT NOT NULL,
-	`attributeRule` TEXT NOT NULL,
-	`ruleStrengthId` BIGINT NOT NULL DEFAULT  0,
-	`contentTypeId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_MRCMDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_MRCMDomain";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_MRCMDomain` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`domainConstraint` TEXT NOT NULL,
-	`parentDomain` TEXT NOT NULL,
-	`proximalPrimitiveConstraint` TEXT NOT NULL,
-	`proximalPrimitiveRefinement` TEXT NOT NULL,
-	`domainTemplateForPrecoordination` TEXT NOT NULL,
-	`domainTemplateForPostcoordination` TEXT NOT NULL,
-	`guideURL` TEXT NOT NULL,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_concept --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_concept";
-
-CREATE TABLE IF NOT EXISTS `snap_concept` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`definitionStatusId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_description";
-
-CREATE TABLE IF NOT EXISTS `snap_description` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`conceptId` BIGINT NOT NULL DEFAULT  0,
-	`languageCode` VARCHAR (3) NOT NULL DEFAULT '',
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`term` TEXT NOT NULL,
-	`caseSignificanceId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_relationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_relationship";
-
-CREATE TABLE IF NOT EXISTS `snap_relationship` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`sourceId` BIGINT NOT NULL DEFAULT  0,
-	`destinationId` BIGINT NOT NULL DEFAULT  0,
-	`relationshipGroup` INT NOT NULL DEFAULT 0,
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`characteristicTypeId` BIGINT NOT NULL DEFAULT  0,
-	`modifierId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_statedRelationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_statedRelationship";
-
-CREATE TABLE IF NOT EXISTS `snap_statedRelationship` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`sourceId` BIGINT NOT NULL DEFAULT  0,
-	`destinationId` BIGINT NOT NULL DEFAULT  0,
-	`relationshipGroup` INT NOT NULL DEFAULT 0,
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`characteristicTypeId` BIGINT NOT NULL DEFAULT  0,
-	`modifierId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_textDefinition --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_textDefinition";
-
-CREATE TABLE IF NOT EXISTS `snap_textDefinition` (
-	`id` BIGINT NOT NULL DEFAULT  0,
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`conceptId` BIGINT NOT NULL DEFAULT  0,
-	`languageCode` VARCHAR (3) NOT NULL DEFAULT '',
-	`typeId` BIGINT NOT NULL DEFAULT  0,
-	`term` TEXT NOT NULL,
-	`caseSignificanceId` BIGINT NOT NULL DEFAULT  0,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_OWLExpression --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_OWLExpression";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_OWLExpression` (
-	`id` char(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`owlExpression` TEXT NOT NULL,
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- Create Transitive Tables --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Transitive Tables";
-
--- CREATE TABLE `snap_transclose` 
-
-CREATE TABLE IF NOT EXISTS `snap_transclose` (
-	`subtypeId` BIGINT NOT NULL DEFAULT  0,
-		`supertypeId` BIGINT NOT NULL DEFAULT  0,
-		PRIMARY KEY (`subtypeId`,`supertypeId`),
-		KEY `t_rev` (`supertypeId`,`subtypeId`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- CREATE TABLE snap_proximal_primitives 
-
-CREATE TABLE IF NOT EXISTS snap_proximal_primitives (
-	`subtypeId` BIGINT NOT NULL DEFAULT  0,
-		`supertypeId` BIGINT NOT NULL DEFAULT  0,
-		PRIMARY KEY (`subtypeId`,`supertypeId`),
-		KEY `t_rev` (`supertypeId`,`subtypeId`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
-
--- ===========================================
--- START LOAD DATA
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START LOAD DATA";
-
-
--- Load Tables with Prefix: full --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Tables with Prefix: full";
-
-
--- Load Table Data: full_refset_Simple --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_Simple";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_SimpleFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_Simple`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`);
-
-
--- Load Table Data: full_refset_Association --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_Association";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AssociationFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_Association`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`targetComponentId`);
-
-
--- Load Table Data: full_refset_AttributeValue --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_AttributeValue";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_AttributeValue`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`valueId`);
-
-
--- Load Table Data: full_refset_Language --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_Language";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Language/der2_cRefset_LanguageFull-en_INT_$RELDATE.txt'
-INTO TABLE `full_refset_Language`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`acceptabilityId`);
-
-
--- Load Table Data: full_refset_ExtendedMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_ExtendedMap";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_iisssccRefset_ExtendedMapFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_ExtendedMap`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapGroup`,`mapPriority`,`mapRule`,`mapAdvice`,`mapTarget`,`correlationId`,`mapCategoryId`);
-
-
--- Load Table Data: full_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_SimpleMap";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_SimpleMap`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`);
-
-
--- Load Table Data: full_refset_MRCMModuleScope --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_MRCMModuleScope";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cRefset_MRCMModuleScopeFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_MRCMModuleScope`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mrcmRuleRefsetId`);
-
-
--- Load Table Data: full_refset_RefsetDescriptor --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_RefsetDescriptor";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_RefsetDescriptorFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_RefsetDescriptor`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`);
-
-
--- Load Table Data: full_refset_DescriptionType --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_DescriptionType";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ciRefset_DescriptionTypeFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_DescriptionType`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`descriptionFormat`,`descriptionLength`);
-
-
--- Load Table Data: full_refset_MRCMAttributeDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_MRCMAttributeDomain";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_MRCMAttributeDomain`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`domainId`,`grouped`,`attributeCardinality`,`attributeInGroupCardinality`,`ruleStrengthId`,`contentTypeId`);
-
-
--- Load Table Data: full_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_ModuleDependency";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ModuleDependencyFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_ModuleDependency`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
-
-
--- Load Table Data: full_refset_MRCMAttributeRange --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_MRCMAttributeRange";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_MRCMAttributeRange`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`rangeConstraint`,`attributeRule`,`ruleStrengthId`,`contentTypeId`);
-
-
--- Load Table Data: full_refset_MRCMDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_MRCMDomain";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_sssssssRefset_MRCMDomainFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_MRCMDomain`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`domainConstraint`,`parentDomain`,`proximalPrimitiveConstraint`,`proximalPrimitiveRefinement`,`domainTemplateForPrecoordination`,`domainTemplateForPostcoordination`,`guideURL`);
-
-
--- Load Table Data: full_concept --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_concept";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Concept_Full_INT_$RELDATE.txt'
-INTO TABLE `full_concept`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`definitionStatusId`);
-
-
--- Load Table Data: full_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_description";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Description_Full-en_INT_$RELDATE.txt'
-INTO TABLE `full_description`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`conceptId`,`languageCode`,`typeId`,`term`,`caseSignificanceId`);
-
-
--- Load Table Data: full_relationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_relationship";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Relationship_Full_INT_$RELDATE.txt'
-INTO TABLE `full_relationship`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`sourceId`,`destinationId`,`relationshipGroup`,`typeId`,`characteristicTypeId`,`modifierId`);
-
-
--- Load Table Data: full_statedRelationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_statedRelationship";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_StatedRelationship_Full_INT_$RELDATE.txt'
-INTO TABLE `full_statedRelationship`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`sourceId`,`destinationId`,`relationshipGroup`,`typeId`,`characteristicTypeId`,`modifierId`);
-
-
--- Load Table Data: full_textDefinition --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_textDefinition";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_TextDefinition_Full-en_INT_$RELDATE.txt'
-INTO TABLE `full_textDefinition`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`conceptId`,`languageCode`,`typeId`,`term`,`caseSignificanceId`);
-
-
--- Load Table Data: full_refset_OWLExpression --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_OWLExpression";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_sRefset_OWLExpressionFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_OWLExpression`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`);
-
-
--- Load Tables with Prefix: snap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Tables with Prefix: snap";
-
-
--- Load Table Data: snap_refset_Simple --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_Simple";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_Refset_SimpleSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_Simple`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`);
-
-
--- Load Table Data: snap_refset_Association --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_Association";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_cRefset_AssociationSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_Association`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`targetComponentId`);
-
-
--- Load Table Data: snap_refset_AttributeValue --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_AttributeValue";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_cRefset_AttributeValueSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_AttributeValue`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`valueId`);
-
-
--- Load Table Data: snap_refset_Language --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_Language";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Language/der2_cRefset_LanguageSnapshot-en_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_Language`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`acceptabilityId`);
-
-
--- Load Table Data: snap_refset_ExtendedMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_ExtendedMap";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_iisssccRefset_ExtendedMapSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_ExtendedMap`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapGroup`,`mapPriority`,`mapRule`,`mapAdvice`,`mapTarget`,`correlationId`,`mapCategoryId`);
-
-
--- Load Table Data: snap_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_SimpleMap";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_sRefset_SimpleMapSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_SimpleMap`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`);
-
-
--- Load Table Data: snap_refset_MRCMModuleScope --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_MRCMModuleScope";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cRefset_MRCMModuleScopeSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_MRCMModuleScope`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mrcmRuleRefsetId`);
-
-
--- Load Table Data: snap_refset_RefsetDescriptor --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_RefsetDescriptor";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cciRefset_RefsetDescriptorSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_RefsetDescriptor`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`);
-
-
--- Load Table Data: snap_refset_DescriptionType --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_DescriptionType";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ciRefset_DescriptionTypeSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_DescriptionType`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`descriptionFormat`,`descriptionLength`);
-
-
--- Load Table Data: snap_refset_MRCMAttributeDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_MRCMAttributeDomain";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_MRCMAttributeDomain`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`domainId`,`grouped`,`attributeCardinality`,`attributeInGroupCardinality`,`ruleStrengthId`,`contentTypeId`);
-
-
--- Load Table Data: snap_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_ModuleDependency";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_ModuleDependencySnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_ModuleDependency`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
-
-
--- Load Table Data: snap_refset_MRCMAttributeRange --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_MRCMAttributeRange";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_MRCMAttributeRange`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`rangeConstraint`,`attributeRule`,`ruleStrengthId`,`contentTypeId`);
-
-
--- Load Table Data: snap_refset_MRCMDomain --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_MRCMDomain";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_sssssssRefset_MRCMDomainSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_MRCMDomain`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`domainConstraint`,`parentDomain`,`proximalPrimitiveConstraint`,`proximalPrimitiveRefinement`,`domainTemplateForPrecoordination`,`domainTemplateForPostcoordination`,`guideURL`);
-
-
--- Load Table Data: snap_concept --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_concept";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Concept_Snapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_concept`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`definitionStatusId`);
-
-
--- Load Table Data: snap_description --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_description";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Description_Snapshot-en_INT_$RELDATE.txt'
-INTO TABLE `snap_description`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`conceptId`,`languageCode`,`typeId`,`term`,`caseSignificanceId`);
-
-
--- Load Table Data: snap_relationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_relationship";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_relationship`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`sourceId`,`destinationId`,`relationshipGroup`,`typeId`,`characteristicTypeId`,`modifierId`);
-
-
--- Load Table Data: snap_statedRelationship --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_statedRelationship";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_StatedRelationship_Snapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_statedRelationship`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`sourceId`,`destinationId`,`relationshipGroup`,`typeId`,`characteristicTypeId`,`modifierId`);
-
-
--- Load Table Data: snap_textDefinition --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_textDefinition";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_TextDefinition_Snapshot-en_INT_$RELDATE.txt'
-INTO TABLE `snap_textDefinition`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`conceptId`,`languageCode`,`typeId`,`term`,`caseSignificanceId`);
-
-
--- Load Table Data: snap_refset_OWLExpression --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_OWLExpression";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_sRefset_OWLExpressionSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_OWLExpression`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`owlExpression`);
-
-
--- END LOAD DATA --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END LOAD DATA";
 
 
 
@@ -1403,65 +14,6 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"START CONFIGURATION";
 
-USE `$DBNAME`;
--- Create Configuration Tables and Initial Settings
-DELIMITER ;
-
-CREATE TABLE IF NOT EXISTS `config_language` (
- `id` bigint,
- `prefix` varchar(5),
- `name` VARCHAR (255) NOT NULL DEFAULT '',
-  PRIMARY KEY (`id`),
-  INDEX pfx (`prefix`)
-) ENGINE=MyISAM CHARSET=utf8mb4;
-
-INSERT IGNORE INTO `config_language` (`prefix`,`id`,`name`)
-VALUES
-('en-US', 900000000000509007, 'US English'),
-('en-GB', 900000000000508004, 'GB English'),
-('es', 448879004, 'Spanish'),
-('xx-GM', 608771002, 'GMDN'),
-('xh', 722128001, 'Chinese'),
-('ja', 722129009, 'Japanese'),
-('de', 722130004, 'German'),
-('fr', 722131000, 'French'),
-('en', 900000000000507009, 'English'),
-('en-AU', 32570271000036106, 'Australian English'),
-('es-XL', 450828004, 'Latin American Spanish'),
-('nl-BE', 31000172101, 'Belgian Dutch'),
-('fr-CA', 20581000087109, 'Canadian French'),
-('en-CA', 19491000087109, 'Canadian English'),
-('dk', 554461000005103, 'Danish'),
-('sv', 999991, 'Swedish'),
-('no', 999992, 'Norwegian'),
-('nl', 999993, 'Dutch');
-
-CREATE TABLE IF NOT EXISTS `config_settings` (
-  `id` tinyint(1) NOT NULL DEFAULT '1',
-  `languageId` bigint DEFAULT '900000000000509007',
-  `languageName` varchar(255) NOT NULL DEFAULT 'US English',
-  `snapshotTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deltaStartTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deltaEndTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- Release date is set here and end of the day of release
--- This avoids issues if effectiveTime contain a time element.
-SET @RELDATE=TIMESTAMP(CONCAT('$RELDATE','235959'));
-
--- The row with id=0 is not used directly except as default values to refresh other rows
--- Row 0 set on database load: 
---			snapshotTime and deltaEndTime set to release date 
---          deltaStartTime set to 6 month earlier
--- Other values are reset by resetConfig() 6 and 12 months later than the row with id=0
--- and can be set to specific values using the setDeltaRange and setSnapshotTime procedures.
-
-DELETE FROM `config_settings` WHERE `id`=0;
-
-INSERT IGNORE INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
-VALUES 
-(0,900000000000509007,'US English', @RELDATE, DATE_SUB(@RELDATE,INTERVAL 6 MONTH),@RELDATE);
 USE `$DBNAME`;
 -- Create Configuration Procedures
 
@@ -1644,14 +196,8 @@ CREATE VIEW `snapAsView_relationship` AS select * from `full_relationship` `tbl`
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snapAsView_statedRelationship`;
-CREATE VIEW `snapAsView_statedRelationship` AS select * from `full_statedRelationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_statedRelationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snapAsView_textDefinition`;
-CREATE VIEW `snapAsView_textDefinition` AS select * from `full_textDefinition` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_textDefinition` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+DROP VIEW IF EXISTS `snapAsView_description`;
+CREATE VIEW `snapAsView_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 
 
 -- VIEW DELTA --
@@ -1758,14 +304,8 @@ CREATE VIEW `delta_relationship` AS select `tbl`.* from `full_relationship` `tbl
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_statedRelationship`;
-CREATE VIEW `delta_statedRelationship` AS select `tbl`.* from `full_statedRelationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_textDefinition`;
-CREATE VIEW `delta_textDefinition` AS select `tbl`.* from `full_textDefinition` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_description`;
+CREATE VIEW `delta_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -1878,14 +418,8 @@ CREATE VIEW `snap1_relationship` AS select * from `full_relationship` `tbl` wher
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_statedRelationship`;
-CREATE VIEW `snap1_statedRelationship` AS select * from `full_statedRelationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_statedRelationship` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_textDefinition`;
-CREATE VIEW `snap1_textDefinition` AS select * from `full_textDefinition` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_textDefinition` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_description`;
+CREATE VIEW `snap1_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
@@ -1998,14 +532,8 @@ CREATE VIEW `delta1_relationship` AS select `tbl`.* from `full_relationship` `tb
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_statedRelationship`;
-CREATE VIEW `delta1_statedRelationship` AS select `tbl`.* from `full_statedRelationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_textDefinition`;
-CREATE VIEW `delta1_textDefinition` AS select `tbl`.* from `full_textDefinition` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_description`;
+CREATE VIEW `delta1_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -2118,14 +646,8 @@ CREATE VIEW `snap2_relationship` AS select * from `full_relationship` `tbl` wher
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_statedRelationship`;
-CREATE VIEW `snap2_statedRelationship` AS select * from `full_statedRelationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_statedRelationship` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_textDefinition`;
-CREATE VIEW `snap2_textDefinition` AS select * from `full_textDefinition` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_textDefinition` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_description`;
+CREATE VIEW `snap2_description` AS select * from `full_description` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_description` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
@@ -2238,14 +760,8 @@ CREATE VIEW `delta2_relationship` AS select `tbl`.* from `full_relationship` `tb
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_statedRelationship`;
-CREATE VIEW `delta2_statedRelationship` AS select `tbl`.* from `full_statedRelationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_textDefinition`;
-CREATE VIEW `delta2_textDefinition` AS select `tbl`.* from `full_textDefinition` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_description`;
+CREATE VIEW `delta2_description` AS select `tbl`.* from `full_description` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -3013,8 +1529,8 @@ SELECT Now() `--`,"Add extra (no prefix): proc_ecl";
 USE `$DBNAME`;
 
 DELIMITER ;;
-DROP PROCEDURE IF EXISTS eclQuery;;
-CREATE PROCEDURE eclQuery(p_ecl text)
+DROP PROCEDURE IF EXISTS `eclQuery`;;
+CREATE PROCEDURE `eclQuery`(p_ecl text)
 proc:BEGIN
 
 DECLARE `v_ecltrim` text DEFAULT '';
@@ -3031,6 +1547,7 @@ DECLARE `v_valSymbol` char(4) DEFAULT '';
 DECLARE `v_attSymbol` char(4) DEFAULT '';
 DECLARE `v_attId` BIGINT DEFAULT 0;
 DECLARE `v_valId` BIGINT DEFAULT 0;
+DECLARE `v_valTestIn` char(6) DEFAULT 'IN';
 DECLARE `v_value` text DEFAULT '';
 DECLARE `v_attrib` text DEFAULT '';
 DECLARE `v_prevSetRule` char(1) DEFAULT '';
@@ -3044,7 +1561,7 @@ DECLARE specialty CONDITION FOR SQLSTATE '45000';
 DECLARE `msg` text;
 
 DECLARE `curClause` CURSOR FOR SELECT `clauseNum`,max(`clauseRule`), count(`id`) FROM `tmpEcl` GROUP BY `clauseNum` ORDER BY `clauseNum`;
-DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
+DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET `done` := TRUE;
 
 SET @ver=(SELECT VERSION());
@@ -3070,6 +1587,7 @@ CREATE TEMPORARY TABLE `tmpEcl` (
   `attSymbol` CHAR(4) NOT NULL DEFAULT '',
   `valId` BIGINT NOT NULL DEFAULT 0,
   `valSymbol` CHAR(4) NOT NULL DEFAULT '',
+	`valTestIn` CHAR(6) NOT NULL DEFAULT 'IN',
   `count` BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`));
 
@@ -3143,13 +1661,13 @@ getClause: LOOP
     -- Get the symbol and id for the focus concept and add this as a record in a temporary ECL table (tmpEcl)
     SET `v_valSymbol`=IFNULL(regexp_substr(`v_focus`,'(\\*|\\^|<[<!]?|>[>!]?)'),'=');
     SET `v_valId`=IFNULL(regexp_substr(`v_focus`,'[1-9][0-9]{5,17}'),0);
-    INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`);
+    INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`,0);
     
     IF `v_refine`!='' THEN
         -- to simplify iteration add a comma before the refinement (this allows simple regexp pattern iteration)
         SET `v_refine`=CONCAT(',',`v_refine`);
         getRefine: LOOP
-            -- Iterate through the refinement constraints spliting a the commas
+            -- Iterate through the refinement constraints spliting at the commas
             SET `v_item`=regexp_substr(`v_refine`,',[^,]+',1,`v_testNum`);
             SET `v_testNum`=`v_testNum`+1;
             IF ISNULL(`v_item`) OR `v_testNum`>20 THEN
@@ -3159,6 +1677,8 @@ getClause: LOOP
             SET `v_item`=mid(`v_item`,2);
             -- SELECT `v_testNum`,`v_item`;
             SET `v_attrib`=substring_index(`v_item`,'=',1);
+						-- Check for negated attribute value != (so ! as last char of v_attrib)
+						SET `v_valTestIn`=IF(`v_attrib` regexp '!$',"NOT IN","IN");
             SET `v_value`=substring_index(`v_item`,'=',-1);
             -- SELECT `v_attrib`,`v_value`;
             SET `v_valSymbol`=IFNULL(regexp_substr(`v_value`,'(\\*|\\^|<<?)'),'=');
@@ -3166,7 +1686,7 @@ getClause: LOOP
             SET `v_attSymbol`=IFNULL(regexp_substr(`v_attrib`,'(\\*\\^|<<?)'),'=');
             SET `v_attId`=IFNULL(regexp_substr(`v_attrib`,'[1-9][0-9]{5,17}'),0);
             -- SELECT `v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
-            INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`);
+            INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`);
         END LOOP getRefine;
     END IF;
     SET `v_clauseNum`=`v_clauseNum`+1;
@@ -3187,7 +1707,7 @@ clauseLoop: LOOP
     SET `v_inSource`='';
     OPEN `curRefine`;
     refineLoop: LOOP
-        FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
+        FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`;
         IF `done` then
             SET `done`=FALSE;
             CLOSE `curRefine`;
@@ -3265,23 +1785,28 @@ clauseLoop: LOOP
                     END IF;
             END CASE;
             -- ADD CONDITIONS FOR destinationId
+
             CASE `v_valSymbol`
                 WHEN '=' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
+										IF `v_valTestIn`='IN' THEN
+                    	SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
+										ELSE
+											SET @insertIds=CONCAT(@insertIds,' AND `destinationId`!=',`v_valId`);
+										END IF;
                 WHEN '<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
                 WHEN '<<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
                 WHEN '<!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
                 WHEN '>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
                 WHEN '>>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
                 WHEN '>!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
                 WHEN '^' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',')');
                 ELSE
                     IF `v_valSymbol`!='*' THEN
                         -- Symbol * implies any value. Other symbols are errors
@@ -3332,6 +1857,7 @@ PREPARE s_output FROM @output;
 EXECUTE s_output;
 DEALLOCATE PREPARE s_output;
 END;;
+DELIMITER ;
 
 -- Create eclSimple() Procedure
 -- This procedure only works with current snapshot
@@ -4055,55 +2581,46 @@ DELIMITER ;
 
 
 -- ===========================================
--- Add extra (no prefix): table_shortcuts
+-- Add extra (no prefix): func_refsetnames
 -- ===========================================
 
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (no prefix): table_shortcuts";
+SELECT Now() `--`,"Add extra (no prefix): func_refsetnames";
 
-DELIMITER ;
-USE `$DBNAME`;
+DELIMITER ;;
+DROP FUNCTION IF EXISTS `snap_RefsetNames`;;
+CREATE FUNCTION `snap_RefsetNames`() RETURNS text
+BEGIN
+--
+-- Return a JSON representation of the refset names (as preferred terms);
+-- Refset name concepts are by definition concepts that are subtype descendants of concept 900000000000455006
+-- that do NOT have any subtype children (those with subtype children represent either refset type or groups of
+-- refsets linked in some way.)
+--
+DECLARE done INT DEFAULT FALSE;
 
--- Create and Populate Shortcuts Table
--- Useful for quick use of subsumption limits.
-CREATE TABLE IF NOT EXISTS `config_shortcuts` (
-  `abbrev` varchar(5) NOT NULL,
-  `conceptId` bigint NOT NULL,
-  PRIMARY KEY (`abbrev`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+DECLARE namedata TEXT;
+DECLARE sep VARCHAR(1) DEFAULT '';
+DECLARE alldata TEXT DEFAULT '{';
+DECLARE rsname CURSOR FOR SELECT CONCAT('"',`conceptId`,'":{"term":"',`term`,'","rows":0,"table":"-","files":{}}') FROM `snap_pref` WHERE `conceptId` IN (SELECT 
+			`tc1`.`subtypeId` FROM (`snap_transclose` `tc1` LEFT JOIN `snap_transclose` `tc2` ON ((`tc1`.`subtypeId` = `tc2`.`supertypeId`))) WHERE ((`tc1`.`supertypeId` = 900000000000455006)
+                    AND ISNULL(`tc2`.`subtypeId`)));
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-INSERT IGNORE INTO `config_shortcuts` (`abbrev`,`conceptId`) 
-VALUES ('anat',91723000),
-('attr',246061005),
-('body',123037004),
-('clin',404684003),
-('dise',64572001),
-('envi',308916002),
-('eval',386053000),
-('even',272379006),
-('find',404684003),
-('forc',78621006),
-('lab',108252007),
-('meas',122869004),
-('meta',900000000000441003),
-('morph',118956008),
-('obje',260787004),
-('obse',363787002),
-('orga',410607006),
-('phar',373873005),
-('proc',71388002),
-('qual',362981000),
-('qval',362981000),
-('reco',419891008),
-('refs',900000000000455006),
-('situ',243796009),
-('soci',48176007),
-('spec',123038009),
-('stag',254291000),
-('subs',105590001),
-('swec',243796009);
+OPEN rsname;
+GETRSNAMES: LOOP
+	FETCH rsname INTO namedata;
+	IF done THEN
+		LEAVE GETRSNAMES;
+	END IF;
+	SET alldata=CONCAT(alldata,sep,namedata);
+	SET sep=',';
+END LOOP;
+close rsname;
+RETURN CONCAT(alldata,'}');
 
+END;;
 DELIMITER ;
 
 -- END EXTRAS --
@@ -4185,66 +2702,67 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_Simple";
 
-CALL CreateIndexIfNotExists('full_refset_Simple','Simple_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Simple','Simple_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_Association --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_Association";
 
-CALL CreateIndexIfNotExists('full_refset_Association','Association_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Association','Association_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_tgt','refsetId,targetComponentId');
 
 -- Index full_refset_AttributeValue --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_AttributeValue";
 
-CALL CreateIndexIfNotExists('full_refset_AttributeValue','AttributeValue_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_AttributeValue','AttributeValue_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_AttributeValue','sct_refset_AttributeValue_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_AttributeValue','sct_refset_AttributeValue_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_Language --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_Language";
 
-CALL CreateIndexIfNotExists('full_refset_Language','Language_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Language','Language_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Language','sct_refset_Language_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Language','sct_refset_Language_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_ExtendedMap --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_ExtendedMap";
 
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','ExtendedMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','ExtendedMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','ExtendedMap_map','refsetId,mapTarget');
+CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_map','mapTarget');
 
 -- Index full_refset_SimpleMap --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_SimpleMap";
 
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','SimpleMap_map','refsetId,mapTarget');
+CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
 
 -- Index full_refset_MRCMModuleScope --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_MRCMModuleScope";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','MRCMModuleScope_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','MRCMModuleScope_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_RefsetDescriptor --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_RefsetDescriptor";
 
-CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','RefsetDescriptor_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','RefsetDescriptor_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_DescriptionType --
 DELIMITER ;
@@ -4257,33 +2775,33 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_MRCMAttributeDomain";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','MRCMAttributeDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','MRCMAttributeDomain_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','MRCMAttributeDomain_dom','domainId');
+CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_dom','domainId');
 
 -- Index full_refset_ModuleDependency --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_ModuleDependency";
 
-CALL CreateIndexIfNotExists('full_refset_ModuleDependency','ModuleDependency_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ModuleDependency','ModuleDependency_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_MRCMAttributeRange --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_MRCMAttributeRange";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','MRCMAttributeRange_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','MRCMAttributeRange_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_MRCMDomain --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_MRCMDomain";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMDomain','MRCMDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMDomain','MRCMDomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMDomain','sct_refset_MRCMDomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_MRCMDomain','sct_refset_MRCMDomain_rc','refsetId,referencedComponentId');
 
 -- Index full_concept --
 DELIMITER ;
@@ -4296,44 +2814,34 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_description";
 
-CALL CreateIndexIfNotExists('full_description','description_concept','conceptId');
-CALL CreateIndexIfNotExists('full_description','description_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('full_description','description_ft','term');
-CALL CreateIndexIfNotExists('full_description','description_term','term(100)');
+CALL CreateIndexIfNotExists('full_description','sct_description_concept','conceptId');
+CALL CreateIndexIfNotExists('full_description','sct_description_lang','conceptId,languageCode');
+CALL CreateIndexIfNotExists('full_description','sct_description_term_ft','term');
 
 -- Index full_relationship --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_relationship";
 
-CALL CreateIndexIfNotExists('full_relationship','relationship_source','sourceId,typeId,destinationId');
-CALL CreateIndexIfNotExists('full_relationship','relationship_dest','destinationId,typeId,sourceId');
+CALL CreateIndexIfNotExists('full_relationship','sct_relationship_source','sourceId,typeId,destinationId');
+CALL CreateIndexIfNotExists('full_relationship','sct_relationship_dest','destinationId,typeId,sourceId');
 
--- Index full_statedRelationship --
+-- Index full_description --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_statedRelationship";
+SELECT Now() `--`,"Index full_description";
 
-CALL CreateIndexIfNotExists('full_statedRelationship','statedRelationship_source','sourceId,typeId,destinationId');
-CALL CreateIndexIfNotExists('full_statedRelationship','statedRelationship_dest','destinationId,typeId,sourceId');
-
--- Index full_textDefinition --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index full_textDefinition";
-
-CALL CreateIndexIfNotExists('full_textDefinition','textDefinition_concept','conceptId');
-CALL CreateIndexIfNotExists('full_textDefinition','textDefinition_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('full_textDefinition','textDefinition_ft','term');
-CALL CreateIndexIfNotExists('full_textDefinition','textDefinition_term','term(100)');
+CALL CreateIndexIfNotExists('full_description','sct_description_concept','conceptId');
+CALL CreateIndexIfNotExists('full_description','sct_description_lang','conceptId,languageCode');
+CALL CreateIndexIfNotExists('full_description','sct_description_term_ft','term');
 
 -- Index full_refset_OWLExpression --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index full_refset_OWLExpression";
 
-CALL CreateIndexIfNotExists('full_refset_OWLExpression','OWLExpression_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_OWLExpression','OWLExpression_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_OWLExpression','sct_refset_OWLExpression_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_OWLExpression','sct_refset_OWLExpression_rc','refsetId,referencedComponentId');
 ;
 
 
@@ -4348,66 +2856,67 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_Simple";
 
-CALL CreateIndexIfNotExists('snap_refset_Simple','Simple_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Simple','Simple_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_Association --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_Association";
 
-CALL CreateIndexIfNotExists('snap_refset_Association','Association_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Association','Association_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_tgt','refsetId,targetComponentId');
 
 -- Index snap_refset_AttributeValue --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_AttributeValue";
 
-CALL CreateIndexIfNotExists('snap_refset_AttributeValue','AttributeValue_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_AttributeValue','AttributeValue_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_AttributeValue','sct_refset_AttributeValue_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_AttributeValue','sct_refset_AttributeValue_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_Language --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_Language";
 
-CALL CreateIndexIfNotExists('snap_refset_Language','Language_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Language','Language_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Language','sct_refset_Language_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Language','sct_refset_Language_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_ExtendedMap --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_ExtendedMap";
 
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','ExtendedMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','ExtendedMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','ExtendedMap_map','refsetId,mapTarget');
+CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_map','mapTarget');
 
 -- Index snap_refset_SimpleMap --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_SimpleMap";
 
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','SimpleMap_map','refsetId,mapTarget');
+CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
 
 -- Index snap_refset_MRCMModuleScope --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_MRCMModuleScope";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','MRCMModuleScope_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','MRCMModuleScope_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_RefsetDescriptor --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_RefsetDescriptor";
 
-CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','RefsetDescriptor_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','RefsetDescriptor_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_DescriptionType --
 DELIMITER ;
@@ -4420,33 +2929,33 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_MRCMAttributeDomain";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','MRCMAttributeDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','MRCMAttributeDomain_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','MRCMAttributeDomain_dom','domainId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_dom','domainId');
 
 -- Index snap_refset_ModuleDependency --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_ModuleDependency";
 
-CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','ModuleDependency_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','ModuleDependency_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_MRCMAttributeRange --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_MRCMAttributeRange";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','MRCMAttributeRange_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','MRCMAttributeRange_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_MRCMDomain --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_MRCMDomain";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','MRCMDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','MRCMDomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','sct_refset_MRCMDomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','sct_refset_MRCMDomain_rc','refsetId,referencedComponentId');
 
 -- Index snap_concept --
 DELIMITER ;
@@ -4459,44 +2968,34 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_description";
 
-CALL CreateIndexIfNotExists('snap_description','description_concept','conceptId');
-CALL CreateIndexIfNotExists('snap_description','description_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('snap_description','description_ft','term');
-CALL CreateIndexIfNotExists('snap_description','description_term','term(100)');
+CALL CreateIndexIfNotExists('snap_description','sct_description_concept','conceptId');
+CALL CreateIndexIfNotExists('snap_description','sct_description_lang','conceptId,languageCode');
+CALL CreateIndexIfNotExists('snap_description','sct_description_term_ft','term');
 
 -- Index snap_relationship --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_relationship";
 
-CALL CreateIndexIfNotExists('snap_relationship','relationship_source','sourceId,typeId,destinationId');
-CALL CreateIndexIfNotExists('snap_relationship','relationship_dest','destinationId,typeId,sourceId');
+CALL CreateIndexIfNotExists('snap_relationship','sct_relationship_source','sourceId,typeId,destinationId');
+CALL CreateIndexIfNotExists('snap_relationship','sct_relationship_dest','destinationId,typeId,sourceId');
 
--- Index snap_statedRelationship --
+-- Index snap_description --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_statedRelationship";
+SELECT Now() `--`,"Index snap_description";
 
-CALL CreateIndexIfNotExists('snap_statedRelationship','statedRelationship_source','sourceId,typeId,destinationId');
-CALL CreateIndexIfNotExists('snap_statedRelationship','statedRelationship_dest','destinationId,typeId,sourceId');
-
--- Index snap_textDefinition --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_textDefinition";
-
-CALL CreateIndexIfNotExists('snap_textDefinition','textDefinition_concept','conceptId');
-CALL CreateIndexIfNotExists('snap_textDefinition','textDefinition_lang','conceptId,languageCode');
-CALL CreateIndexIfNotExists('snap_textDefinition','textDefinition_ft','term');
-CALL CreateIndexIfNotExists('snap_textDefinition','textDefinition_term','term(100)');
+CALL CreateIndexIfNotExists('snap_description','sct_description_concept','conceptId');
+CALL CreateIndexIfNotExists('snap_description','sct_description_lang','conceptId,languageCode');
+CALL CreateIndexIfNotExists('snap_description','sct_description_term_ft','term');
 
 -- Index snap_refset_OWLExpression --
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Index snap_refset_OWLExpression";
 
-CALL CreateIndexIfNotExists('snap_refset_OWLExpression','OWLExpression_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_OWLExpression','OWLExpression_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_OWLExpression','sct_refset_OWLExpression_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_OWLExpression','sct_refset_OWLExpression_rc','refsetId,referencedComponentId');
 ;
 
 
