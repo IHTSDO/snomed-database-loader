@@ -1529,8 +1529,8 @@ SELECT Now() `--`,"Add extra (no prefix): proc_ecl";
 USE `$DBNAME`;
 
 DELIMITER ;;
-DROP PROCEDURE IF EXISTS eclQuery;;
-CREATE PROCEDURE eclQuery(p_ecl text)
+DROP PROCEDURE IF EXISTS `eclQuery`;;
+CREATE PROCEDURE `eclQuery`(p_ecl text)
 proc:BEGIN
 
 DECLARE `v_ecltrim` text DEFAULT '';
@@ -1547,6 +1547,7 @@ DECLARE `v_valSymbol` char(4) DEFAULT '';
 DECLARE `v_attSymbol` char(4) DEFAULT '';
 DECLARE `v_attId` BIGINT DEFAULT 0;
 DECLARE `v_valId` BIGINT DEFAULT 0;
+DECLARE `v_valTestIn` char(6) DEFAULT 'IN';
 DECLARE `v_value` text DEFAULT '';
 DECLARE `v_attrib` text DEFAULT '';
 DECLARE `v_prevSetRule` char(1) DEFAULT '';
@@ -1560,7 +1561,7 @@ DECLARE specialty CONDITION FOR SQLSTATE '45000';
 DECLARE `msg` text;
 
 DECLARE `curClause` CURSOR FOR SELECT `clauseNum`,max(`clauseRule`), count(`id`) FROM `tmpEcl` GROUP BY `clauseNum` ORDER BY `clauseNum`;
-DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
+DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET `done` := TRUE;
 
 SET @ver=(SELECT VERSION());
@@ -1586,6 +1587,7 @@ CREATE TEMPORARY TABLE `tmpEcl` (
   `attSymbol` CHAR(4) NOT NULL DEFAULT '',
   `valId` BIGINT NOT NULL DEFAULT 0,
   `valSymbol` CHAR(4) NOT NULL DEFAULT '',
+	`valTestIn` CHAR(6) NOT NULL DEFAULT 'IN',
   `count` BIGINT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`));
 
@@ -1659,13 +1661,13 @@ getClause: LOOP
     -- Get the symbol and id for the focus concept and add this as a record in a temporary ECL table (tmpEcl)
     SET `v_valSymbol`=IFNULL(regexp_substr(`v_focus`,'(\\*|\\^|<[<!]?|>[>!]?)'),'=');
     SET `v_valId`=IFNULL(regexp_substr(`v_focus`,'[1-9][0-9]{5,17}'),0);
-    INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`);
+    INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`,0);
     
     IF `v_refine`!='' THEN
         -- to simplify iteration add a comma before the refinement (this allows simple regexp pattern iteration)
         SET `v_refine`=CONCAT(',',`v_refine`);
         getRefine: LOOP
-            -- Iterate through the refinement constraints spliting a the commas
+            -- Iterate through the refinement constraints spliting at the commas
             SET `v_item`=regexp_substr(`v_refine`,',[^,]+',1,`v_testNum`);
             SET `v_testNum`=`v_testNum`+1;
             IF ISNULL(`v_item`) OR `v_testNum`>20 THEN
@@ -1675,6 +1677,8 @@ getClause: LOOP
             SET `v_item`=mid(`v_item`,2);
             -- SELECT `v_testNum`,`v_item`;
             SET `v_attrib`=substring_index(`v_item`,'=',1);
+						-- Check for negated attribute value != (so ! as last char of v_attrib)
+						SET `v_valTestIn`=IF(`v_attrib` regexp '!$',"NOT IN","IN");
             SET `v_value`=substring_index(`v_item`,'=',-1);
             -- SELECT `v_attrib`,`v_value`;
             SET `v_valSymbol`=IFNULL(regexp_substr(`v_value`,'(\\*|\\^|<<?)'),'=');
@@ -1682,7 +1686,7 @@ getClause: LOOP
             SET `v_attSymbol`=IFNULL(regexp_substr(`v_attrib`,'(\\*\\^|<<?)'),'=');
             SET `v_attId`=IFNULL(regexp_substr(`v_attrib`,'[1-9][0-9]{5,17}'),0);
             -- SELECT `v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
-            INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`);
+            INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`);
         END LOOP getRefine;
     END IF;
     SET `v_clauseNum`=`v_clauseNum`+1;
@@ -1703,7 +1707,7 @@ clauseLoop: LOOP
     SET `v_inSource`='';
     OPEN `curRefine`;
     refineLoop: LOOP
-        FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
+        FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`;
         IF `done` then
             SET `done`=FALSE;
             CLOSE `curRefine`;
@@ -1781,23 +1785,28 @@ clauseLoop: LOOP
                     END IF;
             END CASE;
             -- ADD CONDITIONS FOR destinationId
+
             CASE `v_valSymbol`
                 WHEN '=' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
+										IF `v_valTestIn`='IN' THEN
+                    	SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
+										ELSE
+											SET @insertIds=CONCAT(@insertIds,' AND `destinationId`!=',`v_valId`);
+										END IF;
                 WHEN '<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
                 WHEN '<<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
                 WHEN '<!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
                 WHEN '>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
                 WHEN '>>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
                 WHEN '>!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
                 WHEN '^' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` IN (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',')');
+                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',')');
                 ELSE
                     IF `v_valSymbol`!='*' THEN
                         -- Symbol * implies any value. Other symbols are errors
@@ -1848,6 +1857,7 @@ PREPARE s_output FROM @output;
 EXECUTE s_output;
 DEALLOCATE PREPARE s_output;
 END;;
+DELIMITER ;
 
 -- Create eclSimple() Procedure
 -- This procedure only works with current snapshot
