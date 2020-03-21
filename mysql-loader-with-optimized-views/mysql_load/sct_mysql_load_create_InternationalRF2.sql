@@ -3273,7 +3273,6 @@ PREPARE s_output FROM @output;
 EXECUTE s_output;
 DEALLOCATE PREPARE s_output;
 END;;
-DELIMITER ;
 
 -- Create eclSimple() Procedure
 -- This procedure only works with current snapshot
@@ -4039,6 +4038,304 @@ RETURN CONCAT(alldata,'}');
 END;;
 DELIMITER ;
 
+<<<<<<< Updated upstream
+=======
+
+-- ===========================================
+-- Add extra (with prefix): proc_refsetmembers
+-- ===========================================
+
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Add extra (with prefix): proc_refsetmembers";
+
+DROP PROCEDURE IF EXISTS `snap_members`;
+DELIMITER ;;
+CREATE PROCEDURE `snap_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
+BEGIN
+-- Procedure that returns maps for a specified concept from a specified extended map reference set
+-- Examples:
+-- ICD-10 MAP EXAMPLE 1: SIMPLE
+--  74400008|Appendicitis| 
+-- CALL snap_GetMaps(447562003,74400008);
+--
+-- ICD-10 MAP EXAMPLE 2: TWO MAP GROUPS
+--  196607008|Esophageal ulcer due to aspirin|
+-- CALL snap_GetMaps(447562003,196607008);
+--
+-- ICD-10 MAP EXAMPLE 3: AGE BASED RULE
+--  32398004|Bronchitis|
+-- CALL snap_GetMaps(447562003,32398004);
+--
+-- ICD-10 MAP EXAMPLE 4: GENDER BASED RULE
+--  8619003|Infertility|
+-- CALL snap_GetMaps(447562003,8619003);
+--
+-- ICD-10 MAP EXAMPLE 5: EXTERNAL CAUSES
+--  111613008|Closed skull fracture with intracranial injury|
+-- CALL snap_GetMaps(447562003,111613008);
+DECLARE `v_refsetType` VARCHAR(60);
+	SET `v_refsetType`=(SELECT IFNULL(`refsetType`,'NONE') FROM `config_refsets` WHERE `refsetId`=`p_refsetId`);
+	CASE 
+		WHEN `v_refsetType`='extendedmap' THEN
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, 
+				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`, 
+				`mapGroup`, `mapPriority`, `mapRule`, `mapAdvice`, `mapTarget`, 
+				`correlationId`, 
+				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`correlationId`) `correlationTerm`,
+				`mapCategoryId`, 
+				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`mapCategoryId`) `mapCategoryTerm`
+				FROM `snap_refset_extendedmap` `m`
+					WHERE `refsetId`=`p_refsetId`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1
+					ORDER BY `referencedComponentId`,`mapGroup`,`mapPriority`;
+		WHEN `v_refsetType`='simplemap' THEN
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, 
+				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
+				`mapTarget`
+				FROM  `snap_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='association' THEN
+			SELECT * FROM  `snap_refset_association` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
+			-- refComp = DESCRIPTION
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, (SELECT `term` FROM `snap_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
+				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
+			-- refComp = RELATIONSHIP
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, '!Relationship!'
+				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' THEN
+			-- refComp = CONCEPT
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, (SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
+				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'descriptiontype' THEN
+			SELECT * FROM  `snap_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'language' THEN
+			SELECT * FROM  `snap_refset_language` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'moduledependency' THEN
+			SELECT * FROM  `snap_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmattributedomain' THEN
+			SELECT * FROM  `snap_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmattributerange' THEN
+			SELECT * FROM  `snap_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmdomain' THEN
+			SELECT * FROM  `snap_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmmodulescope' THEN
+			SELECT * FROM  `snap_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'owlexpression' THEN
+			SELECT * FROM  `snap_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'refsetdescriptor' THEN
+			SELECT * FROM  `snap_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'simple' THEN
+			SELECT * FROM  `snap_refset_simple` WHERE `refsetId`=`p_refsetid`;
+		ELSE
+			SELECT "Reference Set NOT FOUND!";
+	END CASE;
+END;;
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `snap1_members`;
+DELIMITER ;;
+CREATE PROCEDURE `snap1_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
+BEGIN
+-- Procedure that returns maps for a specified concept from a specified extended map reference set
+-- Examples:
+-- ICD-10 MAP EXAMPLE 1: SIMPLE
+--  74400008|Appendicitis| 
+-- CALL snap1_GetMaps(447562003,74400008);
+--
+-- ICD-10 MAP EXAMPLE 2: TWO MAP GROUPS
+--  196607008|Esophageal ulcer due to aspirin|
+-- CALL snap1_GetMaps(447562003,196607008);
+--
+-- ICD-10 MAP EXAMPLE 3: AGE BASED RULE
+--  32398004|Bronchitis|
+-- CALL snap1_GetMaps(447562003,32398004);
+--
+-- ICD-10 MAP EXAMPLE 4: GENDER BASED RULE
+--  8619003|Infertility|
+-- CALL snap1_GetMaps(447562003,8619003);
+--
+-- ICD-10 MAP EXAMPLE 5: EXTERNAL CAUSES
+--  111613008|Closed skull fracture with intracranial injury|
+-- CALL snap1_GetMaps(447562003,111613008);
+DECLARE `v_refsetType` VARCHAR(60);
+	SET `v_refsetType`=(SELECT IFNULL(`refsetType`,'NONE') FROM `config_refsets` WHERE `refsetId`=`p_refsetId`);
+	CASE 
+		WHEN `v_refsetType`='extendedmap' THEN
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, 
+				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`, 
+				`mapGroup`, `mapPriority`, `mapRule`, `mapAdvice`, `mapTarget`, 
+				`correlationId`, 
+				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`correlationId`) `correlationTerm`,
+				`mapCategoryId`, 
+				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`mapCategoryId`) `mapCategoryTerm`
+				FROM `snap1_refset_extendedmap` `m`
+					WHERE `refsetId`=`p_refsetId`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1
+					ORDER BY `referencedComponentId`,`mapGroup`,`mapPriority`;
+		WHEN `v_refsetType`='simplemap' THEN
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, 
+				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
+				`mapTarget`
+				FROM  `snap1_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='association' THEN
+			SELECT * FROM  `snap1_refset_association` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
+			-- refComp = DESCRIPTION
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, (SELECT `term` FROM `snap1_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
+				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
+			-- refComp = RELATIONSHIP
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, '!Relationship!'
+				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' THEN
+			-- refComp = CONCEPT
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, (SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
+				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'descriptiontype' THEN
+			SELECT * FROM  `snap1_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'language' THEN
+			SELECT * FROM  `snap1_refset_language` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'moduledependency' THEN
+			SELECT * FROM  `snap1_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmattributedomain' THEN
+			SELECT * FROM  `snap1_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmattributerange' THEN
+			SELECT * FROM  `snap1_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmdomain' THEN
+			SELECT * FROM  `snap1_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmmodulescope' THEN
+			SELECT * FROM  `snap1_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'owlexpression' THEN
+			SELECT * FROM  `snap1_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'refsetdescriptor' THEN
+			SELECT * FROM  `snap1_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'simple' THEN
+			SELECT * FROM  `snap1_refset_simple` WHERE `refsetId`=`p_refsetid`;
+		ELSE
+			SELECT "Reference Set NOT FOUND!";
+	END CASE;
+END;;
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `snap2_members`;
+DELIMITER ;;
+CREATE PROCEDURE `snap2_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
+BEGIN
+-- Procedure that returns maps for a specified concept from a specified extended map reference set
+-- Examples:
+-- ICD-10 MAP EXAMPLE 1: SIMPLE
+--  74400008|Appendicitis| 
+-- CALL snap2_GetMaps(447562003,74400008);
+--
+-- ICD-10 MAP EXAMPLE 2: TWO MAP GROUPS
+--  196607008|Esophageal ulcer due to aspirin|
+-- CALL snap2_GetMaps(447562003,196607008);
+--
+-- ICD-10 MAP EXAMPLE 3: AGE BASED RULE
+--  32398004|Bronchitis|
+-- CALL snap2_GetMaps(447562003,32398004);
+--
+-- ICD-10 MAP EXAMPLE 4: GENDER BASED RULE
+--  8619003|Infertility|
+-- CALL snap2_GetMaps(447562003,8619003);
+--
+-- ICD-10 MAP EXAMPLE 5: EXTERNAL CAUSES
+--  111613008|Closed skull fracture with intracranial injury|
+-- CALL snap2_GetMaps(447562003,111613008);
+DECLARE `v_refsetType` VARCHAR(60);
+	SET `v_refsetType`=(SELECT IFNULL(`refsetType`,'NONE') FROM `config_refsets` WHERE `refsetId`=`p_refsetId`);
+	CASE 
+		WHEN `v_refsetType`='extendedmap' THEN
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, 
+				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`, 
+				`mapGroup`, `mapPriority`, `mapRule`, `mapAdvice`, `mapTarget`, 
+				`correlationId`, 
+				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`correlationId`) `correlationTerm`,
+				`mapCategoryId`, 
+				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`mapCategoryId`) `mapCategoryTerm`
+				FROM `snap2_refset_extendedmap` `m`
+					WHERE `refsetId`=`p_refsetId`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1
+					ORDER BY `referencedComponentId`,`mapGroup`,`mapPriority`;
+		WHEN `v_refsetType`='simplemap' THEN
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, 
+				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
+				`mapTarget`
+				FROM  `snap2_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='association' THEN
+			SELECT * FROM  `snap2_refset_association` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
+			-- refComp = DESCRIPTION
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, (SELECT `term` FROM `snap2_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
+				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
+			-- refComp = RELATIONSHIP
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, '!Relationship!'
+				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN `v_refsetType`='attributevalue' THEN
+			-- refComp = CONCEPT
+			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
+				`referencedComponentId`, (SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
+				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
+			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'descriptiontype' THEN
+			SELECT * FROM  `snap2_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'language' THEN
+			SELECT * FROM  `snap2_refset_language` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'moduledependency' THEN
+			SELECT * FROM  `snap2_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmattributedomain' THEN
+			SELECT * FROM  `snap2_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmattributerange' THEN
+			SELECT * FROM  `snap2_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmdomain' THEN
+			SELECT * FROM  `snap2_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'mrcmmodulescope' THEN
+			SELECT * FROM  `snap2_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'owlexpression' THEN
+			SELECT * FROM  `snap2_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'refsetdescriptor' THEN
+			SELECT * FROM  `snap2_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
+		WHEN 'simple' THEN
+			SELECT * FROM  `snap2_refset_simple` WHERE `refsetId`=`p_refsetid`;
+		ELSE
+			SELECT "Reference Set NOT FOUND!";
+	END CASE;
+END;;
+
+DELIMITER ;
+
+
+>>>>>>> Stashed changes
 -- END EXTRAS --
 DELIMITER ;
 USE `$DBNAME`;
