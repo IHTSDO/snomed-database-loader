@@ -197,7 +197,7 @@ RETURN 'Creating HAS_ROLE_GROUP edges';
 USING PERIODIC COMMIT 500
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>rolegroups.csv" as line
 MATCH (c:ObjectConcept { sctid: line.sctid }), (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })
-CREATE UNIQUE (c)-[:HAS_ROLE_GROUP]->(rg);
+MERGE (c)-[:HAS_ROLE_GROUP]->(rg);
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- Modify existing defining relationships
