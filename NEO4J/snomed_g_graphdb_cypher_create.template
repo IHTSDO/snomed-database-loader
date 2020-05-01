@@ -69,7 +69,7 @@ USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_new.csv" as line
 with line
 MATCH (c:ObjectConcept { sctid: line.sctid }), (f:Description { id: line.id })
-CREATE UNIQUE (c)-[:HAS_DESCRIPTION]->(f);
+MERGE (c)-[:HAS_DESCRIPTION]->(f);
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- create ISA relationships
@@ -80,7 +80,7 @@ USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>isa_rel_new.csv" as line
 with line
 MATCH (c1:ObjectConcept { id: line.sourceId }), (c2:ObjectConcept { id: line.destinationId })
-CREATE UNIQUE (c1)-[:ISA { id: line.id,
+MERGE (c1)-[:ISA { id: line.id,
                            active: line.active,
                            effectiveTime: line.effectiveTime,
                            moduleId: line.moduleId,
@@ -109,7 +109,7 @@ USING PERIODIC COMMIT 500
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>rolegroups.csv" as line
 with line
 MATCH (c:ObjectConcept { sctid: line.sctid }), (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })
-CREATE UNIQUE (c)-[:HAS_ROLE_GROUP]->(rg);
+MERGE (c)-[:HAS_ROLE_GROUP]->(rg);
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- create Defining relationships
