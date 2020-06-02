@@ -1,1244 +1,8 @@
 
 
 -- ===========================================
--- Load Extension into Database
+-- Reindex Tables
 -- ===========================================
-
--- IMPORTS SNOMED CT RF2 FULL RELEASE INTO MYSQL DATA BASE
-
--- MySQL Script for Loading and Optimizing SNOMED CT Release Files
--- Apache 2.0 license applies
--- 
--- =======================================================
--- Copyright of this version 2019: SNOMED International www.snomed.org
--- Based on work by David Markwell between 2011 and 2019
--- 
--- All these versions are licensed as follows:
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
-
---     http://www.apache.org/licenses/LICENSE-2.0
-
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
--- =======================================================
---
--- 1. RELEASE PACKAGE AND VERSION 
--- ==============================
--- This MySQL script file is designed to load the following SNOMED CT release package
--- into a MySQL database.
--- Release Package: $PACKAGE 
---
--- If you are working with another version of the same release package
--- this script MAY work with that package. 
--- However:
--- a) if the release package being imported contains file types not present in
---    the version for which this is configured those files will not be imported.
--- b) if the release package being imported does not contains files of the types
---    present in the original version the import process will fail when attempting
---    to import missing files.
--- 
--- 2. IF YOU ARE MANUALLY EDITING THIS FILE
--- ========================================
--- Make a copy of the file and then:
--- 
--- a) Replace all instances of the following placeholders with appropriate values:
---
---  $RELPATH : The path to the release package folder.
---  $DBNAME  : The name of database to be created      (e.g. snomedct )
---  $RELDATE : The release date in the YYYYMMDD format (e.g. 20190731)
---
--- b) If you have NOT created the transitive closure table
---    Replace all instances of 
---     '-- ifTC'  with '/*'
---    and replace all instances of 
---     '-- fiTC'  with '*/'
---
--- 3. SAVE AND RUN THE SCRIPT
--- ==========================
--- Save a copy of the SQL script with any modifications you have made.
--- Run this script in MySQL (e.g. through the MySQL Workbench).
---
-/*
-
-USE A TERMINAL COMMAND LIKE THE FOLLOWING TO RUN THE IMPORT
-
- mysql --defaults-file="$mysql_cnf_filename"  --protocol=tcp --host=localhost --port=$portnumber default-character-set=utf8mb4 --password  < "$sct_mysql_load_filename"
-
-REPLACEMENTS IN THE COMMAND LINE
-
-$mysql_cnf_filename :  The full path of the MySQL configuration file to be used when running the script (e.g. /etct/my.cnf)
-
-$portnumber :  The portnumber on which the MySQL server is running.
-
-$sct_mysql_load_filename : The full path to your copy of this file with the modification noted above.
-
-RECOMMENDED SETTINGS FOR THE my.cnf FILE
-
-[mysqld]
-local-infile=1
-ft_stopword_file = ''
-ft_min_word_len = 2
-disable-log-bin
-skip-log-bin
-default-authentication-plugin=mysql_native_password
-[mysql]
-local-infile=1
-ft_stopword_file = '' 
-ft_min_word_len = 2
-[client]
-local-infile=1
-protocol=tcp
-host=localhost
-port=3306
-
- END OF HEADER */
- -- END OF HEADER
-
--- 
--- PACKAGE AND OPTION SETTINGS USED TO PRODUCING THIS SCRIPT
--- 
--- Release Package: SnomedCT_ICNPInterventionsRelease_PRODUCTION_20180928T120000
--- Package Code: ICNPINTERVENTIONS
--- Release Date: 20180928
--- Extension not including root concept
--- RFS Specification Creation: 20200117121736
--- 
--- CHECK MySQL Server Settings
-
--- INITIALIZE SETTINGS
-SET GLOBAL net_write_timeout = 60;
-SET GLOBAL net_read_timeout=120;
-SET GLOBAL sql_mode ='';
-SET SESSION sql_mode ='';
-
--- CREATE THE CHECK SETTINGS PROCEDURE
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS CheckMySqlSettings;;
-CREATE PROCEDURE CheckMySqlSettings()
-BEGIN
-DECLARE specialty CONDITION FOR SQLSTATE '45000';
-DECLARE `msg` text;
-SELECT "CHECKING MySQL CONFIGURATION SETTINGS";
-SET @req_len=2;
-SET @req_stop='';
-SET @req_infile=1;
-
-SELECT * FROM (
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len,'MySQL Fulltext minimum word length OK',CONCAT('WARNING! Fulltext minimum word length (ft_min_word_len) must be ',@req_len,' but has value: ', @@GLOBAL.ft_min_word_len)) 'Message'
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len,'','* This will cause short words and abbreviations to omitted from search results.') 'MySQL Config Check'
-UNION
-SELECT IF(@@GLOBAL.ft_stopword_file=@req_stop,'MySQL Fulltext stopword file OK',CONCAT('WARNING! Fulltext stopword file (ft_stopword_file) must be empty string but has value: ', @@GLOBAL.ft_stopword_file))
-UNION
-SELECT IF(@@GLOBAL.ft_stopword_file=@req_stop,'','* This will cause some significant clinical words to be omitted from search results!')
-UNION
-SELECT IF(@@GLOBAL.local_infile=@req_infile,'MySQL Local Infile setting OK',CONCAT('ERROR! Local file load (local_infile) must be 1 but has value: ', @@GLOBAL.local_infile))
-UNION
-SELECT IF(@@GLOBAL.local_infile=@req_infile,'','* This will prevent SNOMED CT release files being loaded into the database!')
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','1. See instructions on setting required configuration.')
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','2. Restart MySQL Server after setting the required configuration.')
-UNION
-SELECT IF(@@GLOBAL.ft_min_word_len=@req_len AND @@GLOBAL.ft_stopword_file=@req_stop AND @@GLOBAL.local_infile=@req_infile,'','3. Then rerun the snomed_load_mysql script.')
-) data
-WHERE Message!='';
-IF @@GLOBAL.ft_min_word_len!=@req_len OR @@GLOBAL.ft_stopword_file!=@req_stop OR @@GLOBAL.local_infile!=@req_infile THEN
-	SET `msg`='MySQL Configuration Error! See messages above for details. Script Terminated.';
-	SELECT `msg`;
-	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
-END IF;
-END;;
-
--- CALL THE CHECK SETTINGS PROCEDURE
-DELIMITER ;
-CALL CheckMySqlSettings();
-SELECT 'MySQL Settings - OK.';
-
--- Create Tables --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Tables";
-
-
--- Create Tables with Prefix: full --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Tables with Prefix: full";
-
-
--- CREATE TABLE: full_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_SimpleMap";
-
-CREATE TABLE IF NOT EXISTS `full_refset_SimpleMap` (
-	`id` CHAR(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapTarget` VARCHAR (200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin  NOT NULL DEFAULT '',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: full_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_ModuleDependency";
-
-CREATE TABLE IF NOT EXISTS `full_refset_ModuleDependency` (
-	`id` CHAR(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`sourceEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`targetEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- Create Tables with Prefix: snap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Tables with Prefix: snap";
-
-
--- CREATE TABLE: snap_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_SimpleMap";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_SimpleMap` (
-	`id` CHAR(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapTarget` VARCHAR (200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin  NOT NULL DEFAULT '',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- CREATE TABLE: snap_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_ModuleDependency";
-
-CREATE TABLE IF NOT EXISTS `snap_refset_ModuleDependency` (
-	`id` CHAR(36) NOT NULL DEFAULT '',
-	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`active` TINYINT NOT NULL DEFAULT  0,
-	`moduleId` BIGINT NOT NULL DEFAULT  0,
-	`refsetId` BIGINT NOT NULL DEFAULT  0,
-	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`sourceEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	`targetEffectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
-	PRIMARY KEY (`id`,`effectiveTime`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
--- Create Transitive Tables --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Create Transitive Tables";
-
--- CREATE TABLE `snap_transclose` 
-
-CREATE TABLE IF NOT EXISTS `snap_transclose` (
-	`subtypeId` BIGINT NOT NULL DEFAULT  0,
-	`supertypeId` BIGINT NOT NULL DEFAULT  0,
-	        PRIMARY KEY (`subtypeId`,`supertypeId`),
-	KEY `t_rev` (`supertypeId`,`subtypeId`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- CREATE TABLE snap_proximal_primitives 
-
-CREATE TABLE IF NOT EXISTS snap_proximal_primitives (
-	`subtypeId` BIGINT NOT NULL DEFAULT  0,
-	`supertypeId` BIGINT NOT NULL DEFAULT  0,
-	        PRIMARY KEY (`subtypeId`,`supertypeId`),
-	KEY `t_rev` (`supertypeId`,`subtypeId`))
-	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
-
-
--- ===========================================
--- START LOAD DATA
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START LOAD DATA";
-
-
--- Load Tables with Prefix: full --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Tables with Prefix: full";
-
-
--- Load Table Data: full_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_SimpleMap";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_ICNPInterventionsSimpleMapFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_SimpleMap`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`);
-
-
--- Load Table Data: full_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_ModuleDependency";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ICNPInterventionsModuleDependencyFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_ModuleDependency`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
-
-
--- Load Tables with Prefix: snap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Tables with Prefix: snap";
-
-
--- Load Table Data: snap_refset_SimpleMap --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_SimpleMap";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_sRefset_ICNPInterventionsSimpleMapSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_SimpleMap`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`);
-
-
--- Load Table Data: snap_refset_ModuleDependency --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_ModuleDependency";
-
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_ICNPInterventionsModuleDependencySnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_ModuleDependency`
-LINES TERMINATED BY '\r\n'
-IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
-
-
--- END LOAD DATA --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END LOAD DATA";
-
-
-
--- ===========================================
--- START CONFIGURATION
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START CONFIGURATION";
-
-USE `$DBNAME`;
--- Create Configuration Tables and Initial Settings
-DELIMITER ;
-
-CREATE TABLE IF NOT EXISTS `config_language` (
- `id` bigint,
- `prefix` varchar(5),
- `name` VARCHAR (255) NOT NULL DEFAULT '',
-  PRIMARY KEY (`id`),
-  INDEX pfx (`prefix`)
-) ENGINE=MyISAM CHARSET=utf8mb4;
-
-INSERT IGNORE INTO `config_language` (`prefix`,`id`,`name`)
-VALUES
-('en-US', 900000000000509007, 'US English'),
-('en-GB', 900000000000508004, 'GB English'),
-('es', 448879004, 'Spanish'),
-('xx-GM', 608771002, 'GMDN'),
-('xh', 722128001, 'Chinese'),
-('ja', 722129009, 'Japanese'),
-('de', 722130004, 'German'),
-('fr', 722131000, 'French'),
-('en', 900000000000507009, 'English'),
-('en-AU', 32570271000036106, 'Australian English'),
-('es-XL', 450828004, 'Latin American Spanish'),
-('nl-BE', 31000172101, 'Belgian Dutch'),
-('fr-CA', 20581000087109, 'Canadian French'),
-('en-CA', 19491000087109, 'Canadian English'),
-('dk', 554461000005103, 'Danish'),
-('sv', 999991, 'Swedish'),
-('no', 999992, 'Norwegian'),
-('nl', 999993, 'Dutch');
-
-CREATE TABLE IF NOT EXISTS `config_settings` (
-  `id` tinyint(1) NOT NULL DEFAULT '1',
-  `languageId` bigint DEFAULT '900000000000509007',
-  `languageName` varchar(255) NOT NULL DEFAULT 'US English',
-  `snapshotTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deltaStartTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deltaEndTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- Release date is set here and end of the day of release
--- This avoids issues if effectiveTime contain a time element.
-SET @RELDATE=TIMESTAMP(CONCAT('$RELDATE','235959'));
-
--- The row with id=0 is not used directly except as default values to refresh other rows
--- Row 0 set on database load: 
---			snapshotTime and deltaEndTime set to release date 
---          deltaStartTime set to 6 month earlier
--- Other values are reset by resetConfig() 6 and 12 months later than the row with id=0
--- and can be set to specific values using the setDeltaRange and setSnapshotTime procedures.
-
-DELETE FROM `config_settings` WHERE `id`=0;
-
-INSERT IGNORE INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
-VALUES 
-(0,900000000000509007,'US English', @RELDATE, DATE_SUB(@RELDATE,INTERVAL 6 MONTH),@RELDATE);
-USE `$DBNAME`;
--- Create Configuration Procedures
-
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS `resetConfig`;;
-CREATE PROCEDURE `resetConfig` ()
-BEGIN
-
--- This procedure reapplies the default values (from id=0 row) to the rows with id=1 and id=2
--- Row 0 set on database load: 
---			snapshotTime and deltaEndTime set to release date 
---          deltaStartTime set to 6 month earlier
--- resetConfig resets Row 1 and Row 2
--- 			Row 1 dates are set 6 is months earlier than Row 0
--- 			Row 2 dates are set 12 months earlier than Row 0.
-
-DELETE FROM `config_settings` WHERE `id`>0;
-
-INSERT INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
-SELECT 1,`languageId`,`languageName`,DATE_SUB(`snapshotTime`,INTERVAL 6 MONTH),DATE_SUB(`deltaStartTime`,INTERVAL 6 MONTH),DATE_SUB(`deltaEndTime`,INTERVAL 6 MONTH) FROM `config_settings` WHERE `id`=0
-UNION
-SELECT 2,`languageId`,`languageName`,DATE_SUB(`snapshotTime`,INTERVAL 12 MONTH),DATE_SUB(`deltaStartTime`,INTERVAL 12 MONTH),DATE_SUB(`deltaEndTime`,INTERVAL 12 MONTH) FROM `config_settings` WHERE `id`=0;
-END;;
-
---
-
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS `setLanguage`;;
-CREATE PROCEDURE `setLanguage`(IN `p_id` tinyint, IN `p_lang_code` varchar(5))
-proc:BEGIN
--- This procedure sets the language using the language-dialect code (e.g. en-GB etc)
--- This can be applied to any of the numbered views.
-DECLARE `languageId` BIGINT;
-DECLARE `langRefsetName` text;
-DECLARE `msg` text;
-DECLARE specialty CONDITION FOR SQLSTATE '45000';
-
--- DEFAULT TO en-US
-IF `p_lang_code`='' THEN 
-	SET `p_lang_code`='en-US';
-END IF;
-
--- GET Language refsetId from config_language for the Language Code
-SET `languageId`=(SELECT `id` FROM `config_language` WHERE `prefix`=`p_lang_code`);
-IF ISNULL(`languageId`) THEN
-    -- Error if no record for this lang_code in config_language
-	SET `msg`=CONCAT('Language Code Not Found: ',`p_lang_code`);
-	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
-END IF;
-
--- GET Preferred Synonym for the refsetId from snap_pref
-SET `langRefsetName`=(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`languageId`);
-IF ISNULL(`langRefsetName`) THEN
-    -- Error if no preferred synonym in snap_pref
-    set `msg`=CONCAT('ERR: Language Refset Name Not Found for : ',`p_lang_code`,' RefsetId: ',`languageId`);
- 	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
-END IF;
-
--- CHECK if any members in the snap_refset_language for this refsetId
-SET @test=(SELECT `id` FROM `snap_refset_language` WHERE `refsetId`=`languageId` LIMIT 1);
-IF ISNULL(@test) THEN
-    -- Error if no members
-	set `msg`= CONCAT('ERR: No Language Refset Members Found for : ',`p_lang_code`,' RefsetId: ',`languageId`,'Name: ',`langRefsetName`);
- 	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
-END IF;
-
-UPDATE `config_settings` `s`, `config_language` `l`
-	SET `s`.`languageId`=`l`.`id`,
-	`s`.`languageName`=`l`.`name`
-	WHERE `l`.`prefix`=`p_lang_code`
-	AND `s`.`id`=`p_id`;
-END;;
-
---
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS `setSnapshotTime`;;
-CREATE PROCEDURE `setSnapshotTime` (IN `p_id` tinyint, IN `p_snapshotTime` DATETIME)
-BEGIN
--- This procedure sets the snapshotTime. Time gets adjusted to 23:59:59 on the chosen date.
--- There are two configurable rows id=1 and id=2 which affect different views with prefixes rsnap_ (and if used rsnap2_)
-IF `p_id`<1 THEN
-	SET `p_id`=2;
-ELSEIF `p_id`>1 THEN
-	SET `p_id`=2;
-END IF;
-
-UPDATE `config_settings` `s`
--- Adjusts time to end of day to ensure it is inclusive
-	SET `snapshotTime`=DATE_ADD(DATE(TIMESTAMP(`p_snapshotTime`)),INTERVAL 86399 SECOND)
-	WHERE `s`.`id`=`p_id`;
-END;;
-
---
-DROP PROCEDURE IF EXISTS `setDeltaRange`;;
-CREATE PROCEDURE `setDeltaRange` (IN `p_id` tinyint, IN `p_deltaStartTime` DATETIME,IN `p_deltaEndTime` DATETIME)
-BEGIN
--- This procedure sets the snapshotTime. Time gets adjusted to 23:59:59 on the chosen date.
--- There are two configurable rows id=1 and id=2 which affect different views with prefixes rsnap_ (and if used rsnap2_)
-IF `p_id`<1 THEN
-	SET `p_id`=2;
-ELSEIF `p_id`>1 THEN
-	SET `p_id`=2;
-END IF;
-UPDATE `config_settings` `s`
--- Adjusts times to end of day to ensure it is inclusive
-	SET `deltaStartTime`=DATE_ADD(DATE(TIMESTAMP(`p_deltaStartTime`)),INTERVAL 86399 SECOND),
-		`deltaEndTime`=DATE_ADD(DATE(TIMESTAMP(`p_deltaEndTime`)),INTERVAL 86399 SECOND)
-	WHERE `s`.`id`=`p_id`;
-END;;
-
--- 
-
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS `showConfig`;;
-CREATE PROCEDURE `showConfig`()
-BEGIN
--- This trivial procedure just shows the config_settings table content (included for completeness)
-SELECT `c`.`id`,`languageId`,`languageName`, `term` `refsetName`,DATE(TIMESTAMP(`snapshotTime`)) `snapshotTime`,DATE(TIMESTAMP(`deltaStartTime`)) `deltaStartTime`,DATE(TIMESTAMP(`deltaEndTime`)) `deltaEndTime` FROM `config_settings` `c` JOIN `snap_fsn` on `c`.`languageId`=`conceptId` ORDER BY `c`.`id`;
-END;;
-
--- 
-
-DELIMITER ;;
-DROP PROCEDURE IF EXISTS `resetConfigOpt`;;
-CREATE PROCEDURE `resetConfigOpt` ()
-BEGIN
-	SET @cfgLines=(SELECT count(`id`) FROM `config_settings`);
-	IF @cfgLines=1 THEN
-		CALL `resetConfig`();
-	END IF;
-END;;
-DELIMITER ;
-
-CALL resetConfigOpt();
-DROP PROCEDURE IF EXISTS `resetConfigOpt`;
-
-
-DELIMITER ;
-
-
--- END CONFIGURATION --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END CONFIGURATION";
-
-
-
--- ===========================================
--- START VERSIONED VIEWS
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START VERSIONED VIEWS";
-
-
--- VIEW SNAP CURRENT --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"VIEW SNAP CURRENT";
-
-
--- VIEW DELTA --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"VIEW DELTA";
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_SimpleMap`;
-CREATE VIEW `delta_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta_refset_ModuleDependency`;
-CREATE VIEW `delta_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
--- VIEW SNAP ALT --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"VIEW SNAP ALT";
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_SimpleMap`;
-CREATE VIEW `snap1_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap1_refset_ModuleDependency`;
-CREATE VIEW `snap1_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
--- VIEW DELTA --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"VIEW DELTA";
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_SimpleMap`;
-CREATE VIEW `delta1_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta1_refset_ModuleDependency`;
-CREATE VIEW `delta1_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
--- VIEW SNAP ALT --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"VIEW SNAP ALT";
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_SimpleMap`;
-CREATE VIEW `snap2_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `snap2_refset_ModuleDependency`;
-CREATE VIEW `snap2_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
-
-
--- VIEW DELTA --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"VIEW DELTA";
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_SimpleMap`;
-CREATE VIEW `delta2_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS `delta2_refset_ModuleDependency`;
-CREATE VIEW `delta2_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
-
-
--- END VERSIONED VIEWS --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END VERSIONED VIEWS";
-
-
-
--- ===========================================
--- START COMPOSITE VIEWS
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START COMPOSITE VIEWS";
-
--- Create View Special Snap views for 'snap'
-DELIMITER ;
-USE `$DBNAME`;
-
-DROP VIEW IF EXISTS `snap_fsn`;
-
-CREATE VIEW `snap_fsn` AS
-(SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
-	AND `cfg`.`id`=0);
-
-DROP VIEW IF EXISTS `snap_pref`;
-
-CREATE VIEW `snap_pref` AS
-(SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
-	AND `cfg`.`id`=0);
-
-DROP VIEW IF EXISTS `snap_syn`;
-
-CREATE VIEW `snap_syn` AS
-(SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
-	AND `cfg`.`id`=0);
-
-DROP VIEW IF EXISTS `snap_synall`;
-
-CREATE VIEW `snap_synall` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 
-	AND `cfg`.`id`=0);
-
-DROP VIEW IF EXISTS `snap_term_search_active`;
-
-CREATE VIEW `snap_term_search_active` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `snap_concept` `c` ON `c`.`id` = `d`.`conceptId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 
-	AND `rs`.`active` = 1
-	AND `c`.`active` = 1
-	AND `cfg`.`id`=0);
-
-DROP VIEW IF EXISTS `snap_syn_search_active`;
-
-CREATE VIEW `snap_syn_search_active` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `snap_concept` `c` ON `c`.`id` = `d`.`conceptId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
-	AND `rs`.`active` = 1
-	AND `c`.`active` = 1
-	AND `cfg`.`id`=0);
-
-DROP VIEW IF EXISTS `snap_rel_def_pref`;
-
-CREATE VIEW `snap_rel_def_pref` AS
-(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap_relationship` `r`
-	JOIN `snap_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
-
-DROP VIEW IF EXISTS `snap_rel_def_fsn`;
-
-CREATE VIEW `snap_rel_def_fsn` AS
-(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap_relationship` `r`
-	JOIN `snap_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
-
-DROP VIEW IF EXISTS `snap_rel_child_fsn`;
-
-CREATE VIEW `snap_rel_child_fsn` AS
-(SELECT `r`.`sourceId` `id`,`d`.`term` `term`,`r`.`destinationId` `conceptId`
-	FROM  `snap_relationship` `r`
-	JOIN `snap_fsn` `d` ON (`r`.`sourceId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap_rel_parent_fsn`;
-
-CREATE VIEW `snap_rel_parent_fsn` AS
-(SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
-	FROM  `snap_relationship` `r`
-	JOIN `snap_fsn` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap_rel_child_pref`;
-
-CREATE VIEW `snap_rel_child_pref` AS
-(SELECT `r`.`sourceId` `id`,`d`.`term` `term`,`r`.`destinationId` `conceptId`
-	FROM  `snap_relationship` `r`
-	JOIN `snap_pref` `d` ON (`r`.`sourceId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap_rel_parent_pref`;
-
-CREATE VIEW `snap_rel_parent_pref` AS
-(SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
-	FROM  `snap_relationship` `r`
-JOIN `snap_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DELIMITER ;
--- Create View Special All views for 'snap'
-DELIMITER ;
-USE `$DBNAME`;
-DROP VIEW IF EXISTS snap_inactive_concepts;
-
-CREATE VIEW snap_inactive_concepts AS 
-select `c`.`id`,`c`.`effectiveTime`,`c`.`active`,`c`.`definitionStatusId`,`cf`.`term` 'FSN',`vp`.`term` 'reason',`arp`.`term` 'assoc_type',`atf`.`id` 'ref_conceptId',`atf`.`term` 'ref_concept_FSN' 
-from `snap_concept` `c`
-left join `snap_fsn` `cf` ON `cf`.`conceptid`=`c`.`id`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`c`.`id` and `v`.`refsetId`=900000000000489007 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-left outer join `snap_refset_association` `a` on `a`.`referencedComponentId`=`c`.`id` 
-and `a`.`refsetId` IN (900000000000528000,900000000000523009,900000000000527005,900000000000526001,900000000000525002,900000000000531004,900000000000524003,900000000000530003) and `a`.`active`=1
-left outer join `snap_pref` `arp` on `arp`.`conceptid`=`a`.`refsetId`
-left outer join `snap_fsn` `atf` on `atf`.`conceptid`=`a`.`targetComponentId`
-where `c`.`active`=0
-order by `c`.`id`;
-
-DROP VIEW IF EXISTS snap_inactive_descriptions;
-
-CREATE VIEW snap_inactive_descriptions AS 
-select `d`.`id`,`d`.`effectiveTime`,`d`.`active`,`d`.`conceptid`,`d`.`term` 'term',`df`.`term` 'concept_fsn',`c`.`active` 'concept_active',`vp`.`term` 'reason' 
-from `snap_description` `d`
-left outer join `snap_fsn` `df` ON `df`.`conceptid`=`d`.`conceptid`
-join `snap_concept` `c` ON `c`.`id`=`d`.`conceptid`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`d`.`id` and `v`.`refsetId`=900000000000490003 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-where `d`.`active`=0
-order by `d`.`id`;
-
-DELIMITER ;
--- Create View Special Delta views for 'delta'
-DELIMITER ;
-USE `$DBNAME`;
-
--- No views specified at present
-
-DELIMITER ;
--- Create View Special All views for 'delta'
-DELIMITER ;
-USE `$DBNAME`;
-DROP VIEW IF EXISTS delta_inactive_concepts;
-
-CREATE VIEW delta_inactive_concepts AS 
-select `c`.`id`,`c`.`effectiveTime`,`c`.`active`,`c`.`definitionStatusId`,`cf`.`term` 'FSN',`vp`.`term` 'reason',`arp`.`term` 'assoc_type',`atf`.`id` 'ref_conceptId',`atf`.`term` 'ref_concept_FSN' 
-from `delta_concept` `c`
-left join `snap_fsn` `cf` ON `cf`.`conceptid`=`c`.`id`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`c`.`id` and `v`.`refsetId`=900000000000489007 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-left outer join `snap_refset_association` `a` on `a`.`referencedComponentId`=`c`.`id` 
-and `a`.`refsetId` IN (900000000000528000,900000000000523009,900000000000527005,900000000000526001,900000000000525002,900000000000531004,900000000000524003,900000000000530003) and `a`.`active`=1
-left outer join `snap_pref` `arp` on `arp`.`conceptid`=`a`.`refsetId`
-left outer join `snap_fsn` `atf` on `atf`.`conceptid`=`a`.`targetComponentId`
-where `c`.`active`=0
-order by `c`.`id`;
-
-DROP VIEW IF EXISTS delta_inactive_descriptions;
-
-CREATE VIEW delta_inactive_descriptions AS 
-select `d`.`id`,`d`.`effectiveTime`,`d`.`active`,`d`.`conceptid`,`d`.`term` 'term',`df`.`term` 'concept_fsn',`c`.`active` 'concept_active',`vp`.`term` 'reason' 
-from `delta_description` `d`
-left outer join `snap_fsn` `df` ON `df`.`conceptid`=`d`.`conceptid`
-join `snap_concept` `c` ON `c`.`id`=`d`.`conceptid`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`d`.`id` and `v`.`refsetId`=900000000000490003 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-where `d`.`active`=0
-order by `d`.`id`;
-
-DELIMITER ;
--- Create View Special Snap views for 'snap1'
-DELIMITER ;
-USE `$DBNAME`;
-
-DROP VIEW IF EXISTS `snap1_fsn`;
-
-CREATE VIEW `snap1_fsn` AS
-(SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
-	AND `cfg`.`id`=1);
-
-DROP VIEW IF EXISTS `snap1_pref`;
-
-CREATE VIEW `snap1_pref` AS
-(SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
-	AND `cfg`.`id`=1);
-
-DROP VIEW IF EXISTS `snap1_syn`;
-
-CREATE VIEW `snap1_syn` AS
-(SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
-	AND `cfg`.`id`=1);
-
-DROP VIEW IF EXISTS `snap1_synall`;
-
-CREATE VIEW `snap1_synall` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 
-	AND `cfg`.`id`=1);
-
-DROP VIEW IF EXISTS `snap1_term_search_active`;
-
-CREATE VIEW `snap1_term_search_active` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `snap1_concept` `c` ON `c`.`id` = `d`.`conceptId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 
-	AND `rs`.`active` = 1
-	AND `c`.`active` = 1
-	AND `cfg`.`id`=1);
-
-DROP VIEW IF EXISTS `snap1_syn_search_active`;
-
-CREATE VIEW `snap1_syn_search_active` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `snap1_concept` `c` ON `c`.`id` = `d`.`conceptId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
-	AND `rs`.`active` = 1
-	AND `c`.`active` = 1
-	AND `cfg`.`id`=1);
-
-DROP VIEW IF EXISTS `snap1_rel_def_pref`;
-
-CREATE VIEW `snap1_rel_def_pref` AS
-(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap1_relationship` `r`
-	JOIN `snap1_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap1_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
-
-DROP VIEW IF EXISTS `snap1_rel_def_fsn`;
-
-CREATE VIEW `snap1_rel_def_fsn` AS
-(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap1_relationship` `r`
-	JOIN `snap1_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap1_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
-
-DROP VIEW IF EXISTS `snap1_rel_child_fsn`;
-
-CREATE VIEW `snap1_rel_child_fsn` AS
-(SELECT `r`.`sourceId` `id`,`d`.`term` `term`,`r`.`destinationId` `conceptId`
-	FROM  `snap1_relationship` `r`
-	JOIN `snap1_fsn` `d` ON (`r`.`sourceId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap1_rel_parent_fsn`;
-
-CREATE VIEW `snap1_rel_parent_fsn` AS
-(SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
-	FROM  `snap1_relationship` `r`
-	JOIN `snap1_fsn` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap1_rel_child_pref`;
-
-CREATE VIEW `snap1_rel_child_pref` AS
-(SELECT `r`.`sourceId` `id`,`d`.`term` `term`,`r`.`destinationId` `conceptId`
-	FROM  `snap1_relationship` `r`
-	JOIN `snap1_pref` `d` ON (`r`.`sourceId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap1_rel_parent_pref`;
-
-CREATE VIEW `snap1_rel_parent_pref` AS
-(SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
-	FROM  `snap1_relationship` `r`
-JOIN `snap1_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DELIMITER ;
--- Create View Special All views for 'snap1'
-DELIMITER ;
-USE `$DBNAME`;
-DROP VIEW IF EXISTS snap1_inactive_concepts;
-
-CREATE VIEW snap1_inactive_concepts AS 
-select `c`.`id`,`c`.`effectiveTime`,`c`.`active`,`c`.`definitionStatusId`,`cf`.`term` 'FSN',`vp`.`term` 'reason',`arp`.`term` 'assoc_type',`atf`.`id` 'ref_conceptId',`atf`.`term` 'ref_concept_FSN' 
-from `snap1_concept` `c`
-left join `snap_fsn` `cf` ON `cf`.`conceptid`=`c`.`id`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`c`.`id` and `v`.`refsetId`=900000000000489007 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-left outer join `snap_refset_association` `a` on `a`.`referencedComponentId`=`c`.`id` 
-and `a`.`refsetId` IN (900000000000528000,900000000000523009,900000000000527005,900000000000526001,900000000000525002,900000000000531004,900000000000524003,900000000000530003) and `a`.`active`=1
-left outer join `snap_pref` `arp` on `arp`.`conceptid`=`a`.`refsetId`
-left outer join `snap_fsn` `atf` on `atf`.`conceptid`=`a`.`targetComponentId`
-where `c`.`active`=0
-order by `c`.`id`;
-
-DROP VIEW IF EXISTS snap1_inactive_descriptions;
-
-CREATE VIEW snap1_inactive_descriptions AS 
-select `d`.`id`,`d`.`effectiveTime`,`d`.`active`,`d`.`conceptid`,`d`.`term` 'term',`df`.`term` 'concept_fsn',`c`.`active` 'concept_active',`vp`.`term` 'reason' 
-from `snap1_description` `d`
-left outer join `snap_fsn` `df` ON `df`.`conceptid`=`d`.`conceptid`
-join `snap_concept` `c` ON `c`.`id`=`d`.`conceptid`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`d`.`id` and `v`.`refsetId`=900000000000490003 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-where `d`.`active`=0
-order by `d`.`id`;
-
-DELIMITER ;
--- Create View Special Delta views for 'delta1'
-DELIMITER ;
-USE `$DBNAME`;
-
--- No views specified at present
-
-DELIMITER ;
--- Create View Special All views for 'delta1'
-DELIMITER ;
-USE `$DBNAME`;
-DROP VIEW IF EXISTS delta1_inactive_concepts;
-
-CREATE VIEW delta1_inactive_concepts AS 
-select `c`.`id`,`c`.`effectiveTime`,`c`.`active`,`c`.`definitionStatusId`,`cf`.`term` 'FSN',`vp`.`term` 'reason',`arp`.`term` 'assoc_type',`atf`.`id` 'ref_conceptId',`atf`.`term` 'ref_concept_FSN' 
-from `delta1_concept` `c`
-left join `snap_fsn` `cf` ON `cf`.`conceptid`=`c`.`id`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`c`.`id` and `v`.`refsetId`=900000000000489007 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-left outer join `snap_refset_association` `a` on `a`.`referencedComponentId`=`c`.`id` 
-and `a`.`refsetId` IN (900000000000528000,900000000000523009,900000000000527005,900000000000526001,900000000000525002,900000000000531004,900000000000524003,900000000000530003) and `a`.`active`=1
-left outer join `snap_pref` `arp` on `arp`.`conceptid`=`a`.`refsetId`
-left outer join `snap_fsn` `atf` on `atf`.`conceptid`=`a`.`targetComponentId`
-where `c`.`active`=0
-order by `c`.`id`;
-
-DROP VIEW IF EXISTS delta1_inactive_descriptions;
-
-CREATE VIEW delta1_inactive_descriptions AS 
-select `d`.`id`,`d`.`effectiveTime`,`d`.`active`,`d`.`conceptid`,`d`.`term` 'term',`df`.`term` 'concept_fsn',`c`.`active` 'concept_active',`vp`.`term` 'reason' 
-from `delta1_description` `d`
-left outer join `snap_fsn` `df` ON `df`.`conceptid`=`d`.`conceptid`
-join `snap_concept` `c` ON `c`.`id`=`d`.`conceptid`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`d`.`id` and `v`.`refsetId`=900000000000490003 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-where `d`.`active`=0
-order by `d`.`id`;
-
-DELIMITER ;
--- Create View Special Snap views for 'snap2'
-DELIMITER ;
-USE `$DBNAME`;
-
-DROP VIEW IF EXISTS `snap2_fsn`;
-
-CREATE VIEW `snap2_fsn` AS
-(SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
-	AND `cfg`.`id`=2);
-
-DROP VIEW IF EXISTS `snap2_pref`;
-
-CREATE VIEW `snap2_pref` AS
-(SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
-	AND `cfg`.`id`=2);
-
-DROP VIEW IF EXISTS `snap2_syn`;
-
-CREATE VIEW `snap2_syn` AS
-(SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
-	AND `cfg`.`id`=2);
-
-DROP VIEW IF EXISTS `snap2_synall`;
-
-CREATE VIEW `snap2_synall` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
-	AND `rs`.`active` = 1 
-	AND `cfg`.`id`=2);
-
-DROP VIEW IF EXISTS `snap2_term_search_active`;
-
-CREATE VIEW `snap2_term_search_active` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `snap2_concept` `c` ON `c`.`id` = `d`.`conceptId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 
-	AND `rs`.`active` = 1
-	AND `c`.`active` = 1
-	AND `cfg`.`id`=2);
-
-DROP VIEW IF EXISTS `snap2_syn_search_active`;
-
-CREATE VIEW `snap2_syn_search_active` AS
-(SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
-	JOIN `snap2_concept` `c` ON `c`.`id` = `d`.`conceptId`
-	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
-	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
-	AND `rs`.`active` = 1
-	AND `c`.`active` = 1
-	AND `cfg`.`id`=2);
-
-DROP VIEW IF EXISTS `snap2_rel_def_pref`;
-
-CREATE VIEW `snap2_rel_def_pref` AS
-(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap2_relationship` `r`
-	JOIN `snap2_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap2_pref` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
-
-DROP VIEW IF EXISTS `snap2_rel_def_fsn`;
-
-CREATE VIEW `snap2_rel_def_fsn` AS
-(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`destinationId` `destinationId`,`dest`.`Term` `destinationTerm`,`r`.`relationshipGroup` `relationshipGroup`
-	FROM (((`snap2_relationship` `r`
-	JOIN `snap2_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`))) JOIN `snap2_fsn` `dest` ON ((`r`.`destinationId` = `dest`.`conceptId`))) WHERE ((`r`.`active` = 1) AND (`r`.`characteristicTypeId` = 900000000000011006)));
-
-DROP VIEW IF EXISTS `snap2_rel_child_fsn`;
-
-CREATE VIEW `snap2_rel_child_fsn` AS
-(SELECT `r`.`sourceId` `id`,`d`.`term` `term`,`r`.`destinationId` `conceptId`
-	FROM  `snap2_relationship` `r`
-	JOIN `snap2_fsn` `d` ON (`r`.`sourceId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap2_rel_parent_fsn`;
-
-CREATE VIEW `snap2_rel_parent_fsn` AS
-(SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
-	FROM  `snap2_relationship` `r`
-	JOIN `snap2_fsn` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap2_rel_child_pref`;
-
-CREATE VIEW `snap2_rel_child_pref` AS
-(SELECT `r`.`sourceId` `id`,`d`.`term` `term`,`r`.`destinationId` `conceptId`
-	FROM  `snap2_relationship` `r`
-	JOIN `snap2_pref` `d` ON (`r`.`sourceId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DROP VIEW IF EXISTS `snap2_rel_parent_pref`;
-
-CREATE VIEW `snap2_rel_parent_pref` AS
-(SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
-	FROM  `snap2_relationship` `r`
-JOIN `snap2_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
-
-DELIMITER ;
--- Create View Special All views for 'snap2'
-DELIMITER ;
-USE `$DBNAME`;
-DROP VIEW IF EXISTS snap2_inactive_concepts;
-
-CREATE VIEW snap2_inactive_concepts AS 
-select `c`.`id`,`c`.`effectiveTime`,`c`.`active`,`c`.`definitionStatusId`,`cf`.`term` 'FSN',`vp`.`term` 'reason',`arp`.`term` 'assoc_type',`atf`.`id` 'ref_conceptId',`atf`.`term` 'ref_concept_FSN' 
-from `snap2_concept` `c`
-left join `snap_fsn` `cf` ON `cf`.`conceptid`=`c`.`id`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`c`.`id` and `v`.`refsetId`=900000000000489007 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-left outer join `snap_refset_association` `a` on `a`.`referencedComponentId`=`c`.`id` 
-and `a`.`refsetId` IN (900000000000528000,900000000000523009,900000000000527005,900000000000526001,900000000000525002,900000000000531004,900000000000524003,900000000000530003) and `a`.`active`=1
-left outer join `snap_pref` `arp` on `arp`.`conceptid`=`a`.`refsetId`
-left outer join `snap_fsn` `atf` on `atf`.`conceptid`=`a`.`targetComponentId`
-where `c`.`active`=0
-order by `c`.`id`;
-
-DROP VIEW IF EXISTS snap2_inactive_descriptions;
-
-CREATE VIEW snap2_inactive_descriptions AS 
-select `d`.`id`,`d`.`effectiveTime`,`d`.`active`,`d`.`conceptid`,`d`.`term` 'term',`df`.`term` 'concept_fsn',`c`.`active` 'concept_active',`vp`.`term` 'reason' 
-from `snap2_description` `d`
-left outer join `snap_fsn` `df` ON `df`.`conceptid`=`d`.`conceptid`
-join `snap_concept` `c` ON `c`.`id`=`d`.`conceptid`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`d`.`id` and `v`.`refsetId`=900000000000490003 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-where `d`.`active`=0
-order by `d`.`id`;
-
-DELIMITER ;
--- Create View Special Delta views for 'delta2'
-DELIMITER ;
-USE `$DBNAME`;
-
--- No views specified at present
-
-DELIMITER ;
--- Create View Special All views for 'delta2'
-DELIMITER ;
-USE `$DBNAME`;
-DROP VIEW IF EXISTS delta2_inactive_concepts;
-
-CREATE VIEW delta2_inactive_concepts AS 
-select `c`.`id`,`c`.`effectiveTime`,`c`.`active`,`c`.`definitionStatusId`,`cf`.`term` 'FSN',`vp`.`term` 'reason',`arp`.`term` 'assoc_type',`atf`.`id` 'ref_conceptId',`atf`.`term` 'ref_concept_FSN' 
-from `delta2_concept` `c`
-left join `snap_fsn` `cf` ON `cf`.`conceptid`=`c`.`id`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`c`.`id` and `v`.`refsetId`=900000000000489007 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-left outer join `snap_refset_association` `a` on `a`.`referencedComponentId`=`c`.`id` 
-and `a`.`refsetId` IN (900000000000528000,900000000000523009,900000000000527005,900000000000526001,900000000000525002,900000000000531004,900000000000524003,900000000000530003) and `a`.`active`=1
-left outer join `snap_pref` `arp` on `arp`.`conceptid`=`a`.`refsetId`
-left outer join `snap_fsn` `atf` on `atf`.`conceptid`=`a`.`targetComponentId`
-where `c`.`active`=0
-order by `c`.`id`;
-
-DROP VIEW IF EXISTS delta2_inactive_descriptions;
-
-CREATE VIEW delta2_inactive_descriptions AS 
-select `d`.`id`,`d`.`effectiveTime`,`d`.`active`,`d`.`conceptid`,`d`.`term` 'term',`df`.`term` 'concept_fsn',`c`.`active` 'concept_active',`vp`.`term` 'reason' 
-from `delta2_description` `d`
-left outer join `snap_fsn` `df` ON `df`.`conceptid`=`d`.`conceptid`
-join `snap_concept` `c` ON `c`.`id`=`d`.`conceptid`
-left outer join `snap_refset_attributevalue` `v` on `v`.`referencedComponentId`=`d`.`id` and `v`.`refsetId`=900000000000490003 and `v`.`active`=1
-left outer join `snap_pref` `vp` on `vp`.`conceptid`=`v`.`valueid` 
-where `d`.`active`=0
-order by `d`.`id`;
-
-DELIMITER ;
-
--- END COMPOSITE VIEWS --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END COMPOSITE VIEWS";
-
-
-
--- ===========================================
--- START TRANSITIVE CLOSURE VIEWS
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START TRANSITIVE CLOSURE VIEWS";
 
 
 -- The SQL Script Generate a Snapshot View Transitive Closure Table 
@@ -1398,33 +162,7 @@ END;;
 DELIMITER ;
 
 CALL CreateTransCloseViews();
-DROP PROCEDURE IF EXISTS  CreateTransCloseViews;
--- END TRANSITIVE CLOSURE VIEWS --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END TRANSITIVE CLOSURE VIEWS";
-
-
-
--- ===========================================
--- START EXTRAS
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"START EXTRAS";
-
-
-
--- ===========================================
--- Add extra (no prefix): proc_ecl
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (no prefix): proc_ecl";
-
--- CONTAINS eclQuery and the Older version eclSimple
+DROP PROCEDURE IF EXISTS  CreateTransCloseViews;-- CONTAINS eclQuery and the Older version eclSimple
 USE `$DBNAME`;
 
 DELIMITER ;;
@@ -1991,16 +729,6 @@ DROP TABLE IF EXISTS `tmp_ref2`;
 END;;
 
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (with prefix): proc_search
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (with prefix): proc_search";
-
 DROP PROCEDURE IF EXISTS `snap_SearchPlus`;
 DELIMITER ;;
 CREATE PROCEDURE `snap_SearchPlus`(`p_search` text,`p_filter` text)
@@ -2280,16 +1008,6 @@ ELSE
 END IF;
 END;;
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (with prefix): proc_languages
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (with prefix): proc_languages";
-
 DROP PROCEDURE IF EXISTS `snap_termsInLanguages`;
 DELIMITER ;;
 CREATE PROCEDURE `snap_termsInLanguages`(`p_conceptIds` text,`p_langCodes` text)
@@ -2476,16 +1194,6 @@ CALL setLanguage(2,`v_defaultLanguage`);
 END;;
 
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (no prefix): func_refsetnames
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (no prefix): func_refsetnames";
-
 DELIMITER ;;
 DROP FUNCTION IF EXISTS `snap_RefsetNames`;;
 CREATE FUNCTION `snap_RefsetNames`() RETURNS text
@@ -2520,16 +1228,6 @@ RETURN CONCAT(alldata,'}');
 
 END;;
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (with prefix): proc_refsetmembers
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (with prefix): proc_refsetmembers";
-
 DROP PROCEDURE IF EXISTS `snap_members`;
 DELIMITER ;;
 CREATE PROCEDURE `snap_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
@@ -2577,47 +1275,77 @@ DECLARE `v_refsetType` VARCHAR(60);
 				`referencedComponentId`, 
 				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
 				`mapTarget`
-				FROM  `snap_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
+				FROM  `snap_refset_simplemap` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='association' THEN
-			SELECT * FROM  `snap_refset_association` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_association` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
 			-- refComp = DESCRIPTION
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, (SELECT `term` FROM `snap_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
 				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
 			-- refComp = RELATIONSHIP
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, '!Relationship!'
 				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' THEN
 			-- refComp = CONCEPT
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, (SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
 				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'descriptiontype' THEN
-			SELECT * FROM  `snap_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'language' THEN
-			SELECT * FROM  `snap_refset_language` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_language` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'moduledependency' THEN
-			SELECT * FROM  `snap_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_moduledependency` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmattributedomain' THEN
-			SELECT * FROM  `snap_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmattributerange' THEN
-			SELECT * FROM  `snap_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmdomain' THEN
-			SELECT * FROM  `snap_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmmodulescope' THEN
-			SELECT * FROM  `snap_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'owlexpression' THEN
-			SELECT * FROM  `snap_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_owlexpression` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'refsetdescriptor' THEN
-			SELECT * FROM  `snap_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'simple' THEN
-			SELECT * FROM  `snap_refset_simple` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap_refset_simple` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		ELSE
 			SELECT "Reference Set NOT FOUND!";
 	END CASE;
@@ -2672,47 +1400,77 @@ DECLARE `v_refsetType` VARCHAR(60);
 				`referencedComponentId`, 
 				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
 				`mapTarget`
-				FROM  `snap1_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
+				FROM  `snap1_refset_simplemap` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='association' THEN
-			SELECT * FROM  `snap1_refset_association` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_association` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
 			-- refComp = DESCRIPTION
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, (SELECT `term` FROM `snap1_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
 				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
 			-- refComp = RELATIONSHIP
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, '!Relationship!'
 				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' THEN
 			-- refComp = CONCEPT
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, (SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
 				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'descriptiontype' THEN
-			SELECT * FROM  `snap1_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'language' THEN
-			SELECT * FROM  `snap1_refset_language` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_language` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'moduledependency' THEN
-			SELECT * FROM  `snap1_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_moduledependency` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmattributedomain' THEN
-			SELECT * FROM  `snap1_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmattributerange' THEN
-			SELECT * FROM  `snap1_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmdomain' THEN
-			SELECT * FROM  `snap1_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmmodulescope' THEN
-			SELECT * FROM  `snap1_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'owlexpression' THEN
-			SELECT * FROM  `snap1_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_owlexpression` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'refsetdescriptor' THEN
-			SELECT * FROM  `snap1_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'simple' THEN
-			SELECT * FROM  `snap1_refset_simple` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap1_refset_simple` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		ELSE
 			SELECT "Reference Set NOT FOUND!";
 	END CASE;
@@ -2767,47 +1525,77 @@ DECLARE `v_refsetType` VARCHAR(60);
 				`referencedComponentId`, 
 				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
 				`mapTarget`
-				FROM  `snap2_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
+				FROM  `snap2_refset_simplemap` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='association' THEN
-			SELECT * FROM  `snap2_refset_association` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_association` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
 			-- refComp = DESCRIPTION
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, (SELECT `term` FROM `snap2_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
 				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
 			-- refComp = RELATIONSHIP
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, '!Relationship!'
 				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN `v_refsetType`='attributevalue' THEN
 			-- refComp = CONCEPT
 			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
 				`referencedComponentId`, (SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
 				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
+			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'descriptiontype' THEN
-			SELECT * FROM  `snap2_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'language' THEN
-			SELECT * FROM  `snap2_refset_language` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_language` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'moduledependency' THEN
-			SELECT * FROM  `snap2_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_moduledependency` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmattributedomain' THEN
-			SELECT * FROM  `snap2_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmattributerange' THEN
-			SELECT * FROM  `snap2_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmdomain' THEN
-			SELECT * FROM  `snap2_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'mrcmmodulescope' THEN
-			SELECT * FROM  `snap2_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'owlexpression' THEN
-			SELECT * FROM  `snap2_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_owlexpression` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'refsetdescriptor' THEN
-			SELECT * FROM  `snap2_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		WHEN 'simple' THEN
-			SELECT * FROM  `snap2_refset_simple` WHERE `refsetId`=`p_refsetid`;
+			SELECT * FROM  `snap2_refset_simple` WHERE `refsetId`=`p_refsetid`
+					AND `referencedComponentId`=`p_referencedComponentId`
+					AND `active`=1;
 		ELSE
 			SELECT "Reference Set NOT FOUND!";
 	END CASE;
@@ -2815,12 +1603,49 @@ END;;
 
 DELIMITER ;
 
-
--- END EXTRAS --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"END EXTRAS";
 
+-- Create and Populate Shortcuts Table
+-- Useful for quick use of subsumption limits.
+CREATE TABLE IF NOT EXISTS `config_shortcuts` (
+  `abbrev` varchar(5) NOT NULL,
+  `conceptId` bigint NOT NULL,
+  PRIMARY KEY (`abbrev`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT IGNORE INTO `config_shortcuts` (`abbrev`,`conceptId`) 
+VALUES ('anat',91723000),
+('attr',246061005),
+('body',123037004),
+('clin',404684003),
+('dise',64572001),
+('envi',308916002),
+('eval',386053000),
+('even',272379006),
+('find',404684003),
+('forc',78621006),
+('lab',108252007),
+('meas',122869004),
+('meta',900000000000441003),
+('morph',118956008),
+('obje',260787004),
+('obse',363787002),
+('orga',410607006),
+('phar',373873005),
+('proc',71388002),
+('qual',362981000),
+('qval',362981000),
+('reco',419891008),
+('refs',900000000000455006),
+('situ',243796009),
+('soci',48176007),
+('spec',123038009),
+('stag',254291000),
+('subs',105590001),
+('swec',243796009);
+
+DELIMITER ;
 
 
 -- ===========================================
@@ -2831,52 +1656,6 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"START INDEX";
 
-
--- CreateIndexUpdater Procedure --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"CreateIndexUpdater Procedure";
-
-
-DELIMITER ;;
-
--- This procedure is use to add indexes to created tables
--- it first checks if the named index is already present.
--- This allows this procedure to be used to add indexes without causing errors
--- or duplicate index data.
-
-DROP PROCEDURE IF EXISTS `CreateIndexIfNotExists` ;;
-CREATE PROCEDURE `CreateIndexIfNotExists` (`p_table` VARCHAR(64), `p_name` VARCHAR(64), `p_columns`  VARCHAR(128))
-BEGIN
-    -- p_table is name of table to be indexed.
-    -- p_name is name of the index.
-    --      The name (not the column names) are used to determine if index already exists.
-    --      If p_name ends in _ft$ then full text index is created.
-    -- p_columns is comma separated list of column names.
-    --      Long string columns in a non-FT index must be followed with a number in brackets
-    --      to limit indexed length. E.g. ...,textcol (200),... 
-    -- 
-	DECLARE `v_db` VARCHAR(64);
-    DECLARE `v_exists` INTEGER;
-    SET `v_db`=(SELECT database());
-
-    SET `v_exists`=(SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS
-        WHERE `table_schema` = `v_db` AND `table_name` = `p_table` AND `index_name` = `p_name` LIMIT 1);
-
-    IF ISNULL(`v_exists`) THEN
-        if `p_name` regexp '_ft$' THEN
-            SET @sqlstmt = CONCAT('CREATE FULLTEXT INDEX ',`p_name`,' ON ',
-            `p_table`,' (',`p_columns`,')');
-        ELSE
-            SET @sqlstmt = CONCAT('CREATE INDEX ',`p_name`,' ON ',
-            `p_table`,' (',`p_columns`,')');
-        END IF;
-        PREPARE st FROM @sqlstmt;
-        EXECUTE st;
-        DEALLOCATE PREPARE st;
-    END IF;
-END ;;
-DELIMITER ;
 
 -- Add Additional Indexes --
 DELIMITER ;
@@ -2890,14 +1669,21 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Indexes for Prefix: full";
 
 
--- Index full_refset_SimpleMap --
+-- Index full_refset_Simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_SimpleMap";
+SELECT Now() `--`,"Index full_refset_Simple";
 
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
+CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
+
+-- Index full_refset_RefsetDescriptor --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index full_refset_RefsetDescriptor";
+
+CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
 
 -- Index full_refset_ModuleDependency --
 DELIMITER ;
@@ -2915,14 +1701,21 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Indexes for Prefix: snap";
 
 
--- Index snap_refset_SimpleMap --
+-- Index snap_refset_Simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_SimpleMap";
+SELECT Now() `--`,"Index snap_refset_Simple";
 
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
+CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
+
+-- Index snap_refset_RefsetDescriptor --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index snap_refset_RefsetDescriptor";
+
+CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
 
 -- Index snap_refset_ModuleDependency --
 DELIMITER ;
@@ -2938,14 +1731,4 @@ CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDep
 DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"END INDEX";
-
-
-
--- ===========================================
--- SNOMED CT MySQL Processing Completed (DB=$DBNAME)
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"SNOMED CT MySQL Processing Completed (DB=$DBNAME)";
 

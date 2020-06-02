@@ -2,9 +2,9 @@
 
 setlocal
 set mydate=%date:~10,4%%date:~4,2%%date:~7,2%
-IF %time:~0,1%==" " (
+if "%time:~0,1%"==" " (
     set mytime=%mydate%0%time:~1,1%%time:~3,2%%time:~6,2%
-) ELSE (
+) else (
     set mytime=%mydate%%time:~0,2%%time:~3,2%%time:~6,2%
 )
 set initial_path=%cd%

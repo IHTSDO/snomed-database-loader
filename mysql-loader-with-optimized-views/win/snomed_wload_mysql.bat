@@ -1,6 +1,6 @@
 @echo off
 :: Windows Script for SnomedRfsMySql import of SNOMED CT Release File.
-:: (c) Copyright 2019 SNOMED International. 
+:: (c) Copyright 2019 SNOMED International 
 :: Licenced under the terms of Apache 2.0 licence.
 ::
 :: This script does the following:
@@ -110,9 +110,9 @@ call:printf "\tMySQL Path:\t !mysqlPath!"
 call:printLog "MySQL Found !mysqlPath!"
 
 :: Get source script prefix from input or default
-set /P loadKey="Loader script identifying tag (default: create_latest): "
+set /P loadKey="Loader script identifying tag (default: create_InternationalRF2): "
 if "a%loadKey%"=="a" (
-    set "loadkey=create_latest"
+    set "loadkey=create_InternationalRF2"
 )
 echo %loadKey%
 
