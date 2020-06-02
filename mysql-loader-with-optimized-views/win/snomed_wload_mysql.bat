@@ -1,6 +1,6 @@
 @echo off
 :: Windows Script for SnomedRfsMySql import of SNOMED CT Release File.
-:: (c) Copyright 2019 SNOMED International 
+:: (c) Copyright 2019 SNOMED International. 
 :: Licenced under the terms of Apache 2.0 licence.
 ::
 :: This script does the following:
