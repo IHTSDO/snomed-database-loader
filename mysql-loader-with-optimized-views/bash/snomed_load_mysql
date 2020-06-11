@@ -68,7 +68,7 @@ notc=''
 # By default uses the create_latest.sql script 
 # (Based on the Variable Path version substitution made later in the script)
 loadkey=''
-loadkey_default='create_latest'
+defaultLoadkey="create_InternationalRF2"
 
 Q='"'
 
@@ -196,26 +196,25 @@ loaderTags=`ls -1 "$loaderFolder/mysql_load"|grep '^sct_mysql_load_\(create\|ext
 if [[ $loaderTags == '' ]] ; then
 	printf 'ERROR! No loader SQL scripts found.\n\n'
 	exit
-elif [[ $loaderTags == 'create_latest' ]] ; then
-	loadkey=$loaderTags
-elif [[ $loadkey == '' ]] ; then
+elif [[ "$loadkey" == "" ]] ; then
 	printf "Loader script identifying tag defaults to 'create_latest' if left blank.\nAlternatively you can specify another scripts.\n\tEach script has a 'create_' or 'update_' prefix which indicates if it:\n - creates a new database; or\n - updates the views and stored procedures in an existing database.\nAvailable scripts are listed below:\n$loaderTags\n\n"
-	read -p "Loader script identifying tag: " loadkey
+	read -p "Loader script identifying tag (default: $defaultLoadkey): " loadkey
 fi
-if [[ $loadkey == '' ]] ; then
-	loadkey=$loadkey_default
+if [[ "$loadkey" == '' ]] ; then
+	loadkey=$defaultLoadkey
 elif ! [[ $loadkey =~ ^[ceu].*[ed]_.* ]] ; then
 	printf 'ERROR! Invalid loadkey specified.\n\tLoadkey must start with "create_" "extend_" or "update_"\n\n'
 	exit
 fi
 
 sql_file="${loaderFolder}/$mysqlload/sct_mysql_load_${loadkey}.sql"
+printf "SQL Script: $sql_file\n"
 
 if [ -f "$sql_file" ] ; then
-	printf "\nLOADER SCRIPT: ${loadkey}\n\n"
+	printf "\nLOADER SCRIPT: ${sql_file}\n\n"
 else
-	printf "\nERROR! Loader script not found: ${loadkey}\n\n"
-	addLog "ERROR! Loader script not found: ${loadkey}"
+	printf "\nERROR! Loader script not found: ${sql_file}\n\n"
+	addLog "ERROR! Loader script not found: ${sql_file}"
 fi
 
 if ! [ -f "$user_prefs" ] ; then
@@ -409,7 +408,7 @@ fi
 
 sql_tmp="${loaderFolder}/$mysqlload/sct_mysql_temp.sql"
 
-printf "\n------------------------\nSETTINGS\n\nSQL file: $sql_file\nRelease Folder Path: $thisRelease\nDatabase name: $dbname\n\nConfig file: $cnf_file\nPort: $portnumber\nMode: $mode\n\nREUSABLE COMMAND LINE:\n$prog -c $cnfname -p $portnumber -s $loadkey -r ""$thisRelease"" -d ""$dbname"" -u ""$mysqluser"" -mode $mode\n\n------------------------\n"
+printf "\n------------------------\nSETTINGS\n\nSQL file: $sql_file\nRelease Folder Path: $thisRelease\nDatabase name: $dbname\n\nConfig file: $cnf_file\nPort: $portnumber\nMode: $mode\n\nREUSABLE COMMAND LINE:\n$prog -c $cnfname -p $portnumber -s $sql_file -r ""$thisRelease"" -d ""$dbname"" -u ""$mysqluser"" -mode $mode\n\n------------------------\n"
 
 thisReldate=`sed 's/^.*_\(20[0-9]\{6\}\).*$/\1/' <<<"$thisRelease"`
 
@@ -433,9 +432,9 @@ if ! [[ "$PATH" =~ mysql/bin ]] ; then
    PATH=${PATH}:/usr/local/mysql/bin
 fi
 
-# mysql --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --comment --user $mysqluser --password  < "${sql_tmp}"
+# mysql --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4  --user $mysqluser --password  < "${sql_tmp}"
 
-${mysqlrun} --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --comment --user $mysqluser --password  < "${sql_tmp}"
+${mysqlrun} --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --user $mysqluser --password  < "${sql_tmp}"
 err=$?
 
 if [[ $err != 0 ]] ; then
