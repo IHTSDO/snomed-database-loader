@@ -1,5 +1,5 @@
 # SNOMED CT MySQL Release Files Loader with Optimized Views
-## SnomedRfsMySql 2020-06-02
+## SnomedRfsMySql 2020-08-25
 
 ## INSTRUCTION ON USE
 
