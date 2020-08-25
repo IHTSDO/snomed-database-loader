@@ -259,7 +259,7 @@ type %sql_file% | %perlPath% -pe %sedPattern% >"%sql_tmp%"
 
 :: Run the MySQL import process
 call:printLog "Starting the SNOMED CT MySQL import process"
-call:printf "\nStarting the SNOMED CT MySQL import process\n\nPlease enter the MySQL password for you chosen MySQL user account: %mysqluser%\n\nAfter you have done this the process will continue without further user input.\n\nDepending on your system performance this may take between 20 minutes and 90 minutesto complete"
+call:printf "\nStarting the SNOMED CT MySQL import process\n\nPlease enter the MySQL password for you chosen MySQL user account: %mysqluser%\n\nAfter you have done this the process will continue without further user input.\n\nDepending on your system performance this may take between 20 minutes and 90 minutes to complete"
 call:printLog "!mysqlPath! --default-character-set=utf8mb4 --local-infile=1 --comments --password --user !mysqluser!   <!sql_tmp!"
 
 "!mysqlPath!" --default-character-set=utf8mb4 --local-infile=1 --comments --password --user !mysqluser!   <"!sql_tmp!"
