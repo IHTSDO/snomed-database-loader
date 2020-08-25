@@ -1,0 +1,177 @@
+#!/bin/bash
+
+self=$0
+prog=`basename "$self"`
+mysqlrun='mysql'
+mysqlload='mysql_load'
+mode="standard"
+
+help="\n----------------------------------\nHELP FOR SCRIPT: $prog\n----------------------------------\nRuns MySQL Command Line.\n\nRequires:tA SnomedRfsMySql folder containing relevant support folders and files\n\t(e.g. previous release of same package)\n\nCommand line parameters (all optional). Script uses default values and prompts for required parameters.\n\t-help (or -h): Displays this message.\n\t-d dbname: Specifies dbname (the name of the database to be created).\n\t-b loaderFolder: Specifies loaderFolder (the folder containing required support folders and files).\n\t-c cnfname: Specifies the {cnfname} in the MySQL configuration file name {cnfname}.cnf (default: $cnfname).\n\t-u mysqluser: Specifies the username for an administrator account on the MySQL Server (default $USER).\n\t-p portnumber: Specifies the MySQL port number (by default read from the file {cnfname}.cnf.\n\n"
+
+# Get command line parameters
+# -h Help
+# -d dbname (New target database name)
+# -f loaderFolder (Folder )
+# -c cnfname (MySQL configuration file name : default my_snomedimport_client)
+# -p portnumber (MySQL portnumber : default from cnfname file)
+# -u MySQL username
+
+while [[ $#>0 ]]
+do
+	echo $1
+	if [[ $1 =~ ^-h.* ]] ; then
+		printf "$help"
+		exit
+	fi
+	if [[ $1 == '-d' ]] ; then
+		# Specify a the database name
+		# Not needed as script prompts if not supplied here and defaults to snomedct.
+		shift
+		dbname="$1"
+		if ! [[ $dbname =~ ^s[-a-zA-Z_0-9]{1,9}$ ]] ; then
+			printf "Invalid database name: $dbname\n\tMust start with 's' and be no longer than 10 characters\n"
+			printf "$help"
+			exit
+		fi
+	fi
+	if [[ $1 == '-f' ]] ; then
+		# Specify a loader folder in which required load subfolders will be found
+		# Not needed as this can be located if not specified (either local to script or in EPSDRIVE)
+		shift
+		loaderFolder="$1"
+		if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+			printf "Invalid loader folder: $loaderFolder\n\tError! Missing folder: $loaderFolder/$mysqlload\n"
+			printf "$help"
+			exit
+		fi
+	fi
+	if [[ $1 == '-c' ]] ; then
+		# Specify the mysql Config filename stem
+		shift
+		cnfname="$1"
+	fi
+	if [[ $1 == '-p' ]] ; then
+		# Specify the mysql Port Number
+		# Optional as can be read from mysql config file.
+		shift
+		portnumber="$1"
+	fi
+
+	if [[ $1 == '-u' ]] ; then
+		# Specify My SQL username
+		# Optional as prompts for this if not provided and defaults to logged in user
+		shift
+		mysqluser="$1"
+	fi
+	shift
+done
+
+# If loaderFolder not set by command line set it here 
+# Other scripts are relative to the defined base folder
+
+if [[ "$loaderFolder" == "" ]] ; then
+	# First check folder containing the script
+	loaderFolder=`dirname "$self"`
+	cd $loaderFolder
+	# The folder from $0 may be relative so change to the folder
+	# Then get the absolute folder path
+	loaderFolder=$PWD
+	if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+		# Failing that check parent script
+		loaderFolder=`dirname "$loaderFolder"`
+	fi
+	if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+		# Finally look in the place it will be on EPS team systems
+		loaderFolder="$EPSDRIVE/SnomedRfs/SnomedRfsMySql"
+	fi
+	if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+		printf "ERROR INVALID Loader Folder: $loaderFolder.\nDoes not contain required subfolder: $mysqlload\n\n"
+		printf "$help"
+		exit
+	fi
+fi
+
+
+# By default uses the create_latest.sql script 
+# (Based on the Variable Path version substitution made later in the script)
+loadkey=''
+loadkey_default='create_latest'
+
+Q='"'
+
+log_file="${loaderFolder}/cnf/${USER}_load_log.txt"
+user_prefs="${loaderFolder}/cnf/${USER}_prefs.txt"
+tmp_prefs="${loaderFolder}/cnf/${USER}_tmp.txt"
+
+function addLog()
+{
+	printf "`date +'%Y-%m-%d %T'` $1\n" >>"$log_file"
+}
+printf ''> "$log_file"
+addLog "Started snomed_load_mysql"
+
+if ! [ -f "$user_prefs" ] ; then
+	echo "" >"$user_prefs"
+fi
+
+function setCfgValue()
+	{
+	local cfgName="$1"
+	local cfgValue="$2"
+	if ! [ -f "$user_prefs" ] ; then
+		echo "${cfgName}=${cfgValue}" >"$user_prefs"
+	else
+		sed '/'$cfgName'=/d' "$user_prefs" >"$tmp_prefs"
+		echo "${cfgName}=${cfgValue}" >>"$tmp_prefs"
+		mv -f "$tmp_prefs" "$user_prefs"
+	fi
+	}
+function getCfgValue()
+	{
+	local cfgName="$1"
+	local defaultValue="$2" #set default value
+	if ! [ -f "$user_prefs" ] ; then
+		echo "" "$user_prefs"
+	fi
+	cfgValue=`sed '/^[^=]*$/d;s/'$cfgName'=\(.*\)/\1/;/.*=.*/d' "$user_prefs"`
+	if [[ $cfgValue == '' ]] ; then
+		cfgValue="$defaultValue"
+	fi
+	}
+
+if ! [ -f "$user_prefs" ] ; then
+	echo "" > "$user_prefs"
+fi
+
+# releasePath set here is container for all release files
+# prevRel set here is previous release folder name
+getCfgValue 'relpath' "$HOME/SnomedCT_ReleaseFiles"
+releasePath=$cfgValue
+getCfgValue 'prevrel'
+prevRelease=$cfgValue
+getCfgValue 'mysqluser' 'root'
+prevUser=$cfgValue
+
+cnfname="my_snomedimport_client"
+cnf_file="${loaderFolder}/cnf/${cnfname}.cnf"
+portnumber=`sed -n 's/port=//p;' "$cnf_file"`
+if [[ $portnumber == '' ]] ; then
+	read -p "MySQL port number: " portnumber
+fi
+read -p "MySQL username (default: $prevUser): " mysqluser
+if [[ "$mysqluser" == '' ]] ; then
+	mysqluser=$prevUser
+else
+	setCfgValue 'mysqluser' "$mysqluser"
+fi
+
+# Get Database Name
+
+read -p "Database name (default: snomedct): " dbname
+if [[ "$dbname" == '' ]] ; then
+	dbname='snomedct'
+fi
+
+
+${mysqlrun} --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --database ${dbname} --comments --user $mysqluser --password
+

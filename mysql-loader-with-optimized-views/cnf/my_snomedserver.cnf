@@ -1,0 +1,15 @@
+[mysqld]
+local-infile=1
+ft_stopword_file = ''
+ft_min_word_len = 2
+disable-log-bin
+skip-log-bin
+default-authentication-plugin=mysql_native_password
+[mysql]
+local-infile=1
+[client]
+local-infile=1
+protocol=tcp
+host=localhost
+port=3306
+

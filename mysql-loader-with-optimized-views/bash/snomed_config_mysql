@@ -1,0 +1,81 @@
+#!/bin/bash
+if ! [[ $USER =~ ^(root|su)$ ]] ; then
+    printf "Must be run as superuser (su or root)\n"
+    exit
+fi
+# Cannot use the $EPSDRIVE variable as not accessible as SUDO
+if [[ $EPSDRIVE == '' ]] ; then
+    cnffolder="/Volumes/GoogleDrive/Shared drives/EPS_Team/SnomedRfs/SnomedRfsMySql/cnf"
+else
+    cnffolder="$EPSDRIVE/Shared drives/EPS_Team/SnomedRfs/SnomedRfsMySql/cnf"
+fi
+# Default port
+port='0'
+
+if [[ $# >1  ]] ; then
+    if [[ $1 =~ '-p' ]] ; then
+        shift
+        port=$1
+        shift
+    fi
+    if [[ $1 =~ '^-[cd]' ]] ; then
+        shift
+        cnffolder=$1
+        shift
+    fi
+fi
+if ! [ -d "$cnffolder" ] ; then
+    cd `dirname "$0"`
+    bashfolder="$PWD"
+    echo "$bashfolder"
+    rfsfolder=`dirname "$bashfolder"`
+    echo "$rfsfolder"
+    cnffolder="$rfsfolder/cnf"
+    echo "$cnffolder"
+    if ! [ -d "$cnffolder" ] ; then
+        printf "Error! No CNF Folder: $cnffolder\n"
+        exit
+    fi
+fi
+printf "\nSNOMED MySQL Configuration folder: $cnffolder\n"
+cd "$cnffolder"
+
+# If a port is specified apply this to the config files
+if [[ $port =~ ^[0-9]{3,5}$ ]] ; then
+    printf "Setting Port to: $port\n"
+    mv -f "my_snomedimport_client.cnf" "my_snomedimport_client.cnf.bak"
+    mv -f "my_snomedserver.cnf" "my_snomedserver.cnf.bak"
+    sed "s/^port=.\{0,10\}$/port=$port/" "my_snomedimport_client.cnf.bak" >"my_snomedimport_client.cnf"
+    sed "s/^port=.\{0,10\}$/port=$port/" "my_snomedserver.cnf.bak" >"my_snomedserver.cnf"
+fi
+
+
+# Copy the my_snomedserver.cnf file to the MySQL support-files folder
+supportfolder="/usr/local/mysql/support-files"
+cp "my_snomedserver.cnf" "$supportfolder/my_snomedserver.cnf"
+
+# Set the ownerships and permission of the my_snomedserver.cnf in the MySQL support-files folder
+chown root:wheel $supportfolder/my_snomedserver.cnf
+chmod a+r $supportfolder/my_snomedserver.cnf
+
+# ls -l $folder/my.cnf
+
+# Update the MySQL lunch demon to reference the my_snomedserver.cnf file
+mysql_launch="com.oracle.oss.mysql.mysqld.plist"
+rm -f "$mysql_launch"
+ldfolder="/Library/LaunchDaemons"
+ldtarget="$ldfolder/$mysql_launch"
+mv "$ldtarget" "$mysql_launch"
+awk -f "ref_my_snomedserver.awk" "$mysql_launch" >"$ldtarget"
+chown root:wheel "$ldtarget"
+chmod a+r "$ldtarget"
+chmod a-x "$ldtarget"
+
+# Add /usr/local/mysql/bin to the PATH environment variable
+# Required to ensure that the mysql command can be run.
+tmp_profile=`cat $HOME/.bash_profile`
+if ! [[ "$PATH" =~ mysql/bin || "$tmp_profile" =~ mysql/bin ]] ; then
+   printf 'Added "/usr/local/mysql/bin" to $PATH\n\n'
+   echo "export PATH=${PATH}:/usr/local/mysql/bin" >>$HOME/.bash_profile
+fi
+printf "** Configuration settings update completed ** \n\n"

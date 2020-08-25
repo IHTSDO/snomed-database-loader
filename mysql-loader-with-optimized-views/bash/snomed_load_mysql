@@ -1,0 +1,447 @@
+#!/bin/bash
+
+# snomed_load_mysql
+# This script loads data from a release package into a MySql Database
+# Requires appropriate MySQL loader script to exist
+
+# FUNCTION DECLARATIONS FOR LATER USE
+function addLog()
+{
+	printf "`date +'%Y-%m-%d %T'` $1\n" >>"$log_file"
+}
+
+
+function buildTransitiveClosure {
+	if [[ "$snapcontent" == '' ]] ; then
+		printf "\nERROR: Cannot create Transitive Closure. Snapshot Release files not found!\n\n"
+		addLog "ERROR: Cannot create Transitive Closure. Snapshot Release files not found!"
+		exit
+	fi
+	if ! [ -f "$tc_source" ] ; then
+		printf "\nERROR: Cannot create Transitive Closure.\n\tRequired file not found: $tc_source\n\n"
+		addLog "ERROR: Cannot create Transitive Closure.\n\tRequired file not found: $tc_source"
+		exit
+	fi
+	printf "Starting transitive closure generator.\n\tSource: $tc_source\n\tTarget: $tc_target\n"
+	addLog "Starting transitive closure generator.\n\tSource: $tc_source\n\tTarget: $tc_target"
+	printf 	"\n-------------------------------------------------\n=  *****  PLEASE WAIT FOR A FEW MINUTES  *****\t=\n=  When transitive closure generation completes\t=\n=  you will be need to enter your DB password\t=\n-------------------------------------------------\n"
+	perl "$loaderFolder/lib/transitiveClosureRf2SnapMulti.pl" "$tc_source" "$tc_target"
+	printf "Transitive closure - output file is:\n\t$tc_target\n"
+	addLog "Transitive closure - output file is:\n\t$tc_target"
+}
+
+function setCfgValue()
+	{
+	local cfgName="$1"
+	local cfgValue="$2"
+	if ! [ -f "$user_prefs" ] ; then
+		echo "${cfgName}=${cfgValue}" >"$user_prefs"
+	else
+		sed '/'$cfgName'=/d' "$user_prefs" >"$tmp_prefs"
+		echo "${cfgName}=${cfgValue}" >>"$tmp_prefs"
+		mv -f "$tmp_prefs" "$user_prefs"
+	fi
+	}
+function getCfgValue()
+	{
+	local cfgName="$1"
+	local defaultValue="$2" #set default value
+	if ! [ -f "$user_prefs" ] ; then
+		echo "" "$user_prefs"
+	fi
+	cfgValue=`sed '/^[^=]*$/d;s/'$cfgName'=\(.*\)/\1/;/.*=.*/d' "$user_prefs"`
+	if [[ $cfgValue == '' ]] ; then
+		cfgValue="$defaultValue"
+	fi
+	}
+
+# END OF FUNCTION DECLARATIONS
+
+self=$0
+prog=`basename "$self"`
+mysqlrun='mysql'
+mysqlload='mysql_load'
+mode="standard"
+cnfname="my_snomedimport_client"
+notc=''
+
+# By default uses the create_latest.sql script 
+# (Based on the Variable Path version substitution made later in the script)
+loadkey=''
+defaultLoadkey="create_InternationalRF2"
+
+Q='"'
+
+help="\n----------------------------------\nHELP FOR SCRIPT: $prog\n----------------------------------\nLoads SNOMED CT Release Package into MySQL database.\n\nRequires:\n\tA folder containing an unzipped SNOMED CT Release Package\n\tA SnomedRfsMySql folder containing relevant support folders and files\n\tA sct_mysql_load_LOADKEY.sql file generated for this release package\n\tor another release package containing matching set of file structures\n\t(e.g. previous release of same package)\n\nCommand line parameters (all optional). Script uses default values and prompts for required parameters.\n\t-help (or -h): Displays this message.\n\t-r releasepath: Specifies releasepath (the full path to the release package folder).\n\t-d dbname: Specifies dbname (the name of the database to be created).\n\t-b loaderFolder: Specifies loaderFolder (the folder containing required support folders and files).\n\t-s loadkey: Specifies the {loadkey} of the master script load script file sct_mysql_load_{loadkey}.sql.\n\t-c cnfname: Specifies the {cnfname} in the MySQL configuration file name {cnfname}.cnf (default: $cnfname).\n\t-u mysqluser: Specifies the username for an administrator account on the MySQL Server (default $USER).\n\t-p portnumber: Specifies the MySQL port number (by default read from the file {cnfname}.cnf.\n\t-mode flag1 flag2 ... : Specifies mode options that affect script actions.\n\t\tMode flag values:\n\t\t  skiptc: Do not build or use transitive closure file (default is to use - after building if required).\n\t\t  notc: Same as skiptc but also removes any existing transitive closure file.\n\t\t  forcetc: Force rebuild of transitive closure file (default is to build unless already present).\n\t\t  reuse: Reuses existing temporary copy of the MySQL load script (default is to create from master).\n\t\t  noload: Does not run the MySQL load script (diagnostic mode allowing review of script).\n\n"
+
+# Get command line parameters
+# -h Help
+# -d dbname (New target database name)
+# -f loaderFolder (Folder )
+# -c cnfname (MySQL configuration file name : default my_snomedimport_client)
+# -p portnumber (MySQL portnumber : default from cnfname file)
+# -s loadkey (key for the MySQL script to be run : default=VP_latest)
+# -r thisRelease (release folder path)
+# -u MySQL username
+# -mode mode (Options: skiptc, notc, forcetc, reuse, noload)
+
+while [[ $#>0 ]]
+do
+	echo $1
+	if [[ $1 =~ ^-h.* ]] ; then
+		printf "$help"
+		exit
+	fi
+	if [[ $1 == '-d' ]] ; then
+		# Specify a the database name
+		# Not needed as script prompts if not supplied here and defaults to snomedct.
+		shift
+		dbname="$1"
+		if ! [[ $dbname =~ ^s[-a-zA-Z_0-9]{1,9}$ ]] ; then
+			printf "Invalid database name: $dbname\n\tMust start with 's' and be no longer than 10 characters\n"
+			printf "$help"
+			exit
+		fi
+	fi
+	if [[ $1 == '-f' ]] ; then
+		# Specify a loader folder in which required load subfolders will be found
+		# Not needed as this can be located if not specified (either local to script or in EPSDRIVE)
+		shift
+		loaderFolder="$1"
+		if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+			printf "Invalid loader folder: $loaderFolder\n\tError! Missing folder: $loaderFolder/$mysqlload\n"
+			printf "$help"
+			exit
+		fi
+	fi
+	if [[ $1 == '-c' ]] ; then
+		# Specify the mysql Config filename stem
+		shift
+		cnfname="$1"
+	fi
+	if [[ $1 == '-p' ]] ; then
+		# Specify the mysql Port Number
+		# Optional as can be read from mysql config file.
+		shift
+		portnumber="$1"
+	fi
+	if [[ $1 == '-s' ]] ; then
+		# Specify SQL Script key (identifies the script to be used as source input)
+		# Optional as prompts for this if not provided and defaults to "VP_latest" (for the specified release file)
+		shift
+		loadkey="$1"
+	fi
+	if [[ $1 == '-u' ]] ; then
+		# Specify My SQL username
+		# Optional as prompts for this if not provided and defaults to logged in user
+		shift
+		mysqluser="$1"
+	fi
+	if [[ $1 == '-r' ]] ; then
+		# Specify SNOMED CT Release File Path
+		# Optional as prompts for this if not provided
+		shift
+		thisRelease="$1"
+	fi
+	if [[ $1 == '-mode' ]] ; then
+		# Specify mode. 
+		# reuse : Don't recreate the script use existing temporary file from previous run
+		# skiptc : Don't create or use transitive closure (TC) file.
+		# notc : Don't create transitive closure (TC) file. Delete TC file if it exists.
+		# forcetc : Force TC rebuild even if TC file already exists
+			# Note: TC default is to create TC if it does not exist and reuse it if it already exists
+		# noload : Don't iniate the database import (for diagnotic review of SQL script output only)
+		shift
+		mode=$1
+		echo "MODE: " $mode
+	fi
+	shift
+done
+
+# If loaderFolder not set by command line set it here 
+# Other scripts are relative to the defined base folder
+if [[ "$loaderFolder" == "" ]] ; then
+	# First check folder containing the script
+	loaderFolder=`dirname "$self"`
+	cd $loaderFolder
+	# The folder from $0 may be relative so change to the folder
+	# Then get the absolute folder path
+	loaderFolder=$PWD
+	if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+		# Failing that check parent script
+		loaderFolder=`dirname "$loaderFolder"`
+	fi
+	if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+		# Finally look in the place it will be on EPS team systems
+		loaderFolder="$EPSDRIVE/SnomedRfs/SnomedRfsMySql"
+	fi
+	if ! [ -d "$loaderFolder/$mysqlload" ] ; then
+		printf "ERROR INVALID Loader Folder: $loaderFolder.\nDoes not contain required subfolder: $mysqlload\n\n"
+		printf "$help"
+		exit
+	fi
+fi
+
+cd "$loaderFolder"
+echo "$loaderFolder"
+cnf_file="${loaderFolder}/cnf/${cnfname}.cnf"
+log_file="${loaderFolder}/cnf/${USER}_load_log.txt"
+user_prefs="${loaderFolder}/cnf/${USER}_prefs.txt"
+tmp_prefs="${loaderFolder}/cnf/${USER}_tmp.txt"
+printf ''> "$log_file"
+addLog "Started snomed_load_mysql"
+
+# If SQL loader script identifying tag not set prompt for this
+loaderTags=`ls -1 "$loaderFolder/mysql_load"|grep '^sct_mysql_load_\(create\|extend\|update\)_.*\.sql$'|sed 's/^sct_mysql_load_/ /;s/\.sql$//'`
+if [[ $loaderTags == '' ]] ; then
+	printf 'ERROR! No loader SQL scripts found.\n\n'
+	exit
+elif [[ "$loadkey" == "" ]] ; then
+	printf "Loader script identifying tag defaults to 'create_latest' if left blank.\nAlternatively you can specify another scripts.\n\tEach script has a 'create_' or 'update_' prefix which indicates if it:\n - creates a new database; or\n - updates the views and stored procedures in an existing database.\nAvailable scripts are listed below:\n$loaderTags\n\n"
+	read -p "Loader script identifying tag (default: $defaultLoadkey): " loadkey
+fi
+if [[ "$loadkey" == '' ]] ; then
+	loadkey=$defaultLoadkey
+elif ! [[ $loadkey =~ ^[ceu].*[ed]_.* ]] ; then
+	printf 'ERROR! Invalid loadkey specified.\n\tLoadkey must start with "create_" "extend_" or "update_"\n\n'
+	exit
+fi
+
+sql_file="${loaderFolder}/$mysqlload/sct_mysql_load_${loadkey}.sql"
+printf "SQL Script: $sql_file\n"
+
+if [ -f "$sql_file" ] ; then
+	printf "\nLOADER SCRIPT: ${sql_file}\n\n"
+else
+	printf "\nERROR! Loader script not found: ${sql_file}\n\n"
+	addLog "ERROR! Loader script not found: ${sql_file}"
+fi
+
+if ! [ -f "$user_prefs" ] ; then
+	echo "" >"$user_prefs"
+fi
+
+if ! [ -f "$user_prefs" ] ; then
+	echo "" > "$user_prefs"
+fi
+
+# releasePath set here is container for all release files
+# prevRel set here is previous release folder name
+getCfgValue 'relpath' "$HOME/SnomedCT_ReleaseFiles"
+releasePath=$cfgValue
+getCfgValue 'prevrel'
+prevRelease=$cfgValue
+getCfgValue 'mysqluser' 'root'
+prevUser=$cfgValue
+
+addLog "User Defaults for:$USER\n\tReleasePath:$releasePath\n\tPrevRelease:$prevRelease\n\tPrevUser:$prevUser"
+
+
+if [[ "$releasePath" != "" ]] ; then
+	if ! [ -d $releasePath ] ; then
+		releasePath=""
+	fi
+fi
+
+# If port number not provided on command line get this from the config file
+if [[ $portnumber == '' ]] ; then
+	portnumber=`sed -n 's/port=//p;' "$cnf_file"`
+	if [[ $portnumber == '' ]] ; then
+		read -p "MySQL port number: " portnumber
+	fi
+fi
+
+# BEFORE SET
+
+if [[ $loadkey =~ ^update ]] ; then
+	thisRelease='No_Folder_Required'
+else
+	if [[ "$thisRelease" == ""  && $loadkey =~ ^[ce] ]] ; then
+		if [[ "$releasePath" == "" ]] ; then
+			printf "Enter the full path to the release folder or zip archive.\n"
+		elif [[ "$prevRelease" != '' ]] ; then
+			printf "Enter one of the following:\n - Full path to release folder or zip archive\n - Name of release folder or zip archive in:\n\t${releasePath}\n - Blank for previously loaded release:\n\t(${Q}${prevRelease}${Q})\n"
+		else
+			printf "Enter one of the following:\n - Full path to release folder or zip archive\n - Name of release folder or zip archive in:\n\t$releasePath\n"
+		fi
+		read -p "Release folder path: " thisRelease
+		if [[ "$thisRelease" == '' ]] ; then
+			thisRelease="$prevRelease"
+		fi
+	fi
+
+	# FIX REFERENCES TO $HOME IN THE PATH
+	if [[ $thisRelease =~ ^\$HOME ]] ; then
+		thisRelease="$HOME${thisRelease:5}"
+		echo $thisRelease
+	fi
+
+	# If $thisRelease does not start at root "/" then prepend with $releasePath
+
+	if ! [[ $thisRelease =~ ^/ ]] ; then
+		thisRelease="$releasePath/$thisRelease"
+	fi
+
+	# If zip file named ignore the .zip extension in folder name
+	# In all cases set and test the matching .zip file
+
+	if [[ $thisRelease =~ \.zip$ ]] ; then
+		releaseZip="$thisRelease"
+		thisRelease="${thisRelease%.zip}"
+	else
+		releaseZip="${thisRelease}.zip"
+	fi
+
+	if [ -d "$thisRelease" ] ; then
+		# Folder found so use this
+		printf "\nRELEASE FOLDER: $thisRelease\n"
+		addLog "Release folder found: $thisRelease"
+		thisRelease="$thisRelease"
+	elif [ -f "$releaseZip" ] ; then
+		# No folder but zipfile found so unzip
+		printf "\nRELEASE ZIP ARCHIVE: $releaseZip\n"
+		addLog "Release Zip file found: $thisRelease"
+		unzipFolder=`dirname "$thisRelease"`
+		unzip "$releaseZip" -q -d $unzipFolder
+		printf "\nRELEASE FOLDER: $thisRelease\n"
+	else
+		# No folder or zipfile found so exit here
+		printf "ERROR! Release folder not found: $thisRelease\n\n"
+		addLog "ERROR! Release folder not found: $thisRelease"
+		exit
+	fi
+
+	if ! [ -d "$thisRelease/Full" ] ; then
+		printf "ERROR! Release folder: $thisRelease does not contain a Full subfolder\n\n"
+		addLog "ERROR! Release folder: $thisRelease does not contain a Full subfolder"
+		exit
+	elif ! [ -d "$thisRelease/Snapshot" ] ; then
+		printf "ERROR! Release folder: $thisRelease does not contain a Snapshot subfolder\n\n"
+		addLog "ERROR! Release folder: $thisRelease does not contain a Snapshot subfolder"
+		exit
+	else
+		setCfgValue 'relpath' `dirname "$thisRelease"`
+		setCfgValue 'prevrel' `basename "$thisRelease"`	
+	fi
+	if ! [ -d "$thisRelease" ] ; then
+		printf "Release folder not found!\n Path: $thisRelease\n"
+		addLog "Release folder not found!\n\tPath: $thisRelease"
+		exit
+	fi
+	if ! [ -d "$thisRelease/Full" ] ; then 
+		printf "Release folder does not contain a Full release subfolder!\n Path: $thisRelease/Full\n"
+		addLog "Release folder does not contain a Full release subfolder!\n\tPath: $thisRelease/Full"
+		exit
+	fi
+	echo "$thisRelease" >cnf/lastrelpath.txt
+	snapcontent="$thisRelease/Snapshot/Terminology"
+	tc_source=''
+	if [ -d "$snapcontent" ] ; then
+		prevpath=$PWD
+		cd "$snapcontent"
+		tc_sourcefile=`echo *sct2_Relationship_Snapshot_*.txt|head -n 1`
+		if [[ $tc_sourcefile =~ [0-9]{8}.txt$ ]] ; then
+			tc_version=${tc_sourcefile/#*Snapshot/}
+			tc_target="$thisRelease/xder_transitiveClosure_Snapshot${tc_version}"
+			tc_source="$snapcontent/$tc_sourcefile"
+		fi
+		cd "$prevpath"
+	else
+		snapcontent=''
+	fi
+fi
+
+# Get Database Name
+if [[ $dbname == '' ]] ; then
+	echo
+	read -p "Database name (default: snomedct): " dbname
+	if [[ "$dbname" == '' ]] ; then
+		dbname='snomedct'
+	fi
+fi
+addLog "Database name:$dbname"
+
+# Get MySQL User Name
+getCfgValue 'mysqluser'
+if [[ $mysqluser == '' ]] ; then
+	read -p "MySQL username (default: $prevUser): " mysqluser
+	if [[ "$mysqluser" == '' ]] ; then
+		mysqluser=$prevUser
+	else
+		setCfgValue 'mysqluser' "$mysqluser"
+	fi
+fi
+addLog "MySQL username:$mysqluser"
+
+if [[ "$mode" != "standard" ]] ; then
+	printf "MODE: $mode\n"
+fi
+
+
+if [[ $loadkey =~ ^create ]] ; then
+	printf "\nTRANSITIVE CLOSURE: "
+	if [ -f "$tc_target" ] ; then
+		if [[ $mode =~ (forcetc) ]] ; then
+			buildTransitiveClosure
+		elif [[ $mode =~ (notc) ]] ; then
+			rm "$tc_target"
+			printf 'Removed previously built transitive closure file.\n'
+			addLog "Removed previously built transitive closure file"
+		else
+			printf 'Using previously built transitive closure file.\n'
+			addLog "Using previously built transitive closure file"
+		fi
+	elif [[ $mode =~ (notc|skiptc) ]] ; then
+		printf 'Skipping Transitive Closure Build\n'
+		addLog "Skipping Transitive Closure Build"
+	else
+		buildTransitiveClosure
+	fi
+fi
+
+if [ -f $tc_target ] ; then
+	notc=''
+else
+	notc='-- NO TC'
+fi
+
+
+sql_tmp="${loaderFolder}/$mysqlload/sct_mysql_temp.sql"
+
+printf "\n------------------------\nSETTINGS\n\nSQL file: $sql_file\nRelease Folder Path: $thisRelease\nDatabase name: $dbname\n\nConfig file: $cnf_file\nPort: $portnumber\nMode: $mode\n\nREUSABLE COMMAND LINE:\n$prog -c $cnfname -p $portnumber -s $sql_file -r ""$thisRelease"" -d ""$dbname"" -u ""$mysqluser"" -mode $mode\n\n------------------------\n"
+
+thisReldate=`sed 's/^.*_\(20[0-9]\{6\}\).*$/\1/' <<<"$thisRelease"`
+
+if [[ $mode =~ (reuse) ]] ; then
+	printf "Debug skipping Script Regeneration - Will reuse current temp file\n"
+else
+	sed 's#$HOME/#'"${HOME}/"'#g;s#$RELPATH/#'"${thisRelease}/"'#g;s#$RELDATE#'"${thisReldate}"'#g;s#$DBNAME#'"${dbname}"'#g;s#$NOTC#'${notc}'#g' "$sql_file" >"$sql_tmp"
+fi
+
+# NO LOAD DEBUG EXIT OPTION
+if [[ $mode =~ noload ]] ; then
+ echo "DEBUG EXIT"
+ exit
+fi
+#
+
+printf 	"\n-------------------------------------------------\n=  **  PLEASE ENTER YOUR MYSQL PASSWORD  **\t=\n= You can then leave the database build to run.\t=\n= A step by step progress report will be shown\t=\n= but there is no need for further user input.\t=\n-------------------------------------------------\n"
+
+# This adds to the PATH in case this was not done earlier.
+if ! [[ "$PATH" =~ mysql/bin ]] ; then
+   PATH=${PATH}:/usr/local/mysql/bin
+fi
+
+# mysql --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4  --user $mysqluser --password  < "${sql_tmp}"
+
+${mysqlrun} --defaults-extra-file="${cnf_file}"  --protocol=tcp --host=localhost --port=${portnumber} --default-character-set=utf8mb4 --user $mysqluser --password  < "${sql_tmp}"
+err=$?
+
+if [[ $err != 0 ]] ; then
+	printf "\n-----------------------------------------\n=  ** MySQL IMPORT PROCESS FAILED  **\t=\n= Manual interrupt or error (status: $err)\t=\n-----------------------------------------\n"
+	addLog "MySQL IMPORT PROCESS FAILED"
+	exit
+fi
+
+printf 	"\n-------------------------------------------------\n=    ** DATABASE BUILD IS NOW COMPLETE **\t=\n=  You can access the $Q$dbname$Q database using the\t=\n=  MySQL command line or MySQL Workbench.\t=\n-------------------------------------------------\n"
+addLog "DATABASE BUILD IS NOW COMPLETE\n\tDatabase: $dbname"
