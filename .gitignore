@@ -4,3 +4,4 @@ tmp*
 .idea/
 .DS_Store
 *.zip
+.vscode/settings.json

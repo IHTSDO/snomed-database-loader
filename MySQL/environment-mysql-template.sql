@@ -242,3 +242,20 @@ key idx_referencedcomponentid(referencedcomponentid),
 key idx_mapTarget(mapTarget)
 ) engine=myisam default charset=utf8;
 
+drop table if exists owlexpression_TYPE;
+create table owlexpression_TYPE(
+id varchar(36) not null,
+effectivetime char(8) not null,
+active char(1) not null,
+moduleid varchar(18) not null,
+refsetid varchar(18) not null,
+referencedcomponentid varchar(18) not null,
+owlExpression text not null,
+key idx_id(id),
+key idx_effectivetime(effectivetime),
+key idx_active(active),
+key idx_moduleid(moduleid),
+key idx_refsetid(refsetid),
+key idx_referencedcomponentid(referencedcomponentid)
+) engine=myisam default charset=utf8;
+

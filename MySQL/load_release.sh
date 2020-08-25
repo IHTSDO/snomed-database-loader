@@ -52,15 +52,6 @@ then
 	includeTransitiveClosure=true
 fi
 
-includeStatedTransitiveClosure=false
-echo "Calculate and store stated transitive closure? [Y/N]:"
-read tcResponse
-if [[ "${tcResponse}" == "Y"  ||  "${tcResponse}" == "y" ]]
-then
-	echo "Including stated transitive closure table - stated_transclos"
-	includeStatedTransitiveClosure=true
-fi
-
 #Unzip the files here, junking the structure
 localExtract="tmp_extracted"
 generatedLoadScript="tmp_loader.sql"
@@ -89,7 +80,7 @@ esac
 #Determine the release date from the filenames
 releaseDate=`ls -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`	
 
-#Generate the environemnt script by running through the template as 
+#Generate the environment script by running through the template as 
 #many times as required
 now=`date +"%Y%m%d_%H%M%S"`
 echo -e "\nGenerating Environment script for ${loadType} type(s)"
@@ -150,6 +141,7 @@ addLoadScript sct2_Concept_TYPE_MOD_DATE.txt concept
 addLoadScript sct2_Description_TYPE-LANG_MOD_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_MOD_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
+addLoadScript sct2_sRefset_OWLExpressionTYPE_MOD_DATE.txt owlexpression
 addLoadScript sct2_TextDefinition_TYPE-LANG_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-LANG_MOD_DATE.txt langrefset
@@ -184,27 +176,6 @@ CREATE TABLE transclos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 EOF
 addLoadScript ${tempFile} transclos
-fi
-
-if [ "${includeStatedTransitiveClosure}" = true ]
-then
-	echo "Generating Stated Transitive Closure file..."
-	tempFile=$(mktemp)
-	statedRelFile=${localExtract}/sct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt
-	if [ ! -f ${statedRelFile} ]; then
-		statedRelFile=${localExtract}/xsct2_StatedRelationship_Snapshot_${moduleStr}_${releaseDate}.txt
-	fi
-	perl ./transitiveClosureRf2Snap_dbCompatible.pl ${statedRelFile} ${tempFile}
-	mysql -u ${dbUsername} ${dbUserPassword} ${dbName} << EOF
-DROP TABLE IF EXISTS stated_transclos;
-CREATE TABLE stated_transclos (
-  sourceid varchar(18) DEFAULT NULL,
-  destinationid varchar(18) DEFAULT NULL,
-  KEY idx_tc_source (sourceid),
-  KEY idx_tc_destination (destinationid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-EOF
-addLoadScript ${tempFile} stated_transclos
 fi
 
 mysql -u ${dbUsername} ${dbUserPassword} ${dbName}  --local-infile << EOF
