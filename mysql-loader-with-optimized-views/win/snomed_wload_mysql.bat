@@ -74,14 +74,14 @@ if not DEFINED perlPath (
     if not exist !perlPath! (
         set perlPath=""
         call:getFilePath perl.exe perlPath
-        :: Report error is no perl.exe is found.
+        REM Report error is no perl.exe is found.
         if "!perlPath!"=="NOT FOUND" (
             call:printLog "Unable to find perl.exe"
             call:printf "\nUnable to find perl.exe\nThis is required to run this process.\n\tPlease install Strawberry Perl (http://strawberryperl.com/) and then retry"
             exit /b 1
         )
     )
-    :: Save path for quick reuse
+    REM Save path for quick reuse
     echo !perlPath! >"!winpath!perlPath.cfg"
 )
 call:printf "\tPERL Path:\t !perlPath!"
@@ -95,7 +95,7 @@ if exist "!winpath!mysqlPath.cfg" (
     )
 )
 if not DEFINED mysqlPath (
-:: Establish the location of MySQL Sever executables
+REM Establish the location of MySQL Sever executables
     set mysqlPath=""
     call:getFilePath mysql.exe Server mysqlPath
     if "!mysqlPath!"=="NOT FOUND" (
@@ -103,7 +103,7 @@ if not DEFINED mysqlPath (
         call:printf "\nUnable to find mysql.exe - Cannot import the data.\n\tPlease install MySQL Community Server and Workbench\n\t(https://dev.mysql.com/downloads/mysql/).\n\tThen configure in line with SnomedRfsMySql recommendations\n\tbefore retrying this import process".
         exit /b 1
     )
-    :: Save path for quick reuse
+    REM Save path for quick reuse
     echo !mysqlPath! >"!winpath!mysqlPath.cfg"
 )
 call:printf "\tMySQL Path:\t !mysqlPath!"
@@ -117,21 +117,21 @@ if "a%loadKey%"=="a" (
 echo %loadKey%
 
 if "%loadKey:~0,6%" neq "update" (
-    :: Get Release Path
+    REM Get Release Path
     call:printf "\nEnter the full path to the SNOMED CT Release Package folder or zip archive"
     set /P thisRelease="Release folder or zip archive path: "
     echo  !thisRelease!
-    :: Get valid Unix style version of thisRelease for use in SQL
-    :: Then revise theRelease to ensure it uses only backslashes
+    REM Get valid Unix style version of thisRelease for use in SQL
+    REM Then revise theRelease to ensure it uses only backslashes
     set thisRelease=!thisRelease:.zip=!
     set thisReleaseSql=!thisRelease:\=/!
     set thisRelease=!thisRelease:/=\!
-    :: Set releasePackage and releaseRoot variables from thisRelease
+    REM Set releasePackage and releaseRoot variables from thisRelease
     for %%A in (!thisRelease!) do (
         set releasePackage=%%~nA
         set releaseRoot=%%~dpA
     )
-    :: Set thisReldate from releasePackage
+    REM Set thisReldate from releasePackage
     set "thisReldate=!releasePackage:*20=!"
     set thisReldate=20!thisReldate:~0,6!
 )
@@ -190,7 +190,7 @@ set tc_source=""
 :: Locate the snapshot relationships file in the termilogy path.
 call:getFilePath "%tpath%\sct2_Relationship..." "Snapshot" tc_source
 if "!tc_source!"=="NOT FOUND" (
-:: Report error if Snapshot Relationships file cannot be found. This should not happen!
+REM Report error if Snapshot Relationships file cannot be found. This should not happen!
     call:printf "\nError! No Snapshot Relationship file in release package"
     call:printLog "Error! No Snapshot Relationship file in release package"
     exit /b
