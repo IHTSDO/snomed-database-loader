@@ -302,7 +302,7 @@ else
 		printf "\nRELEASE ZIP ARCHIVE: $releaseZip\n"
 		addLog "Release Zip file found: $thisRelease"
 		unzipFolder=`dirname "$thisRelease"`
-		unzip "$releaseZip" -q -d $unzipFolder
+		unzip -q "$releaseZip" -d $unzipFolder
 		printf "\nRELEASE FOLDER: $thisRelease\n"
 	else
 		# No folder or zipfile found so exit here
