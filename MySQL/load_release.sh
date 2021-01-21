@@ -19,13 +19,20 @@ then
 	moduleStr=$newModuleStr
 fi
 
-langCode=en
-echo "Enter the language code string used in filenames [$langCode]:"
+ORIG_IFS=$IFS
+IFS=","
+langCodeArray=(en)
+echo "Enter the language code(s) string used in filenames. Comma separate if multiple [en]:"
 read newLangCode
 if [ -n "$newLangCode" ]
 then
-	langCode=$newLangCode
+	langCodeArray=($newLangCode)
 fi
+IFS=$ORIG_IFS
+
+for i in "${langCodeArray[@]}"; do
+  echo "Language Code: $i"
+done
 
 dbUsername=root
 echo "Enter database username [$dbUsername]:"
@@ -98,7 +105,7 @@ function addLoadScript() {
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
 		fileName=${fileName/MOD/${moduleStr}}
-		fileName=${fileName/LANG/${langCode}}
+		fileName=${fileName/LANG/${3}}
 		parentPath="${localExtract}/"
 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
 		snapshotOnly=false
@@ -138,14 +145,16 @@ function addLoadScript() {
 echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
 addLoadScript sct2_Concept_TYPE_MOD_DATE.txt concept
-addLoadScript sct2_Description_TYPE-LANG_MOD_DATE.txt description
+for i in ${langCodeArray[@]}; do
+  addLoadScript sct2_Description_TYPE-LANG_MOD_DATE.txt description $i
+  addLoadScript sct2_TextDefinition_TYPE-LANG_MOD_DATE.txt textdefinition $i
+  addLoadScript der2_cRefset_LanguageTYPE-LANG_MOD_DATE.txt langrefset $i
+done
 addLoadScript sct2_StatedRelationship_TYPE_MOD_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
 addLoadScript sct2_RelationshipConcreteValues_TYPE_MOD_DATE.txt relationship_concrete
 addLoadScript sct2_sRefset_OWLExpressionTYPE_MOD_DATE.txt owlexpression
-addLoadScript sct2_TextDefinition_TYPE-LANG_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
-addLoadScript der2_cRefset_LanguageTYPE-LANG_MOD_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationTYPE_MOD_DATE.txt associationrefset
 addLoadScript der2_iissscRefset_ComplexMapTYPE_MOD_DATE.txt complexmaprefset
 addLoadScript der2_iisssccRefset_ExtendedMapTYPE_MOD_DATE.txt extendedmaprefset
