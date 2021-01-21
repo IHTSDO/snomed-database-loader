@@ -141,6 +141,7 @@ addLoadScript sct2_Concept_TYPE_MOD_DATE.txt concept
 addLoadScript sct2_Description_TYPE-LANG_MOD_DATE.txt description
 addLoadScript sct2_StatedRelationship_TYPE_MOD_DATE.txt stated_relationship
 addLoadScript sct2_Relationship_TYPE_MOD_DATE.txt relationship
+addLoadScript sct2_RelationshipConcreteValues_TYPE_MOD_DATE.txt relationship_concrete
 addLoadScript sct2_sRefset_OWLExpressionTYPE_MOD_DATE.txt owlexpression
 addLoadScript sct2_TextDefinition_TYPE-LANG_MOD_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
@@ -185,3 +186,4 @@ EOF
 
 rm -rf $localExtract
 #We'll leave the generated environment & load scripts for inspection
+

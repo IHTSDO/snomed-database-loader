@@ -83,6 +83,29 @@ key idx_characteristictypeid(characteristictypeid),
 key idx_modifierid(modifierid)
 ) engine=myisam default charset=utf8;
 
+drop table if exists relationship_concrete_TYPE;
+create table relationship_concrete_TYPE(
+id varchar(18) not null,
+effectivetime char(8) not null,
+active char(1) not null,
+moduleid varchar(18) not null,
+sourceid varchar(18) not null,
+`value` varchar(4096) not null,
+relationshipgroup varchar(18) not null,
+typeid varchar(18) not null,
+characteristictypeid varchar(18) not null,
+modifierid varchar(18) not null,
+key idx_id(id),
+key idx_effectivetime(effectivetime),
+key idx_active(active),
+key idx_moduleid(moduleid),
+key idx_sourceid(sourceid),
+key idx_relationshipgroup(relationshipgroup),
+key idx_typeid(typeid),
+key idx_characteristictypeid(characteristictypeid),
+key idx_modifierid(modifierid)
+) engine=myisam default charset=utf8;
+
 drop table if exists stated_relationship_TYPE;
 create table stated_relationship_TYPE(
 id varchar(18) not null,
@@ -258,4 +281,5 @@ key idx_moduleid(moduleid),
 key idx_refsetid(refsetid),
 key idx_referencedcomponentid(referencedcomponentid)
 ) engine=myisam default charset=utf8;
+
 
