@@ -103,11 +103,11 @@ port=3306
 -- 
 -- PACKAGE AND OPTION SETTINGS USED TO PRODUCING THIS SCRIPT
 -- 
--- Release Package: SnomedCT_InternationalRF2_PRODUCTION_20200731T120000
+-- Release Package: SnomedCT_InternationalRF2_PRODUCTION_20210131T120000
 -- Package Code: INT
--- Release Date: 20200731
+-- Release Date: 20210131
 -- Full Edition including root concept
--- RFS Specification Creation: 20200804092053
+-- RFS Specification Creation: 20210201095850
 -- 
 
 DROP DATABASE IF EXISTS `$DBNAME`; 
