@@ -16,7 +16,5 @@ CREATE INDEX attributevaluerefset_f_idx ON snomedct.attributevaluerefset_f
   USING btree (referencedcomponentid, valueid);
 CREATE INDEX simplerefset_referencedcomponentid_idx ON snomedct.simplerefset_f
   USING btree (referencedcomponentid);
-CREATE INDEX complexmaprefset_referencedcomponentid_idx ON snomedct.complexmaprefset_f
-  USING btree (referencedcomponentid);
 CREATE INDEX extendedmaprefset_referencedcomponentid_idx ON snomedct.extendedmaprefset_f
   USING btree (referencedcomponentid);
