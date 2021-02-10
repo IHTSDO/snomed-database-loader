@@ -220,6 +220,54 @@ CREATE TABLE MRCMAttributeDomain_f(
 	PRIMARY KEY (id, effectiveTime)
 );
 
+/*create table MRCMAttributeDomain_f*/
+DROP TABLE IF EXISTS MRCMAttributeDomain_f CASCADE;
+CREATE TABLE MRCMAttributeRangeRefset_f(
+  id uuid not null,
+  effectivetime char(8) not null,
+  active char(1) not null,
+  moduleid varchar(18) not null,
+  refsetid varchar(18) not null,
+  referencedcomponentid varchar(18) not null,
+  rangeConstraint TEXT NOT NULL,
+	attributeRule TEXT NOT NULL,
+	ruleStrengthId varchar(18) NOT NULL,
+	contentTypeId varchar(18) NOT NULL,
+	PRIMARY KEY (id, effectiveTime)
+);
+
+/*create table MRCMDomain_f*/
+DROP TABLE IF EXISTS MRCMDomain_f CASCADE;
+CREATE TABLE MRCMDomain_f(  id uuid not null,
+  effectivetime char(8) not null,
+  active char(1) not null,
+  moduleid varchar(18) not null,
+  refsetid varchar(18) not null,
+  referencedcomponentid varchar(18) not null,
+  domainConstraint TEXT,
+  parentDomain TEXT,
+  proximalPrimitiveConstraint TEXT,
+  proximalPrimitiveRefinement TEXT,
+  domainTemplateForPrecoordination TEXT,
+  domainTemplateForPostcoordination TEXT,
+  guideURL TEXT NOT NULL,
+ PRIMARY KEY (id, effectiveTime)
+);
+
+
+/*create table ModuleDependencyRefset_f*/
+DROP TABLE IF EXISTS ModuleDependencyRefset_f CASCADE;
+CREATE TABLE ModuleDependencyRefset_f(
+  id uuid not null,
+  effectivetime char(8) not null,
+  active char(1) not null,
+  moduleid varchar(18) not null,
+  refsetid varchar(18) not null,
+  referencedcomponentid varchar(18) not null,
+	sourceEffectiveTime CHAR(8) NOT NULL,
+	targetEffectiveTime CHAR(8) NOT NULL,
+	PRIMARY KEY (id, effectiveTime)
+);
 
 /*create table OWLExpressionRefset_f*/
 DROP TABLE IF EXISTS OWLExpressionRefset_f CASCADE;
