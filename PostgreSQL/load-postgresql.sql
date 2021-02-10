@@ -51,10 +51,6 @@ BEGIN
   EXECUTE 'COPY simplemaprefset' || suffix || '(id, effectivetime, active, moduleid, refsetid,  referencedcomponentid, maptarget) FROM '''
         || folder || '/' || type || '/Refset/Map/der2_sRefset_SimpleMap' || type || '_' || release || '.txt'' WITH (FORMAT csv, HEADER true, DELIMITER ''	'')';
 
-  EXECUTE 'TRUNCATE TABLE complexmaprefset' || suffix;
-  EXECUTE 'COPY complexmaprefset' || suffix || '(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, mapGroup, mapPriority, mapRule, mapAdvice, mapTarget, correlationId) FROM '''
-        || folder || '/' || type || '/Refset/Map/der2_iissscRefset_ComplexMap' || type || '_' || release || '.txt'' WITH (FORMAT csv, HEADER true, DELIMITER ''	'')';
-
   EXECUTE 'TRUNCATE TABLE extendedmaprefset' || suffix;
   EXECUTE 'COPY extendedmaprefset' || suffix || '(id, effectivetime, active, moduleid, refsetid, referencedcomponentid, mapGroup, mapPriority, mapRule, mapAdvice, mapTarget, correlationId, mapCategoryId) FROM '''
         || folder || '/' || type || '/Refset/Map/der2_iisssccRefset_ExtendedMap' || type || '_' || release || '.txt'' WITH (FORMAT csv, HEADER true, DELIMITER ''	'')';
