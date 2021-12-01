@@ -120,12 +120,20 @@ function addLoadScript() {
 				snapshotOnly=true
 				if [ ! -f ${parentPath}${fileName} ]; then
 					echo "Unable to find ${origFilename} or beta version, skipping..."
-					return
+					#SI are stopping producing Delta files, so don't worry about those missing
+					if [ "$fileType" == "Delta" ]
+					then 
+						echo "Checking next file type"
+						continue
+					else 
+						echo "Skipping"
+						return
+					fi
 				fi
 			fi
 		fi
 		
-		if [[ $snapshotOnly = false || ($snapshotOnly = true && "$fileType" = "Snapshot") ]]
+		if [[ $snapshotOnly = false || ($snapshotOnly = true && "$fileType" == "Snapshot") ]]
 		then 
 			echo "alter table ${tableName} disable keys;" >> ${generatedLoadScript}
 			echo "load data local" >> ${generatedLoadScript}
