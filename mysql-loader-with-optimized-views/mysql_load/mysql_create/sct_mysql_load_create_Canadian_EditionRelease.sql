@@ -103,11 +103,11 @@ port=3306
 -- 
 -- PACKAGE AND OPTION SETTINGS USED TO PRODUCING THIS SCRIPT
 -- 
--- Release Package: SnomedCT_InternationalRF2_PRODUCTION_20210731T120000
--- Package Code: INT
--- Release Date: 20210731
+-- Release Package: SnomedCT_Canadian_EditionRelease_PRODUCTION_20210930T120000
+-- Package Code: CANADIAN
+-- Release Date: 20210930
 -- Full Edition including root concept
--- RFS Specification Creation: 20211209111115
+-- RFS Specification Creation: 20211209115414
 -- 
 
 DROP DATABASE IF EXISTS `$DBNAME`; 
@@ -224,6 +224,23 @@ CREATE TABLE IF NOT EXISTS `full_refset_attributevalue` (
 	`refsetId` BIGINT NOT NULL DEFAULT  0,
 	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
 	`valueId` BIGINT NOT NULL DEFAULT  0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: full_refset_QuerySpecificationReferenceSet --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: full_refset_QuerySpecificationReferenceSet";
+
+CREATE TABLE IF NOT EXISTS `full_refset_QuerySpecificationReferenceSet` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`query` TEXT NOT NULL,
 	PRIMARY KEY (`id`,`effectiveTime`))
 	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
@@ -588,6 +605,23 @@ CREATE TABLE IF NOT EXISTS `snap_refset_attributevalue` (
 	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 
+-- CREATE TABLE: snap_refset_QuerySpecificationReferenceSet --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: snap_refset_QuerySpecificationReferenceSet";
+
+CREATE TABLE IF NOT EXISTS `snap_refset_QuerySpecificationReferenceSet` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`query` TEXT NOT NULL,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
 -- CREATE TABLE: snap_refset_language --
 DELIMITER ;
 USE `$DBNAME`;
@@ -937,7 +971,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_simple";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_SimpleFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_SimpleFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_simple`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -949,7 +983,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_association";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AssociationFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AssociationFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_association`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -961,11 +995,23 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_attributevalue";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AttributeValueFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_cRefset_AttributeValueFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_attributevalue`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`valueId`);
+
+
+-- Load Table Data: full_refset_QuerySpecificationReferenceSet --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: full_refset_QuerySpecificationReferenceSet";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_sRefset_QuerySpecificationReferenceSetFull_CanadianEdition_$RELDATE.txt'
+INTO TABLE `full_refset_QuerySpecificationReferenceSet`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`query`);
 
 
 -- Load Table Data: full_refset_language --
@@ -973,7 +1019,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_language";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Language/der2_cRefset_LanguageFull-en_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Language/der2_cRefset_LanguageFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_language`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -985,7 +1031,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_extendedmap";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_iisssccRefset_ExtendedMapFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_iisssccRefset_ExtendedMapFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_extendedmap`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -997,7 +1043,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_simplemap";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_SimpleMapFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_SimpleMapFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_simplemap`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1009,7 +1055,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_mrcmmodulescope";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cRefset_MRCMModuleScopeFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cRefset_MRCMModuleScopeFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_mrcmmodulescope`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1021,7 +1067,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_refsetdescriptor";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_RefsetDescriptorFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_RefsetDescriptorFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_refsetdescriptor`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1033,7 +1079,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_descriptiontype";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ciRefset_DescriptionTypeFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ciRefset_DescriptionTypeFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_descriptiontype`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1045,7 +1091,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_mrcmattributedomain";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_mrcmattributedomain`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1057,7 +1103,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_moduledependency";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ModuleDependencyFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ModuleDependencyFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_moduledependency`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1069,7 +1115,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_mrcmattributerange";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_mrcmattributerange`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1081,7 +1127,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_mrcmdomain";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_sssssssRefset_MRCMDomainFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_sssssssRefset_MRCMDomainFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_mrcmdomain`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1093,7 +1139,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_concept";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Concept_Full_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Concept_Full_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_concept`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1105,7 +1151,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_description";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Description_Full-en_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Description_Full_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_description`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1117,7 +1163,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_relationshipconcretevalues";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_RelationshipConcreteValues_Full_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_RelationshipConcreteValues_Full_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_relationshipconcretevalues`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1129,7 +1175,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_relationship";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Relationship_Full_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_Relationship_Full_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_relationship`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1141,7 +1187,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_description";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_TextDefinition_Full-en_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_TextDefinition_Full_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_description`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1153,7 +1199,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: full_refset_owlexpression";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_sRefset_OWLExpressionFull_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Terminology/sct2_sRefset_OWLExpressionFull_CanadianEdition_$RELDATE.txt'
 INTO TABLE `full_refset_owlexpression`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1171,7 +1217,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_simple";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_Refset_SimpleSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_Refset_SimpleSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_simple`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1183,7 +1229,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_association";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_cRefset_AssociationSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_cRefset_AssociationSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_association`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1195,11 +1241,23 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_attributevalue";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_cRefset_AttributeValueSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_cRefset_AttributeValueSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_attributevalue`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`valueId`);
+
+
+-- Load Table Data: snap_refset_QuerySpecificationReferenceSet --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: snap_refset_QuerySpecificationReferenceSet";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_sRefset_QuerySpecificationReferenceSetSnapshot_CanadianEdition_$RELDATE.txt'
+INTO TABLE `snap_refset_QuerySpecificationReferenceSet`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`query`);
 
 
 -- Load Table Data: snap_refset_language --
@@ -1207,7 +1265,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_language";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Language/der2_cRefset_LanguageSnapshot-en_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Language/der2_cRefset_LanguageSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_language`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1219,7 +1277,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_extendedmap";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_iisssccRefset_ExtendedMapSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_iisssccRefset_ExtendedMapSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_extendedmap`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1231,7 +1289,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_simplemap";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_sRefset_SimpleMapSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_sRefset_SimpleMapSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_simplemap`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1243,7 +1301,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_mrcmmodulescope";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cRefset_MRCMModuleScopeSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cRefset_MRCMModuleScopeSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_mrcmmodulescope`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1255,7 +1313,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_refsetdescriptor";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cciRefset_RefsetDescriptorSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cciRefset_RefsetDescriptorSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_refsetdescriptor`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1267,7 +1325,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_descriptiontype";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ciRefset_DescriptionTypeSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ciRefset_DescriptionTypeSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_descriptiontype`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1279,7 +1337,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_mrcmattributedomain";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cissccRefset_MRCMAttributeDomainSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_mrcmattributedomain`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1291,7 +1349,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_moduledependency";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_ModuleDependencySnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_ModuleDependencySnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_moduledependency`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1303,7 +1361,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_mrcmattributerange";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssccRefset_MRCMAttributeRangeSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_mrcmattributerange`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1315,7 +1373,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_mrcmdomain";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_sssssssRefset_MRCMDomainSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_sssssssRefset_MRCMDomainSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_mrcmdomain`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1327,7 +1385,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_concept";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Concept_Snapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Concept_Snapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_concept`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1339,7 +1397,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_description";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Description_Snapshot-en_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Description_Snapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_description`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1351,7 +1409,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_relationshipconcretevalues";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_RelationshipConcreteValues_Snapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_RelationshipConcreteValues_Snapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_relationshipconcretevalues`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1363,7 +1421,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_relationship";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_Relationship_Snapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_relationship`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1375,7 +1433,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_description";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_TextDefinition_Snapshot-en_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_TextDefinition_Snapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_description`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1387,7 +1445,7 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"Load Table Data: snap_refset_owlexpression";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_sRefset_OWLExpressionSnapshot_INT_$RELDATE.txt'
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Terminology/sct2_sRefset_OWLExpressionSnapshot_CanadianEdition_$RELDATE.txt'
 INTO TABLE `snap_refset_owlexpression`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
@@ -1634,7 +1692,7 @@ SELECT DISTINCT `refsetId`, 'association' `refsetType` FROM `snap_refset_associa
 UNION
 SELECT DISTINCT `refsetId`, 'attributevalue' FROM `snap_refset_attributevalue`
 UNION
-SELECT DISTINCT `refsetId`, 'descriptiontype' FROM `snap_refset_descriptiontype`
+SELECT DISTINCT `refsetId`, 'descriptiontype' FROM `snap_refset_DescriptionType`
 UNION
 SELECT DISTINCT `refsetId`, 'extendedmap' FROM `snap_refset_extendedmap`
 UNION
@@ -1731,6 +1789,12 @@ DELIMITER ;
 
 DROP VIEW IF EXISTS `delta_refset_attributevalue`;
 CREATE VIEW `delta_refset_attributevalue` AS select `tbl`.* from `full_refset_attributevalue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `delta_refset_QuerySpecificationReferenceSet`;
+CREATE VIEW `delta_refset_QuerySpecificationReferenceSet` AS select `tbl`.* from `full_refset_QuerySpecificationReferenceSet` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -1855,6 +1919,12 @@ CREATE VIEW `snap1_refset_attributevalue` AS select * from `full_refset_attribut
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `snap1_refset_QuerySpecificationReferenceSet`;
+CREATE VIEW `snap1_refset_QuerySpecificationReferenceSet` AS select * from `full_refset_QuerySpecificationReferenceSet` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_QuerySpecificationReferenceSet` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `snap1_refset_language`;
 CREATE VIEW `snap1_refset_language` AS select * from `full_refset_language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
@@ -1971,6 +2041,12 @@ DELIMITER ;
 
 DROP VIEW IF EXISTS `delta1_refset_attributevalue`;
 CREATE VIEW `delta1_refset_attributevalue` AS select `tbl`.* from `full_refset_attributevalue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `delta1_refset_QuerySpecificationReferenceSet`;
+CREATE VIEW `delta1_refset_QuerySpecificationReferenceSet` AS select `tbl`.* from `full_refset_QuerySpecificationReferenceSet` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -2095,6 +2171,12 @@ CREATE VIEW `snap2_refset_attributevalue` AS select * from `full_refset_attribut
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `snap2_refset_QuerySpecificationReferenceSet`;
+CREATE VIEW `snap2_refset_QuerySpecificationReferenceSet` AS select * from `full_refset_QuerySpecificationReferenceSet` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_QuerySpecificationReferenceSet` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `snap2_refset_language`;
 CREATE VIEW `snap2_refset_language` AS select * from `full_refset_language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
@@ -2211,6 +2293,12 @@ DELIMITER ;
 
 DROP VIEW IF EXISTS `delta2_refset_attributevalue`;
 CREATE VIEW `delta2_refset_attributevalue` AS select `tbl`.* from `full_refset_attributevalue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `delta2_refset_QuerySpecificationReferenceSet`;
+CREATE VIEW `delta2_refset_QuerySpecificationReferenceSet` AS select `tbl`.* from `full_refset_QuerySpecificationReferenceSet` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -2332,7 +2420,7 @@ DROP VIEW IF EXISTS `snap_fsn`;
 
 CREATE VIEW `snap_fsn` AS
 (SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -2342,7 +2430,7 @@ DROP VIEW IF EXISTS `snap_pref`;
 
 CREATE VIEW `snap_pref` AS
 (SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -2352,7 +2440,7 @@ DROP VIEW IF EXISTS `snap_syn`;
 
 CREATE VIEW `snap_syn` AS
 (SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
@@ -2362,7 +2450,7 @@ DROP VIEW IF EXISTS `snap_synall`;
 
 CREATE VIEW `snap_synall` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 
@@ -2372,7 +2460,7 @@ DROP VIEW IF EXISTS `snap_term_search_active`;
 
 CREATE VIEW `snap_term_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 
@@ -2384,7 +2472,7 @@ DROP VIEW IF EXISTS `snap_syn_search_active`;
 
 CREATE VIEW `snap_syn_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
@@ -2526,7 +2614,7 @@ DROP VIEW IF EXISTS `snap1_fsn`;
 
 CREATE VIEW `snap1_fsn` AS
 (SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -2536,7 +2624,7 @@ DROP VIEW IF EXISTS `snap1_pref`;
 
 CREATE VIEW `snap1_pref` AS
 (SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -2546,7 +2634,7 @@ DROP VIEW IF EXISTS `snap1_syn`;
 
 CREATE VIEW `snap1_syn` AS
 (SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
@@ -2556,7 +2644,7 @@ DROP VIEW IF EXISTS `snap1_synall`;
 
 CREATE VIEW `snap1_synall` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 
@@ -2566,7 +2654,7 @@ DROP VIEW IF EXISTS `snap1_term_search_active`;
 
 CREATE VIEW `snap1_term_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap1_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 
@@ -2578,7 +2666,7 @@ DROP VIEW IF EXISTS `snap1_syn_search_active`;
 
 CREATE VIEW `snap1_syn_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap1_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
@@ -2720,7 +2808,7 @@ DROP VIEW IF EXISTS `snap2_fsn`;
 
 CREATE VIEW `snap2_fsn` AS
 (SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -2730,7 +2818,7 @@ DROP VIEW IF EXISTS `snap2_pref`;
 
 CREATE VIEW `snap2_pref` AS
 (SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -2740,7 +2828,7 @@ DROP VIEW IF EXISTS `snap2_syn`;
 
 CREATE VIEW `snap2_syn` AS
 (SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
@@ -2750,7 +2838,7 @@ DROP VIEW IF EXISTS `snap2_synall`;
 
 CREATE VIEW `snap2_synall` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 
@@ -2760,7 +2848,7 @@ DROP VIEW IF EXISTS `snap2_term_search_active`;
 
 CREATE VIEW `snap2_term_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap2_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 
@@ -2772,7 +2860,7 @@ DROP VIEW IF EXISTS `snap2_syn_search_active`;
 
 CREATE VIEW `snap2_syn_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap2_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
@@ -2934,7 +3022,7 @@ DELIMITER ;
 DELIMITER ;
 USE `$DBNAME`;
 
-$NOTC LOAD DATA LOCAL INFILE '$RELPATH/xder_transitiveClosure_Snapshot_INT_$RELDATE.txt'
+$NOTC LOAD DATA LOCAL INFILE '$RELPATH/xder_TransitiveClosure_Snapshot_CanadianEdition_$RELDATE.txt'
 $NOTC		INTO TABLE `snap_transclose`
 $NOTC		LINES TERMINATED BY '\n'
 $NOTC		(`subtypeId`,`supertypeId`);
@@ -4431,6 +4519,12 @@ SELECT Now() `--`,"Index full_refset_attributevalue";
 CALL CreateIndexIfNotExists('full_refset_attributevalue','sct_refset_attributevalue_c','referencedComponentId');
 CALL CreateIndexIfNotExists('full_refset_attributevalue','sct_refset_attributevalue_rc','refsetId,referencedComponentId');
 
+-- Index full_refset_QuerySpecificationReferenceSet --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index full_refset_QuerySpecificationReferenceSet";
+
+
 -- Index full_refset_language --
 DELIMITER ;
 USE `$DBNAME`;
@@ -4591,6 +4685,12 @@ SELECT Now() `--`,"Index snap_refset_attributevalue";
 
 CALL CreateIndexIfNotExists('snap_refset_attributevalue','sct_refset_attributevalue_c','referencedComponentId');
 CALL CreateIndexIfNotExists('snap_refset_attributevalue','sct_refset_attributevalue_rc','refsetId,referencedComponentId');
+
+-- Index snap_refset_QuerySpecificationReferenceSet --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index snap_refset_QuerySpecificationReferenceSet";
+
 
 -- Index snap_refset_language --
 DELIMITER ;

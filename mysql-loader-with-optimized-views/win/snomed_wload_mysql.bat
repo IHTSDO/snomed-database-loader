@@ -188,7 +188,7 @@ setlocal EnableDelayedExpansion
 set tpath=%thisRelease%\Snapshot\Terminology
 set tc_source=""
 :: Locate the snapshot relationships file in the termilogy path.
-call:getFilePath "%tpath%\sct2_Relationship..." "Snapshot" tc_source
+call:getFilePath "%tpath%\sct2_Relationship_..." "Snapshot" tc_source
 if "!tc_source!"=="NOT FOUND" (
 REM Report error if Snapshot Relationships file cannot be found. This should not happen!
     call:printf "\nError! No Snapshot Relationship file in release package"

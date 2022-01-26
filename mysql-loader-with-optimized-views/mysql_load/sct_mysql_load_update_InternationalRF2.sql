@@ -298,6 +298,12 @@ CREATE VIEW `snapAsView_description` AS select * from `full_description` `tbl` w
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `snapAsView_relationshipconcretevalues`;
+CREATE VIEW `snapAsView_relationshipconcretevalues` AS select * from `full_relationshipconcretevalues` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationshipconcretevalues` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `snapAsView_relationship`;
 CREATE VIEW `snapAsView_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub`) where ((`sub`.`id` = `tbl`.`id`))));
 
@@ -316,80 +322,80 @@ SELECT Now() `--`,"VIEW DELTA";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_Simple`;
-CREATE VIEW `delta_refset_Simple` AS select `tbl`.* from `full_refset_Simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_simple`;
+CREATE VIEW `delta_refset_simple` AS select `tbl`.* from `full_refset_simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_Association`;
-CREATE VIEW `delta_refset_Association` AS select `tbl`.* from `full_refset_Association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_association`;
+CREATE VIEW `delta_refset_association` AS select `tbl`.* from `full_refset_association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_AttributeValue`;
-CREATE VIEW `delta_refset_AttributeValue` AS select `tbl`.* from `full_refset_AttributeValue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_attributevalue`;
+CREATE VIEW `delta_refset_attributevalue` AS select `tbl`.* from `full_refset_attributevalue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_Language`;
-CREATE VIEW `delta_refset_Language` AS select `tbl`.* from `full_refset_Language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_language`;
+CREATE VIEW `delta_refset_language` AS select `tbl`.* from `full_refset_language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_ExtendedMap`;
-CREATE VIEW `delta_refset_ExtendedMap` AS select `tbl`.* from `full_refset_ExtendedMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_extendedmap`;
+CREATE VIEW `delta_refset_extendedmap` AS select `tbl`.* from `full_refset_extendedmap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_SimpleMap`;
-CREATE VIEW `delta_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_simplemap`;
+CREATE VIEW `delta_refset_simplemap` AS select `tbl`.* from `full_refset_simplemap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_MRCMModuleScope`;
-CREATE VIEW `delta_refset_MRCMModuleScope` AS select `tbl`.* from `full_refset_MRCMModuleScope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_mrcmmodulescope`;
+CREATE VIEW `delta_refset_mrcmmodulescope` AS select `tbl`.* from `full_refset_mrcmmodulescope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_RefsetDescriptor`;
-CREATE VIEW `delta_refset_RefsetDescriptor` AS select `tbl`.* from `full_refset_RefsetDescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_refsetdescriptor`;
+CREATE VIEW `delta_refset_refsetdescriptor` AS select `tbl`.* from `full_refset_refsetdescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_DescriptionType`;
-CREATE VIEW `delta_refset_DescriptionType` AS select `tbl`.* from `full_refset_DescriptionType` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_descriptiontype`;
+CREATE VIEW `delta_refset_descriptiontype` AS select `tbl`.* from `full_refset_descriptiontype` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_MRCMAttributeDomain`;
-CREATE VIEW `delta_refset_MRCMAttributeDomain` AS select `tbl`.* from `full_refset_MRCMAttributeDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_mrcmattributedomain`;
+CREATE VIEW `delta_refset_mrcmattributedomain` AS select `tbl`.* from `full_refset_mrcmattributedomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_ModuleDependency`;
-CREATE VIEW `delta_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_moduledependency`;
+CREATE VIEW `delta_refset_moduledependency` AS select `tbl`.* from `full_refset_moduledependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_MRCMAttributeRange`;
-CREATE VIEW `delta_refset_MRCMAttributeRange` AS select `tbl`.* from `full_refset_MRCMAttributeRange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_mrcmattributerange`;
+CREATE VIEW `delta_refset_mrcmattributerange` AS select `tbl`.* from `full_refset_mrcmattributerange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_MRCMDomain`;
-CREATE VIEW `delta_refset_MRCMDomain` AS select `tbl`.* from `full_refset_MRCMDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_mrcmdomain`;
+CREATE VIEW `delta_refset_mrcmdomain` AS select `tbl`.* from `full_refset_mrcmdomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -406,6 +412,12 @@ CREATE VIEW `delta_description` AS select `tbl`.* from `full_description` `tbl`,
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `delta_relationshipconcretevalues`;
+CREATE VIEW `delta_relationshipconcretevalues` AS select `tbl`.* from `full_relationshipconcretevalues` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `delta_relationship`;
 CREATE VIEW `delta_relationship` AS select `tbl`.* from `full_relationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
@@ -418,8 +430,8 @@ CREATE VIEW `delta_description` AS select `tbl`.* from `full_description` `tbl`,
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_OWLExpression`;
-CREATE VIEW `delta_refset_OWLExpression` AS select `tbl`.* from `full_refset_OWLExpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_owlexpression`;
+CREATE VIEW `delta_refset_owlexpression` AS select `tbl`.* from `full_refset_owlexpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- VIEW SNAP ALT --
@@ -430,80 +442,80 @@ SELECT Now() `--`,"VIEW SNAP ALT";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_Simple`;
-CREATE VIEW `snap1_refset_Simple` AS select * from `full_refset_Simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Simple` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_simple`;
+CREATE VIEW `snap1_refset_simple` AS select * from `full_refset_simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_simple` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_Association`;
-CREATE VIEW `snap1_refset_Association` AS select * from `full_refset_Association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Association` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_association`;
+CREATE VIEW `snap1_refset_association` AS select * from `full_refset_association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_association` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_AttributeValue`;
-CREATE VIEW `snap1_refset_AttributeValue` AS select * from `full_refset_AttributeValue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_AttributeValue` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_attributevalue`;
+CREATE VIEW `snap1_refset_attributevalue` AS select * from `full_refset_attributevalue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_attributevalue` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_Language`;
-CREATE VIEW `snap1_refset_Language` AS select * from `full_refset_Language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_language`;
+CREATE VIEW `snap1_refset_language` AS select * from `full_refset_language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_ExtendedMap`;
-CREATE VIEW `snap1_refset_ExtendedMap` AS select * from `full_refset_ExtendedMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ExtendedMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_extendedmap`;
+CREATE VIEW `snap1_refset_extendedmap` AS select * from `full_refset_extendedmap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_extendedmap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_SimpleMap`;
-CREATE VIEW `snap1_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_simplemap`;
+CREATE VIEW `snap1_refset_simplemap` AS select * from `full_refset_simplemap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_simplemap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_MRCMModuleScope`;
-CREATE VIEW `snap1_refset_MRCMModuleScope` AS select * from `full_refset_MRCMModuleScope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMModuleScope` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_mrcmmodulescope`;
+CREATE VIEW `snap1_refset_mrcmmodulescope` AS select * from `full_refset_mrcmmodulescope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmmodulescope` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_RefsetDescriptor`;
-CREATE VIEW `snap1_refset_RefsetDescriptor` AS select * from `full_refset_RefsetDescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_RefsetDescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_refsetdescriptor`;
+CREATE VIEW `snap1_refset_refsetdescriptor` AS select * from `full_refset_refsetdescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_refsetdescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_DescriptionType`;
-CREATE VIEW `snap1_refset_DescriptionType` AS select * from `full_refset_DescriptionType` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_DescriptionType` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_descriptiontype`;
+CREATE VIEW `snap1_refset_descriptiontype` AS select * from `full_refset_descriptiontype` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_descriptiontype` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_MRCMAttributeDomain`;
-CREATE VIEW `snap1_refset_MRCMAttributeDomain` AS select * from `full_refset_MRCMAttributeDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_mrcmattributedomain`;
+CREATE VIEW `snap1_refset_mrcmattributedomain` AS select * from `full_refset_mrcmattributedomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmattributedomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_ModuleDependency`;
-CREATE VIEW `snap1_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_moduledependency`;
+CREATE VIEW `snap1_refset_moduledependency` AS select * from `full_refset_moduledependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_moduledependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_MRCMAttributeRange`;
-CREATE VIEW `snap1_refset_MRCMAttributeRange` AS select * from `full_refset_MRCMAttributeRange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeRange` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_mrcmattributerange`;
+CREATE VIEW `snap1_refset_mrcmattributerange` AS select * from `full_refset_mrcmattributerange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmattributerange` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_MRCMDomain`;
-CREATE VIEW `snap1_refset_MRCMDomain` AS select * from `full_refset_MRCMDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_mrcmdomain`;
+CREATE VIEW `snap1_refset_mrcmdomain` AS select * from `full_refset_mrcmdomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmdomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
@@ -520,6 +532,12 @@ CREATE VIEW `snap1_description` AS select * from `full_description` `tbl` where 
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `snap1_relationshipconcretevalues`;
+CREATE VIEW `snap1_relationshipconcretevalues` AS select * from `full_relationshipconcretevalues` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationshipconcretevalues` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `snap1_relationship`;
 CREATE VIEW `snap1_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
@@ -532,8 +550,8 @@ CREATE VIEW `snap1_description` AS select * from `full_description` `tbl` where 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_OWLExpression`;
-CREATE VIEW `snap1_refset_OWLExpression` AS select * from `full_refset_OWLExpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_OWLExpression` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_owlexpression`;
+CREATE VIEW `snap1_refset_owlexpression` AS select * from `full_refset_owlexpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_owlexpression` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 -- VIEW DELTA --
@@ -544,80 +562,80 @@ SELECT Now() `--`,"VIEW DELTA";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_Simple`;
-CREATE VIEW `delta1_refset_Simple` AS select `tbl`.* from `full_refset_Simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_simple`;
+CREATE VIEW `delta1_refset_simple` AS select `tbl`.* from `full_refset_simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_Association`;
-CREATE VIEW `delta1_refset_Association` AS select `tbl`.* from `full_refset_Association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_association`;
+CREATE VIEW `delta1_refset_association` AS select `tbl`.* from `full_refset_association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_AttributeValue`;
-CREATE VIEW `delta1_refset_AttributeValue` AS select `tbl`.* from `full_refset_AttributeValue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_attributevalue`;
+CREATE VIEW `delta1_refset_attributevalue` AS select `tbl`.* from `full_refset_attributevalue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_Language`;
-CREATE VIEW `delta1_refset_Language` AS select `tbl`.* from `full_refset_Language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_language`;
+CREATE VIEW `delta1_refset_language` AS select `tbl`.* from `full_refset_language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_ExtendedMap`;
-CREATE VIEW `delta1_refset_ExtendedMap` AS select `tbl`.* from `full_refset_ExtendedMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_extendedmap`;
+CREATE VIEW `delta1_refset_extendedmap` AS select `tbl`.* from `full_refset_extendedmap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_SimpleMap`;
-CREATE VIEW `delta1_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_simplemap`;
+CREATE VIEW `delta1_refset_simplemap` AS select `tbl`.* from `full_refset_simplemap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_MRCMModuleScope`;
-CREATE VIEW `delta1_refset_MRCMModuleScope` AS select `tbl`.* from `full_refset_MRCMModuleScope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_mrcmmodulescope`;
+CREATE VIEW `delta1_refset_mrcmmodulescope` AS select `tbl`.* from `full_refset_mrcmmodulescope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_RefsetDescriptor`;
-CREATE VIEW `delta1_refset_RefsetDescriptor` AS select `tbl`.* from `full_refset_RefsetDescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_refsetdescriptor`;
+CREATE VIEW `delta1_refset_refsetdescriptor` AS select `tbl`.* from `full_refset_refsetdescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_DescriptionType`;
-CREATE VIEW `delta1_refset_DescriptionType` AS select `tbl`.* from `full_refset_DescriptionType` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_descriptiontype`;
+CREATE VIEW `delta1_refset_descriptiontype` AS select `tbl`.* from `full_refset_descriptiontype` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_MRCMAttributeDomain`;
-CREATE VIEW `delta1_refset_MRCMAttributeDomain` AS select `tbl`.* from `full_refset_MRCMAttributeDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_mrcmattributedomain`;
+CREATE VIEW `delta1_refset_mrcmattributedomain` AS select `tbl`.* from `full_refset_mrcmattributedomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_ModuleDependency`;
-CREATE VIEW `delta1_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_moduledependency`;
+CREATE VIEW `delta1_refset_moduledependency` AS select `tbl`.* from `full_refset_moduledependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_MRCMAttributeRange`;
-CREATE VIEW `delta1_refset_MRCMAttributeRange` AS select `tbl`.* from `full_refset_MRCMAttributeRange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_mrcmattributerange`;
+CREATE VIEW `delta1_refset_mrcmattributerange` AS select `tbl`.* from `full_refset_mrcmattributerange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_MRCMDomain`;
-CREATE VIEW `delta1_refset_MRCMDomain` AS select `tbl`.* from `full_refset_MRCMDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_mrcmdomain`;
+CREATE VIEW `delta1_refset_mrcmdomain` AS select `tbl`.* from `full_refset_mrcmdomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -634,6 +652,12 @@ CREATE VIEW `delta1_description` AS select `tbl`.* from `full_description` `tbl`
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `delta1_relationshipconcretevalues`;
+CREATE VIEW `delta1_relationshipconcretevalues` AS select `tbl`.* from `full_relationshipconcretevalues` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `delta1_relationship`;
 CREATE VIEW `delta1_relationship` AS select `tbl`.* from `full_relationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
@@ -646,8 +670,8 @@ CREATE VIEW `delta1_description` AS select `tbl`.* from `full_description` `tbl`
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_OWLExpression`;
-CREATE VIEW `delta1_refset_OWLExpression` AS select `tbl`.* from `full_refset_OWLExpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_owlexpression`;
+CREATE VIEW `delta1_refset_owlexpression` AS select `tbl`.* from `full_refset_owlexpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- VIEW SNAP ALT --
@@ -658,80 +682,80 @@ SELECT Now() `--`,"VIEW SNAP ALT";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_Simple`;
-CREATE VIEW `snap2_refset_Simple` AS select * from `full_refset_Simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Simple` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_simple`;
+CREATE VIEW `snap2_refset_simple` AS select * from `full_refset_simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_simple` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_Association`;
-CREATE VIEW `snap2_refset_Association` AS select * from `full_refset_Association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Association` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_association`;
+CREATE VIEW `snap2_refset_association` AS select * from `full_refset_association` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_association` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_AttributeValue`;
-CREATE VIEW `snap2_refset_AttributeValue` AS select * from `full_refset_AttributeValue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_AttributeValue` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_attributevalue`;
+CREATE VIEW `snap2_refset_attributevalue` AS select * from `full_refset_attributevalue` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_attributevalue` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_Language`;
-CREATE VIEW `snap2_refset_Language` AS select * from `full_refset_Language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_Language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_language`;
+CREATE VIEW `snap2_refset_language` AS select * from `full_refset_language` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_language` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_ExtendedMap`;
-CREATE VIEW `snap2_refset_ExtendedMap` AS select * from `full_refset_ExtendedMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ExtendedMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_extendedmap`;
+CREATE VIEW `snap2_refset_extendedmap` AS select * from `full_refset_extendedmap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_extendedmap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_SimpleMap`;
-CREATE VIEW `snap2_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_simplemap`;
+CREATE VIEW `snap2_refset_simplemap` AS select * from `full_refset_simplemap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_simplemap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_MRCMModuleScope`;
-CREATE VIEW `snap2_refset_MRCMModuleScope` AS select * from `full_refset_MRCMModuleScope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMModuleScope` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_mrcmmodulescope`;
+CREATE VIEW `snap2_refset_mrcmmodulescope` AS select * from `full_refset_mrcmmodulescope` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmmodulescope` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_RefsetDescriptor`;
-CREATE VIEW `snap2_refset_RefsetDescriptor` AS select * from `full_refset_RefsetDescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_RefsetDescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_refsetdescriptor`;
+CREATE VIEW `snap2_refset_refsetdescriptor` AS select * from `full_refset_refsetdescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_refsetdescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_DescriptionType`;
-CREATE VIEW `snap2_refset_DescriptionType` AS select * from `full_refset_DescriptionType` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_DescriptionType` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_descriptiontype`;
+CREATE VIEW `snap2_refset_descriptiontype` AS select * from `full_refset_descriptiontype` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_descriptiontype` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_MRCMAttributeDomain`;
-CREATE VIEW `snap2_refset_MRCMAttributeDomain` AS select * from `full_refset_MRCMAttributeDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_mrcmattributedomain`;
+CREATE VIEW `snap2_refset_mrcmattributedomain` AS select * from `full_refset_mrcmattributedomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmattributedomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_ModuleDependency`;
-CREATE VIEW `snap2_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_moduledependency`;
+CREATE VIEW `snap2_refset_moduledependency` AS select * from `full_refset_moduledependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_moduledependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_MRCMAttributeRange`;
-CREATE VIEW `snap2_refset_MRCMAttributeRange` AS select * from `full_refset_MRCMAttributeRange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMAttributeRange` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_mrcmattributerange`;
+CREATE VIEW `snap2_refset_mrcmattributerange` AS select * from `full_refset_mrcmattributerange` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmattributerange` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_MRCMDomain`;
-CREATE VIEW `snap2_refset_MRCMDomain` AS select * from `full_refset_MRCMDomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_MRCMDomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_mrcmdomain`;
+CREATE VIEW `snap2_refset_mrcmdomain` AS select * from `full_refset_mrcmdomain` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_mrcmdomain` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
@@ -748,6 +772,12 @@ CREATE VIEW `snap2_description` AS select * from `full_description` `tbl` where 
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `snap2_relationshipconcretevalues`;
+CREATE VIEW `snap2_relationshipconcretevalues` AS select * from `full_relationshipconcretevalues` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationshipconcretevalues` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `snap2_relationship`;
 CREATE VIEW `snap2_relationship` AS select * from `full_relationship` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_relationship` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
@@ -760,8 +790,8 @@ CREATE VIEW `snap2_description` AS select * from `full_description` `tbl` where 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_OWLExpression`;
-CREATE VIEW `snap2_refset_OWLExpression` AS select * from `full_refset_OWLExpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_OWLExpression` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_owlexpression`;
+CREATE VIEW `snap2_refset_owlexpression` AS select * from `full_refset_owlexpression` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_owlexpression` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 -- VIEW DELTA --
@@ -772,80 +802,80 @@ SELECT Now() `--`,"VIEW DELTA";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_Simple`;
-CREATE VIEW `delta2_refset_Simple` AS select `tbl`.* from `full_refset_Simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_simple`;
+CREATE VIEW `delta2_refset_simple` AS select `tbl`.* from `full_refset_simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_Association`;
-CREATE VIEW `delta2_refset_Association` AS select `tbl`.* from `full_refset_Association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_association`;
+CREATE VIEW `delta2_refset_association` AS select `tbl`.* from `full_refset_association` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_AttributeValue`;
-CREATE VIEW `delta2_refset_AttributeValue` AS select `tbl`.* from `full_refset_AttributeValue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_attributevalue`;
+CREATE VIEW `delta2_refset_attributevalue` AS select `tbl`.* from `full_refset_attributevalue` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_Language`;
-CREATE VIEW `delta2_refset_Language` AS select `tbl`.* from `full_refset_Language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_language`;
+CREATE VIEW `delta2_refset_language` AS select `tbl`.* from `full_refset_language` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_ExtendedMap`;
-CREATE VIEW `delta2_refset_ExtendedMap` AS select `tbl`.* from `full_refset_ExtendedMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_extendedmap`;
+CREATE VIEW `delta2_refset_extendedmap` AS select `tbl`.* from `full_refset_extendedmap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_SimpleMap`;
-CREATE VIEW `delta2_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_simplemap`;
+CREATE VIEW `delta2_refset_simplemap` AS select `tbl`.* from `full_refset_simplemap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_MRCMModuleScope`;
-CREATE VIEW `delta2_refset_MRCMModuleScope` AS select `tbl`.* from `full_refset_MRCMModuleScope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_mrcmmodulescope`;
+CREATE VIEW `delta2_refset_mrcmmodulescope` AS select `tbl`.* from `full_refset_mrcmmodulescope` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_RefsetDescriptor`;
-CREATE VIEW `delta2_refset_RefsetDescriptor` AS select `tbl`.* from `full_refset_RefsetDescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_refsetdescriptor`;
+CREATE VIEW `delta2_refset_refsetdescriptor` AS select `tbl`.* from `full_refset_refsetdescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_DescriptionType`;
-CREATE VIEW `delta2_refset_DescriptionType` AS select `tbl`.* from `full_refset_DescriptionType` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_descriptiontype`;
+CREATE VIEW `delta2_refset_descriptiontype` AS select `tbl`.* from `full_refset_descriptiontype` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_MRCMAttributeDomain`;
-CREATE VIEW `delta2_refset_MRCMAttributeDomain` AS select `tbl`.* from `full_refset_MRCMAttributeDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_mrcmattributedomain`;
+CREATE VIEW `delta2_refset_mrcmattributedomain` AS select `tbl`.* from `full_refset_mrcmattributedomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_ModuleDependency`;
-CREATE VIEW `delta2_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_moduledependency`;
+CREATE VIEW `delta2_refset_moduledependency` AS select `tbl`.* from `full_refset_moduledependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_MRCMAttributeRange`;
-CREATE VIEW `delta2_refset_MRCMAttributeRange` AS select `tbl`.* from `full_refset_MRCMAttributeRange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_mrcmattributerange`;
+CREATE VIEW `delta2_refset_mrcmattributerange` AS select `tbl`.* from `full_refset_mrcmattributerange` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_MRCMDomain`;
-CREATE VIEW `delta2_refset_MRCMDomain` AS select `tbl`.* from `full_refset_MRCMDomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_mrcmdomain`;
+CREATE VIEW `delta2_refset_mrcmdomain` AS select `tbl`.* from `full_refset_mrcmdomain` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
@@ -862,6 +892,12 @@ CREATE VIEW `delta2_description` AS select `tbl`.* from `full_description` `tbl`
 
 DELIMITER ;
 
+DROP VIEW IF EXISTS `delta2_relationshipconcretevalues`;
+CREATE VIEW `delta2_relationshipconcretevalues` AS select `tbl`.* from `full_relationshipconcretevalues` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
 DROP VIEW IF EXISTS `delta2_relationship`;
 CREATE VIEW `delta2_relationship` AS select `tbl`.* from `full_relationship` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
@@ -874,8 +910,8 @@ CREATE VIEW `delta2_description` AS select `tbl`.* from `full_description` `tbl`
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_OWLExpression`;
-CREATE VIEW `delta2_refset_OWLExpression` AS select `tbl`.* from `full_refset_OWLExpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_owlexpression`;
+CREATE VIEW `delta2_refset_owlexpression` AS select `tbl`.* from `full_refset_owlexpression` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- END VERSIONED VIEWS --
@@ -1002,6 +1038,20 @@ CREATE VIEW `snap_rel_parent_pref` AS
 (SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
 	FROM  `snap_relationship` `r`
 JOIN `snap_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
+
+DROP VIEW IF EXISTS `snap_rel_concretevalues_pref`;
+
+CREATE VIEW `snap_rel_concretevalues_pref` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap_relationshipconcretevalues` `r`
+	JOIN `snap_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
+DROP VIEW IF EXISTS `snap_rel_concretevalues_fsn`;
+
+CREATE VIEW `snap_rel_concretevalues_fsn` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap_relationshipconcretevalues` `r`
+	JOIN `snap_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
 
 DELIMITER ;
 -- Create View Special All views for 'snap'
@@ -1183,6 +1233,20 @@ CREATE VIEW `snap1_rel_parent_pref` AS
 	FROM  `snap1_relationship` `r`
 JOIN `snap1_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
 
+DROP VIEW IF EXISTS `snap1_rel_concretevalues_pref`;
+
+CREATE VIEW `snap1_rel_concretevalues_pref` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap1_relationshipconcretevalues` `r`
+	JOIN `snap1_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
+DROP VIEW IF EXISTS `snap1_rel_concretevalues_fsn`;
+
+CREATE VIEW `snap1_rel_concretevalues_fsn` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap1_relationshipconcretevalues` `r`
+	JOIN `snap1_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
 DELIMITER ;
 -- Create View Special All views for 'snap1'
 DELIMITER ;
@@ -1362,6 +1426,20 @@ CREATE VIEW `snap2_rel_parent_pref` AS
 (SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
 	FROM  `snap2_relationship` `r`
 JOIN `snap2_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
+
+DROP VIEW IF EXISTS `snap2_rel_concretevalues_pref`;
+
+CREATE VIEW `snap2_rel_concretevalues_pref` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap2_relationshipconcretevalues` `r`
+	JOIN `snap2_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
+DROP VIEW IF EXISTS `snap2_rel_concretevalues_fsn`;
+
+CREATE VIEW `snap2_rel_concretevalues_fsn` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap2_relationshipconcretevalues` `r`
+	JOIN `snap2_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
 
 DELIMITER ;
 -- Create View Special All views for 'snap2'

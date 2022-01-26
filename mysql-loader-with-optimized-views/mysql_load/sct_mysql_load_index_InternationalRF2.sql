@@ -1354,111 +1354,111 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Indexes for Prefix: full";
 
 
--- Index full_refset_Simple --
+-- Index full_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_Simple";
+SELECT Now() `--`,"Index full_refset_simple";
 
-CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_simple','sct_refset_simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_simple','sct_refset_simple_rc','refsetId,referencedComponentId');
 
--- Index full_refset_Association --
+-- Index full_refset_association --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_Association";
+SELECT Now() `--`,"Index full_refset_association";
 
-CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Association','sct_refset_Association_tgt','refsetId,targetComponentId');
+CALL CreateIndexIfNotExists('full_refset_association','sct_refset_association_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_association','sct_refset_association_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_association','sct_refset_association_tgt','refsetId,targetComponentId');
 
--- Index full_refset_AttributeValue --
+-- Index full_refset_attributevalue --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_AttributeValue";
+SELECT Now() `--`,"Index full_refset_attributevalue";
 
-CALL CreateIndexIfNotExists('full_refset_AttributeValue','sct_refset_AttributeValue_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_AttributeValue','sct_refset_AttributeValue_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_attributevalue','sct_refset_attributevalue_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_attributevalue','sct_refset_attributevalue_rc','refsetId,referencedComponentId');
 
--- Index full_refset_Language --
+-- Index full_refset_language --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_Language";
+SELECT Now() `--`,"Index full_refset_language";
 
-CALL CreateIndexIfNotExists('full_refset_Language','sct_refset_Language_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_Language','sct_refset_Language_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_language','sct_refset_language_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_language','sct_refset_language_rc','refsetId,referencedComponentId');
 
--- Index full_refset_ExtendedMap --
+-- Index full_refset_extendedmap --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_ExtendedMap";
+SELECT Now() `--`,"Index full_refset_extendedmap";
 
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ExtendedMap','sct_refset_ExtendedMap_map','mapTarget');
+CALL CreateIndexIfNotExists('full_refset_extendedmap','sct_refset_extendedmap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_extendedmap','sct_refset_extendedmap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_extendedmap','sct_refset_extendedmap_map','mapTarget');
 
--- Index full_refset_SimpleMap --
+-- Index full_refset_simplemap --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_SimpleMap";
+SELECT Now() `--`,"Index full_refset_simplemap";
 
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
+CALL CreateIndexIfNotExists('full_refset_simplemap','sct_refset_simplemap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_simplemap','sct_refset_simplemap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_simplemap','sct_refset_simplemap_map','mapTarget');
 
--- Index full_refset_MRCMModuleScope --
+-- Index full_refset_mrcmmodulescope --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMModuleScope";
+SELECT Now() `--`,"Index full_refset_mrcmmodulescope";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmmodulescope','sct_refset_mrcmmodulescope_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmmodulescope','sct_refset_mrcmmodulescope_rc','refsetId,referencedComponentId');
 
--- Index full_refset_RefsetDescriptor --
+-- Index full_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_RefsetDescriptor";
+SELECT Now() `--`,"Index full_refset_refsetdescriptor";
 
-CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_refsetdescriptor','sct_refset_refsetdescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_refsetdescriptor','sct_refset_refsetdescriptor_rc','refsetId,referencedComponentId');
 
--- Index full_refset_DescriptionType --
+-- Index full_refset_descriptiontype --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_DescriptionType";
+SELECT Now() `--`,"Index full_refset_descriptiontype";
 
 
--- Index full_refset_MRCMAttributeDomain --
+-- Index full_refset_mrcmattributedomain --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMAttributeDomain";
+SELECT Now() `--`,"Index full_refset_mrcmattributedomain";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_dom','domainId');
+CALL CreateIndexIfNotExists('full_refset_mrcmattributedomain','sct_refset_mrcmattributedomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmattributedomain','sct_refset_mrcmattributedomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmattributedomain','sct_refset_mrcmattributedomain_dom','domainId');
 
--- Index full_refset_ModuleDependency --
+-- Index full_refset_moduledependency --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_ModuleDependency";
+SELECT Now() `--`,"Index full_refset_moduledependency";
 
-CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_moduledependency','sct_refset_moduledependency_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_moduledependency','sct_refset_moduledependency_rc','refsetId,referencedComponentId');
 
--- Index full_refset_MRCMAttributeRange --
+-- Index full_refset_mrcmattributerange --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMAttributeRange";
+SELECT Now() `--`,"Index full_refset_mrcmattributerange";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmattributerange','sct_refset_mrcmattributerange_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmattributerange','sct_refset_mrcmattributerange_rc','refsetId,referencedComponentId');
 
--- Index full_refset_MRCMDomain --
+-- Index full_refset_mrcmdomain --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_MRCMDomain";
+SELECT Now() `--`,"Index full_refset_mrcmdomain";
 
-CALL CreateIndexIfNotExists('full_refset_MRCMDomain','sct_refset_MRCMDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_MRCMDomain','sct_refset_MRCMDomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmdomain','sct_refset_mrcmdomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_mrcmdomain','sct_refset_mrcmdomain_rc','refsetId,referencedComponentId');
 
 -- Index full_concept --
 DELIMITER ;
@@ -1474,6 +1474,13 @@ SELECT Now() `--`,"Index full_description";
 CALL CreateIndexIfNotExists('full_description','sct_description_concept','conceptId');
 CALL CreateIndexIfNotExists('full_description','sct_description_lang','conceptId,languageCode');
 CALL CreateIndexIfNotExists('full_description','sct_description_term_ft','term');
+
+-- Index full_relationshipconcretevalues --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index full_relationshipconcretevalues";
+
+CALL CreateIndexIfNotExists('full_relationshipconcretevalues','sct_relationshipconcretevalues_source','sourceId,typeId,characteristicTypeId');
 
 -- Index full_relationship --
 DELIMITER ;
@@ -1492,13 +1499,13 @@ CALL CreateIndexIfNotExists('full_description','sct_description_concept','concep
 CALL CreateIndexIfNotExists('full_description','sct_description_lang','conceptId,languageCode');
 CALL CreateIndexIfNotExists('full_description','sct_description_term_ft','term');
 
--- Index full_refset_OWLExpression --
+-- Index full_refset_owlexpression --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_OWLExpression";
+SELECT Now() `--`,"Index full_refset_owlexpression";
 
-CALL CreateIndexIfNotExists('full_refset_OWLExpression','sct_refset_OWLExpression_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_OWLExpression','sct_refset_OWLExpression_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_owlexpression','sct_refset_owlexpression_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_owlexpression','sct_refset_owlexpression_rc','refsetId,referencedComponentId');
 ;
 
 
@@ -1508,111 +1515,111 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Indexes for Prefix: snap";
 
 
--- Index snap_refset_Simple --
+-- Index snap_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_Simple";
+SELECT Now() `--`,"Index snap_refset_simple";
 
-CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Simple','sct_refset_Simple_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_simple','sct_refset_simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_simple','sct_refset_simple_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_Association --
+-- Index snap_refset_association --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_Association";
+SELECT Now() `--`,"Index snap_refset_association";
 
-CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Association','sct_refset_Association_tgt','refsetId,targetComponentId');
+CALL CreateIndexIfNotExists('snap_refset_association','sct_refset_association_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_association','sct_refset_association_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_association','sct_refset_association_tgt','refsetId,targetComponentId');
 
--- Index snap_refset_AttributeValue --
+-- Index snap_refset_attributevalue --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_AttributeValue";
+SELECT Now() `--`,"Index snap_refset_attributevalue";
 
-CALL CreateIndexIfNotExists('snap_refset_AttributeValue','sct_refset_AttributeValue_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_AttributeValue','sct_refset_AttributeValue_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_attributevalue','sct_refset_attributevalue_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_attributevalue','sct_refset_attributevalue_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_Language --
+-- Index snap_refset_language --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_Language";
+SELECT Now() `--`,"Index snap_refset_language";
 
-CALL CreateIndexIfNotExists('snap_refset_Language','sct_refset_Language_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_Language','sct_refset_Language_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_language','sct_refset_language_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_language','sct_refset_language_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_ExtendedMap --
+-- Index snap_refset_extendedmap --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_ExtendedMap";
+SELECT Now() `--`,"Index snap_refset_extendedmap";
 
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ExtendedMap','sct_refset_ExtendedMap_map','mapTarget');
+CALL CreateIndexIfNotExists('snap_refset_extendedmap','sct_refset_extendedmap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_extendedmap','sct_refset_extendedmap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_extendedmap','sct_refset_extendedmap_map','mapTarget');
 
--- Index snap_refset_SimpleMap --
+-- Index snap_refset_simplemap --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_SimpleMap";
+SELECT Now() `--`,"Index snap_refset_simplemap";
 
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
+CALL CreateIndexIfNotExists('snap_refset_simplemap','sct_refset_simplemap_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_simplemap','sct_refset_simplemap_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_simplemap','sct_refset_simplemap_map','mapTarget');
 
--- Index snap_refset_MRCMModuleScope --
+-- Index snap_refset_mrcmmodulescope --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMModuleScope";
+SELECT Now() `--`,"Index snap_refset_mrcmmodulescope";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMModuleScope','sct_refset_MRCMModuleScope_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmmodulescope','sct_refset_mrcmmodulescope_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmmodulescope','sct_refset_mrcmmodulescope_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_RefsetDescriptor --
+-- Index snap_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_RefsetDescriptor";
+SELECT Now() `--`,"Index snap_refset_refsetdescriptor";
 
-CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_RefsetDescriptor','sct_refset_RefsetDescriptor_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_refsetdescriptor','sct_refset_refsetdescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_refsetdescriptor','sct_refset_refsetdescriptor_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_DescriptionType --
+-- Index snap_refset_descriptiontype --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_DescriptionType";
+SELECT Now() `--`,"Index snap_refset_descriptiontype";
 
 
--- Index snap_refset_MRCMAttributeDomain --
+-- Index snap_refset_mrcmattributedomain --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMAttributeDomain";
+SELECT Now() `--`,"Index snap_refset_mrcmattributedomain";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeDomain','sct_refset_MRCMAttributeDomain_dom','domainId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmattributedomain','sct_refset_mrcmattributedomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmattributedomain','sct_refset_mrcmattributedomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmattributedomain','sct_refset_mrcmattributedomain_dom','domainId');
 
--- Index snap_refset_ModuleDependency --
+-- Index snap_refset_moduledependency --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_ModuleDependency";
+SELECT Now() `--`,"Index snap_refset_moduledependency";
 
-CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_moduledependency','sct_refset_moduledependency_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_moduledependency','sct_refset_moduledependency_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_MRCMAttributeRange --
+-- Index snap_refset_mrcmattributerange --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMAttributeRange";
+SELECT Now() `--`,"Index snap_refset_mrcmattributerange";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMAttributeRange','sct_refset_MRCMAttributeRange_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmattributerange','sct_refset_mrcmattributerange_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmattributerange','sct_refset_mrcmattributerange_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_MRCMDomain --
+-- Index snap_refset_mrcmdomain --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_MRCMDomain";
+SELECT Now() `--`,"Index snap_refset_mrcmdomain";
 
-CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','sct_refset_MRCMDomain_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_MRCMDomain','sct_refset_MRCMDomain_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmdomain','sct_refset_mrcmdomain_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_mrcmdomain','sct_refset_mrcmdomain_rc','refsetId,referencedComponentId');
 
 -- Index snap_concept --
 DELIMITER ;
@@ -1628,6 +1635,13 @@ SELECT Now() `--`,"Index snap_description";
 CALL CreateIndexIfNotExists('snap_description','sct_description_concept','conceptId');
 CALL CreateIndexIfNotExists('snap_description','sct_description_lang','conceptId,languageCode');
 CALL CreateIndexIfNotExists('snap_description','sct_description_term_ft','term');
+
+-- Index snap_relationshipconcretevalues --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index snap_relationshipconcretevalues";
+
+CALL CreateIndexIfNotExists('snap_relationshipconcretevalues','sct_relationshipconcretevalues_source','sourceId,typeId,characteristicTypeId');
 
 -- Index snap_relationship --
 DELIMITER ;
@@ -1646,13 +1660,13 @@ CALL CreateIndexIfNotExists('snap_description','sct_description_concept','concep
 CALL CreateIndexIfNotExists('snap_description','sct_description_lang','conceptId,languageCode');
 CALL CreateIndexIfNotExists('snap_description','sct_description_term_ft','term');
 
--- Index snap_refset_OWLExpression --
+-- Index snap_refset_owlexpression --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_OWLExpression";
+SELECT Now() `--`,"Index snap_refset_owlexpression";
 
-CALL CreateIndexIfNotExists('snap_refset_OWLExpression','sct_refset_OWLExpression_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_OWLExpression','sct_refset_OWLExpression_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_owlexpression','sct_refset_owlexpression_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_owlexpression','sct_refset_owlexpression_rc','refsetId,referencedComponentId');
 ;
 
 

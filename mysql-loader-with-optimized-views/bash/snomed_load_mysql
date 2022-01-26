@@ -302,7 +302,7 @@ else
 		printf "\nRELEASE ZIP ARCHIVE: $releaseZip\n"
 		addLog "Release Zip file found: $thisRelease"
 		unzipFolder=`dirname "$thisRelease"`
-		unzip "$releaseZip" -q -d $unzipFolder
+		unzip -q "$releaseZip" -d $unzipFolder
 		printf "\nRELEASE FOLDER: $thisRelease\n"
 	else
 		# No folder or zipfile found so exit here
@@ -408,9 +408,10 @@ fi
 
 sql_tmp="${loaderFolder}/$mysqlload/sct_mysql_temp.sql"
 
-printf "\n------------------------\nSETTINGS\n\nSQL file: $sql_file\nRelease Folder Path: $thisRelease\nDatabase name: $dbname\n\nConfig file: $cnf_file\nPort: $portnumber\nMode: $mode\n\nREUSABLE COMMAND LINE:\n$prog -c $cnfname -p $portnumber -s $sql_file -r ""$thisRelease"" -d ""$dbname"" -u ""$mysqluser"" -mode $mode\n\n------------------------\n"
-
-thisReldate=`sed 's/^.*_\(20[0-9]\{6\}\).*$/\1/' <<<"$thisRelease"`
+# Take release date from a filename, not folder. These are not the same in ICNP package.
+thisReldate=`find "$thisRelease" -name "*Snapshot_*.txt" | head -n1 | sed 's/^.*_\(20[0-9]\{6\}\).*$/\1/'`
+printf "\n------------------------\nSETTINGS\n\nSQL file: $sql_file\nRelease Folder Path: $thisRelease\nRelease date: $thisReldate\nDatabase name: $dbname\n\nConfig file:
+$cnf_file\nPort: $portnumber\nMode: $mode\n\nREUSABLE COMMAND LINE:\n$prog -c $cnfname -p $portnumber -s $sql_file -r ""$thisRelease"" -d ""$dbname"" -u ""$mysqluser"" -mode $mode\n\n------------------------\n"
 
 if [[ $mode =~ (reuse) ]] ; then
 	printf "Debug skipping Script Regeneration - Will reuse current temp file\n"

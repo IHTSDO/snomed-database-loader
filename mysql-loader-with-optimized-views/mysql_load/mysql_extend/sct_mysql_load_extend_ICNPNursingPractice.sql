@@ -10,8 +10,8 @@
 -- Apache 2.0 license applies
 -- 
 -- =======================================================
--- Copyright of this version 2019: SNOMED International www.snomed.org
--- Based on work by David Markwell between 2011 and 2019
+-- Copyright of this version 2021: SNOMED International www.snomed.org
+-- Based on work by David Markwell between 2011 and 2021
 -- 
 -- All these versions are licensed as follows:
 --
@@ -103,11 +103,11 @@ port=3306
 -- 
 -- PACKAGE AND OPTION SETTINGS USED TO PRODUCING THIS SCRIPT
 -- 
--- Release Package: SnomedCT_ICNPInterventionsRelease_PRODUCTION_20180928T120000
--- Package Code: ICNPINTERVENTIONS
--- Release Date: 20180928
+-- Release Package: SnomedCT_ICNPNursingPractice_PRODUCTION_20211031T120000
+-- Package Code: ICNPNURSINGPRACTICE
+-- Release Date: 20211031
 -- Extension not including root concept
--- RFS Specification Creation: 20200117121736
+-- RFS Specification Creation: 20220124094545
 -- 
 -- CHECK MySQL Server Settings
 
@@ -119,6 +119,7 @@ SET SESSION sql_mode ='';
 
 -- CREATE THE CHECK SETTINGS PROCEDURE
 DELIMITER ;;
+USE `$DBNAME`;
 DROP PROCEDURE IF EXISTS CheckMySqlSettings;;
 CREATE PROCEDURE CheckMySqlSettings()
 BEGIN
@@ -173,29 +174,47 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Tables with Prefix: full";
 
 
--- CREATE TABLE: full_refset_SimpleMap --
+-- CREATE TABLE: full_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_SimpleMap";
+SELECT Now() `--`,"CREATE TABLE: full_refset_simple";
 
-CREATE TABLE IF NOT EXISTS `full_refset_SimpleMap` (
+CREATE TABLE IF NOT EXISTS `full_refset_simple` (
 	`id` CHAR(36) NOT NULL DEFAULT '',
 	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
 	`active` TINYINT NOT NULL DEFAULT  0,
 	`moduleId` BIGINT NOT NULL DEFAULT  0,
 	`refsetId` BIGINT NOT NULL DEFAULT  0,
 	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapTarget` VARCHAR (200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin  NOT NULL DEFAULT '',
 	PRIMARY KEY (`id`,`effectiveTime`))
 	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 
--- CREATE TABLE: full_refset_ModuleDependency --
+-- CREATE TABLE: full_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: full_refset_ModuleDependency";
+SELECT Now() `--`,"CREATE TABLE: full_refset_refsetdescriptor";
 
-CREATE TABLE IF NOT EXISTS `full_refset_ModuleDependency` (
+CREATE TABLE IF NOT EXISTS `full_refset_refsetdescriptor` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`attributeDescription` BIGINT NOT NULL DEFAULT  0,
+	`attributeType` BIGINT NOT NULL DEFAULT  0,
+	`attributeOrder` INT NOT NULL DEFAULT 0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: full_refset_moduledependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: full_refset_moduledependency";
+
+CREATE TABLE IF NOT EXISTS `full_refset_moduledependency` (
 	`id` CHAR(36) NOT NULL DEFAULT '',
 	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
 	`active` TINYINT NOT NULL DEFAULT  0,
@@ -214,29 +233,47 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Tables with Prefix: snap";
 
 
--- CREATE TABLE: snap_refset_SimpleMap --
+-- CREATE TABLE: snap_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_SimpleMap";
+SELECT Now() `--`,"CREATE TABLE: snap_refset_simple";
 
-CREATE TABLE IF NOT EXISTS `snap_refset_SimpleMap` (
+CREATE TABLE IF NOT EXISTS `snap_refset_simple` (
 	`id` CHAR(36) NOT NULL DEFAULT '',
 	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
 	`active` TINYINT NOT NULL DEFAULT  0,
 	`moduleId` BIGINT NOT NULL DEFAULT  0,
 	`refsetId` BIGINT NOT NULL DEFAULT  0,
 	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
-	`mapTarget` VARCHAR (200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin  NOT NULL DEFAULT '',
 	PRIMARY KEY (`id`,`effectiveTime`))
 	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 
--- CREATE TABLE: snap_refset_ModuleDependency --
+-- CREATE TABLE: snap_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"CREATE TABLE: snap_refset_ModuleDependency";
+SELECT Now() `--`,"CREATE TABLE: snap_refset_refsetdescriptor";
 
-CREATE TABLE IF NOT EXISTS `snap_refset_ModuleDependency` (
+CREATE TABLE IF NOT EXISTS `snap_refset_refsetdescriptor` (
+	`id` CHAR(36) NOT NULL DEFAULT '',
+	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
+	`active` TINYINT NOT NULL DEFAULT  0,
+	`moduleId` BIGINT NOT NULL DEFAULT  0,
+	`refsetId` BIGINT NOT NULL DEFAULT  0,
+	`referencedComponentId` BIGINT NOT NULL DEFAULT  0,
+	`attributeDescription` BIGINT NOT NULL DEFAULT  0,
+	`attributeType` BIGINT NOT NULL DEFAULT  0,
+	`attributeOrder` INT NOT NULL DEFAULT 0,
+	PRIMARY KEY (`id`,`effectiveTime`))
+	ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+
+
+-- CREATE TABLE: snap_refset_moduledependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"CREATE TABLE: snap_refset_moduledependency";
+
+CREATE TABLE IF NOT EXISTS `snap_refset_moduledependency` (
 	`id` CHAR(36) NOT NULL DEFAULT '',
 	`effectiveTime` DATETIME NOT NULL DEFAULT  '2000-01-31 00:00:00',
 	`active` TINYINT NOT NULL DEFAULT  0,
@@ -289,25 +326,37 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Load Tables with Prefix: full";
 
 
--- Load Table Data: full_refset_SimpleMap --
+-- Load Table Data: full_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_SimpleMap";
+SELECT Now() `--`,"Load Table Data: full_refset_simple";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Map/der2_sRefset_ICNPInterventionsSimpleMapFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_SimpleMap`
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Content/der2_Refset_ICNPSimpleFull_INT_$RELDATE.txt'
+INTO TABLE `full_refset_simple`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`);
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`);
 
 
--- Load Table Data: full_refset_ModuleDependency --
+-- Load Table Data: full_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: full_refset_ModuleDependency";
+SELECT Now() `--`,"Load Table Data: full_refset_refsetdescriptor";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ICNPInterventionsModuleDependencyFull_INT_$RELDATE.txt'
-INTO TABLE `full_refset_ModuleDependency`
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_cciRefset_ICNPRefsetDescriptorFull_INT_$RELDATE.txt'
+INTO TABLE `full_refset_refsetdescriptor`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`);
+
+
+-- Load Table Data: full_refset_moduledependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: full_refset_moduledependency";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Full/Refset/Metadata/der2_ssRefset_ICNPModuleDependencyFull_INT_$RELDATE.txt'
+INTO TABLE `full_refset_moduledependency`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
@@ -319,25 +368,37 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Load Tables with Prefix: snap";
 
 
--- Load Table Data: snap_refset_SimpleMap --
+-- Load Table Data: snap_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_SimpleMap";
+SELECT Now() `--`,"Load Table Data: snap_refset_simple";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Map/der2_sRefset_ICNPInterventionsSimpleMapSnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_SimpleMap`
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Content/der2_Refset_ICNPSimpleSnapshot_INT_$RELDATE.txt'
+INTO TABLE `snap_refset_simple`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
-(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`mapTarget`);
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`);
 
 
--- Load Table Data: snap_refset_ModuleDependency --
+-- Load Table Data: snap_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Load Table Data: snap_refset_ModuleDependency";
+SELECT Now() `--`,"Load Table Data: snap_refset_refsetdescriptor";
 
-LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_ICNPInterventionsModuleDependencySnapshot_INT_$RELDATE.txt'
-INTO TABLE `snap_refset_ModuleDependency`
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_cciRefset_ICNPRefsetDescriptorSnapshot_INT_$RELDATE.txt'
+INTO TABLE `snap_refset_refsetdescriptor`
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES
+(`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`attributeDescription`,`attributeType`,`attributeOrder`);
+
+
+-- Load Table Data: snap_refset_moduledependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Load Table Data: snap_refset_moduledependency";
+
+LOAD DATA LOCAL INFILE '$RELPATH/Snapshot/Refset/Metadata/der2_ssRefset_ICNPModuleDependencySnapshot_INT_$RELDATE.txt'
+INTO TABLE `snap_refset_moduledependency`
 LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES
 (`id`,`effectiveTime`,`active`,`moduleId`,`refsetId`,`referencedComponentId`,`sourceEffectiveTime`,`targetEffectiveTime`);
@@ -400,27 +461,26 @@ CREATE TABLE IF NOT EXISTS `config_settings` (
   `deltaEndTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
-
--- Release date is set here and end of the day of release
--- This avoids issues if effectiveTime contain a time element.
-SET @RELDATE=TIMESTAMP(CONCAT('$RELDATE','235959'));
-
--- The row with id=0 is not used directly except as default values to refresh other rows
--- Row 0 set on database load: 
---			snapshotTime and deltaEndTime set to release date 
---          deltaStartTime set to 6 month earlier
--- Other values are reset by resetConfig() 6 and 12 months later than the row with id=0
--- and can be set to specific values using the setDeltaRange and setSnapshotTime procedures.
-
-DELETE FROM `config_settings` WHERE `id`=0;
-
-INSERT IGNORE INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
-VALUES 
-(0,900000000000509007,'US English', @RELDATE, DATE_SUB(@RELDATE,INTERVAL 6 MONTH),@RELDATE);
 USE `$DBNAME`;
 -- Create Configuration Procedures
 
 DELIMITER ;;
+DROP PROCEDURE IF EXISTS `initConfig`;;
+CREATE PROCEDURE `initConfig` (`p_releaseDate` text)
+BEGIN
+  DECLARE `v_releaseDate` DATETIME;
+  if `p_releaseDate` regexp '2[-0-9]{7,9}$' THEN
+	SET `v_releaseDate`=DATE(`p_releaseDate`);
+  ELSE
+	SET `v_releaseDate`=DATE(NOW());
+  END IF;
+  SET `p_releaseDate`=CONCAT(DATE_FORMAT(v_releaseDate,'%Y%m%d'),'235959');
+  DELETE FROM `config_settings` WHERE `id`=0;
+	INSERT IGNORE INTO `config_settings` (`id`,`languageId`,`languageName`,`snapshotTime`,`deltaStartTime`,`deltaEndTime`)
+	VALUES  (0,900000000000509007,'US English', `p_releaseDate`, DATE_SUB(`p_releaseDate`,INTERVAL 6 MONTH),`p_releaseDate`);
+    CALL resetConfig();
+END;;
+
 DROP PROCEDURE IF EXISTS `resetConfig`;;
 CREATE PROCEDURE `resetConfig` ()
 BEGIN
@@ -440,6 +500,14 @@ SELECT 1,`languageId`,`languageName`,DATE_SUB(`snapshotTime`,INTERVAL 6 MONTH),D
 UNION
 SELECT 2,`languageId`,`languageName`,DATE_SUB(`snapshotTime`,INTERVAL 12 MONTH),DATE_SUB(`deltaStartTime`,INTERVAL 12 MONTH),DATE_SUB(`deltaEndTime`,INTERVAL 12 MONTH) FROM `config_settings` WHERE `id`=0;
 END;;
+
+DELIMITER ;
+
+-- NOW SET THE DATE 
+CALL initConfig('$RELDATE');
+
+
+
 
 --
 
@@ -562,6 +630,48 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"END CONFIGURATION";
 
+-- CREATES AND POPULATES config_refsets
+-- TABLE config_refsets identifies the table used to access a particular reference set.
+--
+DROP TABLE IF EXISTS `config_refsets`;
+CREATE TABLE `config_refsets` (
+  `refsetId` bigint(20) NOT NULL,
+  `refsetType` varchar(60) NOT NULL,
+  PRIMARY KEY (`refsetId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+INSERT INTO `config_refsets` (`refsetId`,`refsetType`)
+SELECT DISTINCT `refsetId`, 'association' `refsetType` FROM `snap_refset_association`
+UNION
+SELECT DISTINCT `refsetId`, 'attributevalue' FROM `snap_refset_attributevalue`
+UNION
+SELECT DISTINCT `refsetId`, 'descriptiontype' FROM `snap_refset_descriptiontype`
+UNION
+SELECT DISTINCT `refsetId`, 'extendedmap' FROM `snap_refset_extendedmap`
+UNION
+SELECT DISTINCT `refsetId`, 'language' FROM `snap_refset_language`
+UNION
+SELECT DISTINCT `refsetId`, 'moduledependency' FROM `snap_refset_moduledependency`
+UNION
+SELECT DISTINCT `refsetId`, 'mrcmattributedomain' FROM `snap_refset_mrcmattributedomain`
+UNION
+SELECT DISTINCT `refsetId`, 'mrcmattributerange' FROM `snap_refset_mrcmattributerange`
+UNION
+SELECT DISTINCT `refsetId`, 'mrcmdomain' FROM `snap_refset_mrcmdomain`
+UNION
+SELECT DISTINCT `refsetId`, 'mrcmmodulescope' FROM `snap_refset_mrcmmodulescope`
+UNION
+SELECT DISTINCT `refsetId`, 'owlexpression' FROM `snap_refset_owlexpression`
+UNION
+SELECT DISTINCT `refsetId`, 'refsetdescriptor' FROM `snap_refset_refsetdescriptor`
+UNION
+SELECT DISTINCT `refsetId`, 'simple' FROM `snap_refset_simple`
+UNION
+SELECT DISTINCT `refsetId`, 'simplemap' FROM `snap_refset_simplemap`;
+-- END CONFIGURATION --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"END CONFIGURATION";
+
 
 
 -- ===========================================
@@ -587,14 +697,20 @@ SELECT Now() `--`,"VIEW DELTA";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_SimpleMap`;
-CREATE VIEW `delta_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_simple`;
+CREATE VIEW `delta_refset_simple` AS select `tbl`.* from `full_refset_simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta_refset_ModuleDependency`;
-CREATE VIEW `delta_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta_refset_refsetdescriptor`;
+CREATE VIEW `delta_refset_refsetdescriptor` AS select `tbl`.* from `full_refset_refsetdescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `delta_refset_moduledependency`;
+CREATE VIEW `delta_refset_moduledependency` AS select `tbl`.* from `full_refset_moduledependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 0 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- VIEW SNAP ALT --
@@ -605,14 +721,20 @@ SELECT Now() `--`,"VIEW SNAP ALT";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_SimpleMap`;
-CREATE VIEW `snap1_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_simple`;
+CREATE VIEW `snap1_refset_simple` AS select * from `full_refset_simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_simple` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap1_refset_ModuleDependency`;
-CREATE VIEW `snap1_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap1_refset_refsetdescriptor`;
+CREATE VIEW `snap1_refset_refsetdescriptor` AS select * from `full_refset_refsetdescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_refsetdescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `snap1_refset_moduledependency`;
+CREATE VIEW `snap1_refset_moduledependency` AS select * from `full_refset_moduledependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_moduledependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 1) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 -- VIEW DELTA --
@@ -623,14 +745,20 @@ SELECT Now() `--`,"VIEW DELTA";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_SimpleMap`;
-CREATE VIEW `delta1_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_simple`;
+CREATE VIEW `delta1_refset_simple` AS select `tbl`.* from `full_refset_simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta1_refset_ModuleDependency`;
-CREATE VIEW `delta1_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta1_refset_refsetdescriptor`;
+CREATE VIEW `delta1_refset_refsetdescriptor` AS select `tbl`.* from `full_refset_refsetdescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `delta1_refset_moduledependency`;
+CREATE VIEW `delta1_refset_moduledependency` AS select `tbl`.* from `full_refset_moduledependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 1 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- VIEW SNAP ALT --
@@ -641,14 +769,20 @@ SELECT Now() `--`,"VIEW SNAP ALT";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_SimpleMap`;
-CREATE VIEW `snap2_refset_SimpleMap` AS select * from `full_refset_SimpleMap` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_SimpleMap` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_simple`;
+CREATE VIEW `snap2_refset_simple` AS select * from `full_refset_simple` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_simple` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `snap2_refset_ModuleDependency`;
-CREATE VIEW `snap2_refset_ModuleDependency` AS select * from `full_refset_ModuleDependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_ModuleDependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+DROP VIEW IF EXISTS `snap2_refset_refsetdescriptor`;
+CREATE VIEW `snap2_refset_refsetdescriptor` AS select * from `full_refset_refsetdescriptor` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_refsetdescriptor` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `snap2_refset_moduledependency`;
+CREATE VIEW `snap2_refset_moduledependency` AS select * from `full_refset_moduledependency` `tbl` where (`tbl`.`effectiveTime` = (select max(`sub`.`effectiveTime`) from (`full_refset_moduledependency` `sub` join `config_settings` `cfg`) where ((`sub`.`id` = `tbl`.`id`) and (`cfg`.`id` = 2) and (`sub`.`effectiveTime` <= `cfg`.`snapshotTime`))));
 
 
 -- VIEW DELTA --
@@ -659,14 +793,20 @@ SELECT Now() `--`,"VIEW DELTA";
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_SimpleMap`;
-CREATE VIEW `delta2_refset_SimpleMap` AS select `tbl`.* from `full_refset_SimpleMap` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_simple`;
+CREATE VIEW `delta2_refset_simple` AS select `tbl`.* from `full_refset_simple` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 DELIMITER ;
 
-DROP VIEW IF EXISTS `delta2_refset_ModuleDependency`;
-CREATE VIEW `delta2_refset_ModuleDependency` AS select `tbl`.* from `full_refset_ModuleDependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+DROP VIEW IF EXISTS `delta2_refset_refsetdescriptor`;
+CREATE VIEW `delta2_refset_refsetdescriptor` AS select `tbl`.* from `full_refset_refsetdescriptor` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
+
+
+DELIMITER ;
+
+DROP VIEW IF EXISTS `delta2_refset_moduledependency`;
+CREATE VIEW `delta2_refset_moduledependency` AS select `tbl`.* from `full_refset_moduledependency` `tbl`,`config_settings` `cfg` where `cfg`.`id` = 2 and `tbl`.`effectiveTime` <= `cfg`.`deltaEndTime` AND `tbl`.`effectiveTime`>`cfg`.`deltaStartTime`;
 
 
 -- END VERSIONED VIEWS --
@@ -692,7 +832,7 @@ DROP VIEW IF EXISTS `snap_fsn`;
 
 CREATE VIEW `snap_fsn` AS
 (SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -702,7 +842,7 @@ DROP VIEW IF EXISTS `snap_pref`;
 
 CREATE VIEW `snap_pref` AS
 (SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -712,7 +852,7 @@ DROP VIEW IF EXISTS `snap_syn`;
 
 CREATE VIEW `snap_syn` AS
 (SELECT `d`.* FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
@@ -722,7 +862,7 @@ DROP VIEW IF EXISTS `snap_synall`;
 
 CREATE VIEW `snap_synall` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 
@@ -732,7 +872,7 @@ DROP VIEW IF EXISTS `snap_term_search_active`;
 
 CREATE VIEW `snap_term_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 
@@ -744,7 +884,7 @@ DROP VIEW IF EXISTS `snap_syn_search_active`;
 
 CREATE VIEW `snap_syn_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap_description` `d`
-	JOIN `snap_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
@@ -793,6 +933,20 @@ CREATE VIEW `snap_rel_parent_pref` AS
 (SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
 	FROM  `snap_relationship` `r`
 JOIN `snap_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
+
+DROP VIEW IF EXISTS `snap_rel_concretevalues_pref`;
+
+CREATE VIEW `snap_rel_concretevalues_pref` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap_relationshipconcretevalues` `r`
+	JOIN `snap_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
+DROP VIEW IF EXISTS `snap_rel_concretevalues_fsn`;
+
+CREATE VIEW `snap_rel_concretevalues_fsn` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap_relationshipconcretevalues` `r`
+	JOIN `snap_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
 
 DELIMITER ;
 -- Create View Special All views for 'snap'
@@ -872,7 +1026,7 @@ DROP VIEW IF EXISTS `snap1_fsn`;
 
 CREATE VIEW `snap1_fsn` AS
 (SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -882,7 +1036,7 @@ DROP VIEW IF EXISTS `snap1_pref`;
 
 CREATE VIEW `snap1_pref` AS
 (SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -892,7 +1046,7 @@ DROP VIEW IF EXISTS `snap1_syn`;
 
 CREATE VIEW `snap1_syn` AS
 (SELECT `d`.* FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
@@ -902,7 +1056,7 @@ DROP VIEW IF EXISTS `snap1_synall`;
 
 CREATE VIEW `snap1_synall` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 
@@ -912,7 +1066,7 @@ DROP VIEW IF EXISTS `snap1_term_search_active`;
 
 CREATE VIEW `snap1_term_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap1_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 
@@ -924,7 +1078,7 @@ DROP VIEW IF EXISTS `snap1_syn_search_active`;
 
 CREATE VIEW `snap1_syn_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap1_description` `d`
-	JOIN `snap1_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap1_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap1_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
@@ -973,6 +1127,20 @@ CREATE VIEW `snap1_rel_parent_pref` AS
 (SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
 	FROM  `snap1_relationship` `r`
 JOIN `snap1_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
+
+DROP VIEW IF EXISTS `snap1_rel_concretevalues_pref`;
+
+CREATE VIEW `snap1_rel_concretevalues_pref` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap1_relationshipconcretevalues` `r`
+	JOIN `snap1_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
+DROP VIEW IF EXISTS `snap1_rel_concretevalues_fsn`;
+
+CREATE VIEW `snap1_rel_concretevalues_fsn` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap1_relationshipconcretevalues` `r`
+	JOIN `snap1_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap1_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
 
 DELIMITER ;
 -- Create View Special All views for 'snap1'
@@ -1052,7 +1220,7 @@ DROP VIEW IF EXISTS `snap2_fsn`;
 
 CREATE VIEW `snap2_fsn` AS
 (SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000003001
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -1062,7 +1230,7 @@ DROP VIEW IF EXISTS `snap2_pref`;
 
 CREATE VIEW `snap2_pref` AS
 (SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000548007
@@ -1072,7 +1240,7 @@ DROP VIEW IF EXISTS `snap2_syn`;
 
 CREATE VIEW `snap2_syn` AS
 (SELECT `d`.* FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId` 
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 AND `rs`.`acceptabilityId` = 900000000000549004
@@ -1082,7 +1250,7 @@ DROP VIEW IF EXISTS `snap2_synall`;
 
 CREATE VIEW `snap2_synall` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009 
 	AND `rs`.`active` = 1 
@@ -1092,7 +1260,7 @@ DROP VIEW IF EXISTS `snap2_term_search_active`;
 
 CREATE VIEW `snap2_term_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap2_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 
@@ -1104,7 +1272,7 @@ DROP VIEW IF EXISTS `snap2_syn_search_active`;
 
 CREATE VIEW `snap2_syn_search_active` AS
 (SELECT `d`.*,`rs`.`acceptabilityId` FROM `snap2_description` `d`
-	JOIN `snap2_refset_Language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
+	JOIN `snap2_refset_language` `rs` ON `d`.`id` = `rs`.`referencedComponentId`
 	JOIN `snap2_concept` `c` ON `c`.`id` = `d`.`conceptId`
 	JOIN `config_settings` `cfg` ON `rs`.`refSetId` = `cfg`.`languageId`
 	WHERE `d`.`active` = 1 AND `d`.`typeId` = 900000000000013009
@@ -1153,6 +1321,20 @@ CREATE VIEW `snap2_rel_parent_pref` AS
 (SELECT `r`.`destinationId` `id`,`d`.`term` `term`,`r`.`sourceId` `conceptId`
 	FROM  `snap2_relationship` `r`
 JOIN `snap2_pref` `d` ON (`r`.`destinationId` = `d`.`conceptId`) WHERE (`r`.`active` = 1) AND (`r`.`typeId` = 116680003));
+
+DROP VIEW IF EXISTS `snap2_rel_concretevalues_pref`;
+
+CREATE VIEW `snap2_rel_concretevalues_pref` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap2_relationshipconcretevalues` `r`
+	JOIN `snap2_pref` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_pref` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
+
+DROP VIEW IF EXISTS `snap2_rel_concretevalues_fsn`;
+
+CREATE VIEW `snap2_rel_concretevalues_fsn` AS 
+(SELECT `r`.`sourceId` `sourceId`,`src`.`Term` `sourceTerm`,`r`.`typeId` `typeId`,`typ`.`Term` `typeTerm`,`r`.`value` `value`,`r`.`relationshipGroup` `relationshipGroup`
+	FROM (((`snap2_relationshipconcretevalues` `r`
+	JOIN `snap2_fsn` `src` ON ((`r`.`sourceId` = `src`.`conceptId`))) JOIN `snap2_fsn` `typ` ON ((`r`.`typeId` = `typ`.`conceptId`)))) WHERE (`r`.`active` = 1));
 
 DELIMITER ;
 -- Create View Special All views for 'snap2'
@@ -1414,347 +1596,409 @@ DELIMITER ;
 USE `$DBNAME`;
 SELECT Now() `--`,"START EXTRAS";
 
-
-
--- ===========================================
--- Add extra (no prefix): proc_ecl
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (no prefix): proc_ecl";
-
 -- CONTAINS eclQuery and the Older version eclSimple
 USE `$DBNAME`;
 
+CREATE TABLE IF NOT EXISTS `config_resultsets` (
+  `setId` varchar(12) NOT NULL,
+  `conceptId` bigint(20) NOT NULL,
+  PRIMARY KEY (`conceptId`,`setId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 DELIMITER ;;
 DROP PROCEDURE IF EXISTS `eclQuery`;;
-CREATE PROCEDURE `eclQuery`(p_ecl text)
+CREATE PROCEDURE `eclQuery`(`p_ecl` text)
 proc:BEGIN
+	 CALL eclQuerySelect(`p_ecl`,'fsn');
+END;;
 
-DECLARE `v_ecltrim` text DEFAULT '';
-DECLARE `v_eclClause` text DEFAULT '';
-DECLARE `v_focus` text DEFAULT '';
-DECLARE `v_refine` text DEFAULT '';
-DECLARE `v_item` text DEFAULT '';
-DECLARE `v_clauseNum` int DEFAULT 1;
-DECLARE `v_testNum` int DEFAULT 1;
-DECLARE `v_refineCount` int DEFAULT 1;
-DECLARE `v_clauseCount` int DEFAULT 1;
-DECLARE `v_clauseRule`  char(1) DEFAULT '';
-DECLARE `v_valSymbol` char(4) DEFAULT '';
-DECLARE `v_attSymbol` char(4) DEFAULT '';
-DECLARE `v_attId` BIGINT DEFAULT 0;
-DECLARE `v_valId` BIGINT DEFAULT 0;
-DECLARE `v_valTestIn` char(6) DEFAULT 'IN';
-DECLARE `v_value` text DEFAULT '';
-DECLARE `v_attrib` text DEFAULT '';
-DECLARE `v_prevSetRule` char(1) DEFAULT '';
-DECLARE `v_id` int DEFAULT 0;
-DECLARE `v_ClauseTable` text DEFAULT '';
-DECLARE `v_InSource` text DEFAULT '';
-DECLARE `v_targetTable` text DEFAULT '';
-DECLARE `v_diagnostic` BOOLEAN DEFAULT FALSE;
-DECLARE `done` BOOLEAN DEFAULT FALSE;
-DECLARE specialty CONDITION FOR SQLSTATE '45000';
-DECLARE `msg` text;
+DROP PROCEDURE IF EXISTS `eclQuerySelect`;;
+CREATE PROCEDURE `eclQuerySelect`(`p_ecl` text,`style` text)
+proc:BEGIN
+	CALL eclQueryGetIds(`p_ecl`,'temp~get');
+	CASE `style`
+		WHEN 'exp' THEN
+			SELECT CONCAT(`t`.`conceptId`,'|',`t`.`term`,'|') FROM `config_resultsets` `r` JOIN `snap_pref` `t` ON `t`.`conceptId`=`r`.`conceptId` WHERE `setId`='temp~get';
+		WHEN 'expfsn' THEN
+			SELECT CONCAT(`t`.`conceptId`,'|',`t`.`term`,'|') FROM `config_resultsets` `r` JOIN `snap_fsn` `t` ON `t`.`conceptId`=`r`.`conceptId` WHERE `setId`='temp~get';
+		WHEN 'pref' THEN
+			SELECT `t`.`conceptId`,`t`.`term` FROM `config_resultsets` `r` JOIN `snap_pref` `t` ON `t`.`conceptId`=`r`.`conceptId` WHERE `setId`='temp~get';
+		WHEN 'fsn' THEN
+			SELECT `t`.`conceptId`,`t`.`term` FROM `config_resultsets` `r` JOIN `snap_fsn` `t` ON `t`.`conceptId`=`r`.`conceptId` WHERE `setId`='temp~get';
+		WHEN 'allsyn' THEN
+			SELECT `t`.`conceptId`,`t`.`term` FROM `config_resultsets` `r` JOIN `snap_allsyn` `t` ON `t`.`conceptId`=`r`.`conceptId` WHERE `setId`='temp~get';
+		WHEN 'count' THEN
+			SELECT count(`conceptId`) FROM `config_resultsets` WHERE `setId`='temp~get';
+		ELSE
+			SELECT `conceptId` FROM `config_resultsets` WHERE `setId`='temp~get';
+		END CASE;
+END;;
 
-DECLARE `curClause` CURSOR FOR SELECT `clauseNum`,max(`clauseRule`), count(`id`) FROM `tmpEcl` GROUP BY `clauseNum` ORDER BY `clauseNum`;
-DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET `done` := TRUE;
+DROP PROCEDURE IF EXISTS `eclQueryCount`;;
+CREATE PROCEDURE `eclQueryCount`(`p_ecl` text,OUT `p_count` INT)
+proc:BEGIN
+	CALL eclQueryGetIds(`p_ecl`,'temp~count');
+	SET `p_count`=(SELECT count(`conceptId`) From `config_resultsets` WHERE `setId`="temp~count");
+END;;
 
-SET @ver=(SELECT VERSION());
-IF @ver<8 THEN
-	SET `msg`='The eclQuery procedure requires MySQL 8.0+. Please use eclSimple() with earlier versions.';
-	SELECT `msg`;
-	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
-END IF;
+DROP PROCEDURE IF EXISTS `eclQueryGetIds`;;
+CREATE PROCEDURE `eclQueryGetIds`(`p_ecl` text, `p_setId` text)
+--
+-- Specify the ECL and a setId to be used store the resulting list of conceptIds.
+-- This adds rows for matching items a two column table called config_resultsets
+-- First column has the p_setId (allowing multiple sets to be saved with different keys)
+-- Second column is the conceptId of a matching concept.
+-- The data is retained in config_resultsets for use outside the procedure.
+-- E.g. SELECT conceptId FROM config_resultsets WHERE setId="someset"
+-- Length of setId is limited to 12 characters (after removing and prefixing symbols +,-,?,!)
+-- Added feature is that starting the key with (+) adds matches to the set, minus (-) removes matches from the table.
+-- Also a question mark or exclamation mark (? or !) before the key outputs diagnostics on the constraint
+-- With no specified set the procedure will output the id and preferred term (in this case the result is not saved)
+--
+proc:BEGIN
+	DECLARE `v_ecltrim` text DEFAULT '';
+	DECLARE `v_eclClause` text DEFAULT '';
+	DECLARE `v_focus` text DEFAULT '';
+	DECLARE `v_refine` text DEFAULT '';
+	DECLARE `v_item` text DEFAULT '';
+	DECLARE `v_clauseNum` int DEFAULT 1;
+	DECLARE `v_testNum` int DEFAULT 1;
+	DECLARE `v_refineCount` int DEFAULT 1;
+	DECLARE `v_clauseCount` int DEFAULT 1;
+	DECLARE `v_clauseRule`  char(1) DEFAULT '';
+	DECLARE `v_valSymbol` char(4) DEFAULT '';
+	DECLARE `v_attSymbol` char(4) DEFAULT '';
+	DECLARE `v_attId` BIGINT DEFAULT 0;
+	DECLARE `v_valId` BIGINT DEFAULT 0;
+	DECLARE `v_valTestIn` char(6) DEFAULT 'IN';
+	DECLARE `v_value` text DEFAULT '';
+	DECLARE `v_attrib` text DEFAULT '';
+	DECLARE `v_prevSetRule` char(1) DEFAULT '';
+	DECLARE `v_id` int DEFAULT 0;
+	DECLARE `v_ClauseTable` text DEFAULT '';
+	DECLARE `v_InSource` text DEFAULT '';
+	DECLARE `v_targetTable` text DEFAULT '';
+	DECLARE `v_diagnostic` BOOLEAN DEFAULT FALSE;
+	DECLARE `done` BOOLEAN DEFAULT FALSE;
+	DECLARE specialty CONDITION FOR SQLSTATE '45000';
+	DECLARE `msg` text;
 
--- IF p_ecl STARTS WITH ? outputs diagnostics from parsing into tmpEcl table
-IF LEFT(`p_ecl`,1)='?' THEN
-    SET `v_diagnostic`=TRUE;
-    SET `p_ecl`=TRIM(MID(`p_ecl`,2));
-END IF;
+	DECLARE `curClause` CURSOR FOR SELECT `clauseNum`,max(`clauseRule`), count(`id`) FROM `tmpEcl` GROUP BY `clauseNum` ORDER BY `clauseNum`;
+	DECLARE `curRefine` CURSOR FOR SELECT `id`,`testNum`, `attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn` FROM `tmpEcl` WHERE `clauseNum`=`v_clauseNum` ORDER BY `testNum`;
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET `done` := TRUE;
+	-- SELECT CONCAT("MODE: ",`p_mode`);
+	SET @ver=(SELECT VERSION());
+	IF @ver<8 THEN
+		SET `msg`='The eclQuery procedure requires MySQL 8.0+. Please use eclSimple() with earlier versions.';
+		SELECT `msg`;
+		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = `msg`;
+	END IF;
 
-DROP TABLE IF EXISTS `tmpEcl`;
-CREATE TEMPORARY TABLE `tmpEcl` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `clauseNum` INT NOT NULL DEFAULT 0,
-  `testNum` INT NOT NULL DEFAULT 0,
-  `clauseRule` CHAR(1) DEFAULT '',
-  `attId` BIGINT NOT NULL DEFAULT 0,
-  `attSymbol` CHAR(4) NOT NULL DEFAULT '',
-  `valId` BIGINT NOT NULL DEFAULT 0,
-  `valSymbol` CHAR(4) NOT NULL DEFAULT '',
-	`valTestIn` CHAR(6) NOT NULL DEFAULT 'IN',
-  `count` BIGINT NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`));
+	-- IF p_ecl STARTS WITH ? outputs diagnostics from parsing into tmpEcl table
+	IF LEFT(`p_ecl`,1)='?' THEN
+			SET `v_diagnostic`=TRUE;
+			SET `p_ecl`=TRIM(MID(`p_ecl`,2));
+	END IF;
 
-DROP TABLE IF EXISTS `tmpSourceIds`;
-DROP TABLE IF EXISTS `tmpIds`;
-CREATE TEMPORARY TABLE tmpIds (
-    `id` bigint NOT NULL DEFAULT '0',
-    PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+	DROP TABLE IF EXISTS `tmpEcl`;
+	CREATE TEMPORARY TABLE `tmpEcl` (
+		`id` INT NOT NULL AUTO_INCREMENT,
+		`clauseNum` INT NOT NULL DEFAULT 0,
+		`testNum` INT NOT NULL DEFAULT 0,
+		`clauseRule` CHAR(1) DEFAULT '',
+		`attId` BIGINT NOT NULL DEFAULT 0,
+		`attSymbol` CHAR(4) NOT NULL DEFAULT '',
+		`valId` BIGINT NOT NULL DEFAULT 0,
+		`valSymbol` CHAR(4) NOT NULL DEFAULT '',
+		`valTestIn` CHAR(6) NOT NULL DEFAULT 'IN',
+		`count` BIGINT NOT NULL DEFAULT 0,
+		PRIMARY KEY (`id`));
 
--- NESTED REPLACEMENTS DO THE FOLLOWING
--- 1. Remove text between paired pipes
--- 2. Replace alternative representations of AND with ',a'
--- 3. Replace alternative representations of OR with ',o'
--- 4. Replace alternative representations or MINUS with ',m'
--- 5. Remove all spaces (this must be done after 2,3,4 as these rely on spaces around words/symbols)
-SET `v_ecltrim`=regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(`p_ecl`,'[|][^|]*[|]',''),' +(AND|[Aa]nd|&+) +',',a'),' +([oO][rR]|\\|+) +',',o'),' +(minus|[Mm]inus|-) +',',m'),' *','');
+	DROP TABLE IF EXISTS `tmpSourceIds`;
+	DROP TABLE IF EXISTS `tmpIds`;
+	CREATE TEMPORARY TABLE `tmpIds` (
+			`id` bigint NOT NULL DEFAULT '0',
+			PRIMARY KEY (`id`)
+	) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
--- IF NOT ENCLOSED IN BRACKETS ADD OUTER BRACKETS FOR CONSISTENT SUBSEQUENT PROCESSING
-IF `v_ecltrim` not regexp '^\\(.*\\)$' THEN
-	SET `v_ecltrim`=CONCAT('(',`v_ecltrim`,')');
-END IF;
+	DROP TABLE IF EXISTS `ResultTable`;
 
--- CHECK THAT BRACKETS ARE BALANCED AND NOT MISPLACED
-IF `v_ecltrim` not regexp '^\\([^\\(\\)]*(\\),[aom]?\\([^\\(\\)]*)*\\)$' THEN
-	SELECT "ERR: Unbalanced or Misplaced Brackets";
-    LEAVE proc;
-END IF;
--- TRIMMED SYMBOLIC VERSION CREATED AND ALL OK
+	-- NESTED REPLACEMENTS DO THE FOLLOWING
+	-- 1. Remove text between paired pipes
+	-- 2. Replace alternative representations of AND with ',a'
+	-- 3. Replace alternative representations of OR with ',o'
+	-- 4. Replace alternative representations or MINUS with ',m'
+	-- 5. Remove all spaces (this must be done after 2,3,4 as these rely on spaces around words/symbols)
+	SET `v_ecltrim`=regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(`p_ecl`,'[|][^|]*[|]',''),' +(AND|[Aa]nd|&+) +',',a'),' +([oO][rR]|\\|+) +',',o'),' +(minus|[Mm]inus|-) +',',m'),' *','');
 
--- Loop to extract ECL clauses enclosed in brackets (allows multiply constraint with AND / OR / MINUS)
-getClause: LOOP
-    -- Each iteration get the next ECL clause
-    SET `v_eclClause`=regexp_substr(`v_ecltrim`,'[aom]?\\([^\\(\\)]*\\),?',1,`v_clauseNum`);
-    IF ISNULL(`v_eclClause`) OR `v_clauseNum`>20 THEN
-        LEAVE getClause;
-    END IF;
-    -- Get the rule letter a=and o=or m=minus between this and ECL clause (if any)
-    IF `v_eclClause` regexp '^[aom]' THEN 
-        SET `v_clauseRule`= LEFT(`v_eclClause`,1);
-        -- remove rule letter and leading bracket
-        SET `v_eclClause`=MID(`v_eclClause`,3);
-    ELSE
-        -- Just remove leading bracket
-        SET `v_eclClause`=MID(`v_eclClause`,2);
-    END IF;
-    -- Trim ECL clause to contents of brackets
-    SET `v_eclClause`=substring_index(`v_eclClause`,')',1);
-    -- Check the ECL clause is processable (no nesting or grouping present in ECL Clause)
-    IF `v_eclClause` regexp '\\(' THEN
-        SELECT 'ERR: Nesting constraint not supported. Character "(" in an ECL Clause',`v_eclClause`;
-        LEAVE proc;
-    END IF;
-    IF `v_eclClause` regexp ':.*:' THEN
-        SELECT 'ERR: Nesting constraint not supported. More than one ":" in an ECL Clause',`v_eclClause`;
-        LEAVE proc;
-    END IF;
-    IF `v_eclClause` regexp '[\\{\\}]' THEN
-        SELECT 'ERR: Grouping constraints not supported. Characters "{" or "}" in an ECL Clause',`v_eclClause`;
-        LEAVE proc;
-    END IF;
-    -- If the ECL clause contains a : split the focus and refinement at that point. Otherwise it is just a focus constraint
-    IF `v_eclClause` regexp ':' THEN
-        SET `v_focus`=substring_index(`v_eclClause`,':',1);
-        SET `v_refine`=substring_index(`v_eclClause`,':',-1);
-    ELSE
-        SET `v_focus`=`v_eclClause`;
-        SET `v_refine`='';
-    END IF;
-    SET `v_testNum`=1;
-    -- Get the symbol and id for the focus concept and add this as a record in a temporary ECL table (tmpEcl)
-    SET `v_valSymbol`=IFNULL(regexp_substr(`v_focus`,'(\\*|\\^|<[<!]?|>[>!]?)'),'=');
-    SET `v_valId`=IFNULL(regexp_substr(`v_focus`,'[1-9][0-9]{5,17}'),0);
-    INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`,0);
-    
-    IF `v_refine`!='' THEN
-        -- to simplify iteration add a comma before the refinement (this allows simple regexp pattern iteration)
-        SET `v_refine`=CONCAT(',',`v_refine`);
-        getRefine: LOOP
-            -- Iterate through the refinement constraints spliting at the commas
-            SET `v_item`=regexp_substr(`v_refine`,',[^,]+',1,`v_testNum`);
-            SET `v_testNum`=`v_testNum`+1;
-            IF ISNULL(`v_item`) OR `v_testNum`>20 THEN
-                -- exit here when no more refinements (or after a maximum number of iterations as an error catcher)
-                LEAVE getRefine;
-            END IF;
-            SET `v_item`=mid(`v_item`,2);
-            -- SELECT `v_testNum`,`v_item`;
-            SET `v_attrib`=substring_index(`v_item`,'=',1);
-						-- Check for negated attribute value != (so ! as last char of v_attrib)
-						SET `v_valTestIn`=IF(`v_attrib` regexp '!$',"NOT IN","IN");
-            SET `v_value`=substring_index(`v_item`,'=',-1);
-            -- SELECT `v_attrib`,`v_value`;
-            SET `v_valSymbol`=IFNULL(regexp_substr(`v_value`,'(\\*|\\^|<<?)'),'=');
-            SET `v_valId`=IFNULL(regexp_substr(`v_value`,'[1-9][0-9]{5,17}'),0);
-            SET `v_attSymbol`=IFNULL(regexp_substr(`v_attrib`,'(\\*\\^|<<?)'),'=');
-            SET `v_attId`=IFNULL(regexp_substr(`v_attrib`,'[1-9][0-9]{5,17}'),0);
-            -- SELECT `v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
-            INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`);
-        END LOOP getRefine;
-    END IF;
-    SET `v_clauseNum`=`v_clauseNum`+1;
-END LOOP getClause;
+	-- IF NOT ENCLOSED IN BRACKETS ADD OUTER BRACKETS FOR CONSISTENT SUBSEQUENT PROCESSING
+	IF `v_ecltrim` not regexp '^\\(.*\\)$' THEN
+		SET `v_ecltrim`=CONCAT('(',`v_ecltrim`,')');
+	END IF;
 
-SET `v_clauseCount`=(SELECT max(`clauseNum`) FROM `tmpEcl`);
+	-- CHECK THAT BRACKETS ARE BALANCED AND NOT MISPLACED
+	IF `v_ecltrim` not regexp '^\\([^\\(\\)]*(\\),[aom]?\\([^\\(\\)]*)*\\)$' THEN
+		SELECT "ERR: Unbalanced or Misplaced Brackets";
+			LEAVE proc;
+	END IF;
+	-- TRIMMED SYMBOLIC VERSION CREATED AND ALL OK
 
-OPEN `curClause`;
-SET `done`=FALSE;
+	-- Loop to extract ECL clauses enclosed in brackets (allows multiply constraint with AND / OR / MINUS)
+	getClause: LOOP
+			-- Each iteration get the next ECL clause
+			SET `v_eclClause`=regexp_substr(`v_ecltrim`,'[aom]?\\([^\\(\\)]*\\),?',1,`v_clauseNum`);
+			IF ISNULL(`v_eclClause`) OR `v_clauseNum`>20 THEN
+					LEAVE getClause;
+			END IF;
+			-- Get the rule letter a=and o=or m=minus between this and ECL clause (if any)
+			IF `v_eclClause` regexp '^[aom]' THEN 
+					SET `v_clauseRule`= LEFT(`v_eclClause`,1);
+					-- remove rule letter and leading bracket
+					SET `v_eclClause`=MID(`v_eclClause`,3);
+			ELSE
+					-- Just remove leading bracket
+					SET `v_eclClause`=MID(`v_eclClause`,2);
+			END IF;
+			-- Trim ECL clause to contents of brackets
+			SET `v_eclClause`=substring_index(`v_eclClause`,')',1);
+			-- Check the ECL clause is processable (no nesting or grouping present in ECL Clause)
+			IF `v_eclClause` regexp '\\(' THEN
+					SELECT 'ERR: Nesting constraint not supported. Character "(" in an ECL Clause',`v_eclClause`;
+					LEAVE proc;
+			END IF;
+			IF `v_eclClause` regexp ':.*:' THEN
+					SELECT 'ERR: Nesting constraint not supported. More than one ":" in an ECL Clause',`v_eclClause`;
+					LEAVE proc;
+			END IF;
+			IF `v_eclClause` regexp '[\\{\\}]' THEN
+					SELECT 'ERR: Grouping constraints not supported. Characters "{" or "}" in an ECL Clause',`v_eclClause`;
+					LEAVE proc;
+			END IF;
+			-- If the ECL clause contains a : split the focus and refinement at that point. Otherwise it is just a focus constraint
+			IF `v_eclClause` regexp ':' THEN
+					SET `v_focus`=substring_index(`v_eclClause`,':',1);
+					SET `v_refine`=substring_index(`v_eclClause`,':',-1);
+			ELSE
+					SET `v_focus`=`v_eclClause`;
+					SET `v_refine`='';
+			END IF;
+			SET `v_testNum`=1;
+			-- Get the symbol and id for the focus concept and add this as a record in a temporary ECL table (tmpEcl)
+			SET `v_valSymbol`=IFNULL(regexp_substr(`v_focus`,'(\\*|\\^|<[<!]?|>[>!]?)'),'=');
+			SET `v_valId`=IFNULL(regexp_substr(`v_focus`,'[1-9][0-9]{5,17}'),0);
+			INSERT INTO `tmpEcl` (`clauseNum`,`clauseRule`,`testNum`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_clauseRule`,`v_testNum`,0,'',`v_valId`,`v_valSymbol`,0);
+			
+			IF `v_refine`!='' THEN
+					-- to simplify iteration add a comma before the refinement (this allows simple regexp pattern iteration)
+					SET `v_refine`=CONCAT(',',`v_refine`);
+					getRefine: LOOP
+							-- Iterate through the refinement constraints spliting at the commas
+							SET `v_item`=regexp_substr(`v_refine`,',[^,]+',1,`v_testNum`);
+							SET `v_testNum`=`v_testNum`+1;
+							IF ISNULL(`v_item`) OR `v_testNum`>20 THEN
+									-- exit here when no more refinements (or after a maximum number of iterations as an error catcher)
+									LEAVE getRefine;
+							END IF;
+							SET `v_item`=mid(`v_item`,2);
+							-- SELECT `v_testNum`,`v_item`;
+							SET `v_attrib`=substring_index(`v_item`,'=',1);
+							-- Check for negated attribute value != (so ! as last char of v_attrib)
+							SET `v_valTestIn`=IF(`v_attrib` regexp '!$',"NOT IN","IN");
+							SET `v_value`=substring_index(`v_item`,'=',-1);
+							-- SELECT `v_attrib`,`v_value`;
+							SET `v_valSymbol`=IFNULL(regexp_substr(`v_value`,'(\\*|\\^|<<?)'),'=');
+							SET `v_valId`=IFNULL(regexp_substr(`v_value`,'[1-9][0-9]{5,17}'),0);
+							SET `v_attSymbol`=IFNULL(regexp_substr(`v_attrib`,'(\\*\\^|<<?)'),'=');
+							SET `v_attId`=IFNULL(regexp_substr(`v_attrib`,'[1-9][0-9]{5,17}'),0);
+							-- SELECT `v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`;
+							INSERT INTO `tmpEcl` (`clauseNum`,`testNum`,`clauseRule`,`attId`,`attSymbol`,`valId`,`valSymbol`,`valTestIn`) values (`v_clauseNum`,`v_testNum`,`v_clauseRule`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`);
+					END LOOP getRefine;
+			END IF;
+			SET `v_clauseNum`=`v_clauseNum`+1;
+	END LOOP getClause;
 
-clauseLoop: LOOP
-    FETCH `curClause` INTO `v_clauseNum`,`v_clauseRule`,`v_refineCount`;
-    IF `done` then
-        LEAVE clauseLoop;
-    END IF;
-    -- SELECT `v_clauseNum`;
-    SET `v_ClauseTable`=IF(`v_clauseNum`=1,'tmpResultIds','tmpClauseIds');
-    SET `v_inSource`='';
-    OPEN `curRefine`;
-    refineLoop: LOOP
-        FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`;
-        IF `done` then
-            SET `done`=FALSE;
-            CLOSE `curRefine`;
-            LEAVE refineLoop;
-        END IF;
-        IF `v_testNum`=`v_refineCount` THEN
-            SET `v_targetTable`=`v_ClauseTable`;
-        ELSE
-            SET `v_targetTable`=CONCAT('tmpRefineIds_',`v_testNum`);
-        END IF;
+	SET `v_clauseCount`=(SELECT max(`clauseNum`) FROM `tmpEcl`);
 
-        SET @dropTable=CONCAT('DROP TABLE IF EXISTS ',`v_targetTable`);
-        PREPARE s_dropTable FROM @dropTable;
-        EXECUTE s_dropTable;
-        DEALLOCATE PREPARE s_dropTable;
+	OPEN `curClause`;
+	SET `done`=FALSE;
 
-        SET @createTable=CONCAT('CREATE TEMPORARY TABLE `',`v_targetTable`,'` LIKE `tmpIds`');
-        PREPARE s_createTable FROM @createTable;
-        EXECUTE s_createTable;
-        DEALLOCATE PREPARE s_createTable;
-        SET @insertIds=CONCAT('INSERT IGNORE INTO `',`v_targetTable`,'` (`id`) ');
+	clauseLoop: LOOP
+		FETCH `curClause` INTO `v_clauseNum`,`v_clauseRule`,`v_refineCount`;
+		IF `done` then
+				LEAVE clauseLoop;
+		END IF;
+		-- SELECT `v_clauseNum`;
+		SET `v_ClauseTable`=IF(`v_clauseNum`=1,'ResultTable','tmpClauseIds');
+		SET `v_inSource`='';
+		OPEN `curRefine`;
+		refineLoop: LOOP
+			FETCH `curRefine` INTO `v_id`,`v_testNum`,`v_attId`,`v_attSymbol`,`v_valId`,`v_valSymbol`,`v_valTestIn`;
+			IF `done` then
+				SET `done`=FALSE;
+				CLOSE `curRefine`;
+				LEAVE refineLoop;
+			END IF;
+			IF `v_testNum`=`v_refineCount` THEN
+				SET `v_targetTable`=`v_ClauseTable`;
+			ELSE
+				SET `v_targetTable`=CONCAT('tmpRefineIds_',`v_testNum`);
+			END IF;
 
-        IF `v_attId`=0 THEN
-            -- Focus concept test
-            CASE `v_valSymbol`
-                WHEN '=' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_concept` WHERE `id`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
-                WHEN '^' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',IF(`v_inSource`!='',CONCAT(' AND `referencedComponentId`',`v_inSource`),''));
-                WHEN '<' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `subtypeId`',`v_inSource`),''));
-                WHEN '<<' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005))',IF(`v_inSource`!='',CONCAT(' AND `subtypeId`',`v_inSource`),''));
-                WHEN '<!' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
-                WHEN '>' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `supertypeId`',`v_inSource`),''));
-                WHEN '>>' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005))',IF(`v_inSource`!='',CONCAT(' AND `supertypeId`',`v_inSource`),''));
-                WHEN '>!' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
-                WHEN '*' THEN
-                    SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_concept` WHERE `active`=1',IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
-                ELSE
-                    SELECT CONCAT('ERR: Invalid focus concept symbol: ',`v_valSymbol`);
-                    LEAVE proc;
-            END CASE;
-        -- Check that the attribute specified is a valid attribute or * for any attribute
-        -- Valid attributes are subtypes of 410662002 | Concept model attribute |              
-        ELSEIF `v_attSymbol`='*' OR `v_attId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=410662002) THEN
-            -- General Source for Inserting Ids is same for refinements the other settings only add conditions
-            SET @insertIds=CONCAT(@insertIds,'SELECT `sourceId` FROM `snap_relationship` WHERE active=1',IF(`v_inSource`!='',CONCAT(' AND `sourceId`',`v_inSource`),''));
+			SET @dropTable=CONCAT('DROP TABLE IF EXISTS ',`v_targetTable`);
+			PREPARE s_dropTable FROM @dropTable;
+			EXECUTE s_dropTable;
+			DEALLOCATE PREPARE s_dropTable;
 
-            -- ADD CONDITIONS FOR typeId
-            CASE `v_attSymbol`
-                WHEN '=' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId`=',`v_attId`);
-                WHEN '<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_attId`,')');
-                WHEN '<<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_attId`,' or (`subtypeId`=',`v_attId`,' and `supertypeId`=410662002)))');
-                WHEN '<!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_attId`,')');
-                WHEN '>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_attId`,')');
-                WHEN '>>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_attId`,' or (`subtypeId`=',`v_attId`,' and `supertypeId`=138875005))',')');
-                WHEN '>!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_attId`,')');
-                ELSE
-                    -- Symbol * implies any attribute type. Other symbols are errors
-                    IF `v_attSymbol`!='*' THEN
-                        SELECT CONCAT('ERR: Invalid attribute type symbol: ',`v_attSymbol`);
-                        LEAVE proc;
-                    END IF;
-            END CASE;
-            -- ADD CONDITIONS FOR destinationId
+			SET @createTable=CONCAT('CREATE TEMPORARY TABLE `',`v_targetTable`,'` LIKE `tmpIds`');
+			PREPARE s_createTable FROM @createTable;
+			EXECUTE s_createTable;
+			DEALLOCATE PREPARE s_createTable;
+			SET @insertIds=CONCAT('INSERT IGNORE INTO `',`v_targetTable`,'` (`id`) ');
 
-            CASE `v_valSymbol`
-                WHEN '=' THEN
-										IF `v_valTestIn`='IN' THEN
-                    	SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
-										ELSE
-											SET @insertIds=CONCAT(@insertIds,' AND `destinationId`!=',`v_valId`);
-										END IF;
-                WHEN '<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
-                WHEN '<<' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
-                WHEN '<!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
-                WHEN '>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
-                WHEN '>>' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
-                WHEN '>!' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
-                WHEN '^' THEN
-                    SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',')');
-                ELSE
-                    IF `v_valSymbol`!='*' THEN
-                        -- Symbol * implies any value. Other symbols are errors
-                        SELECT CONCAT('ERR: Invalid attribute value symbol: ',`v_valSymbol`);
-                        LEAVE proc;
-                    END IF;
-            END CASE;
-        ELSE
-            SELECT CONCAT('ERR: Invalid attributeId Specified: ',`v_attid`);
-            LEAVE proc;
-        END IF;
-        PREPARE s_insertIds FROM @insertIds;
-        EXECUTE s_insertIds;
-        UPDATE `tmpEcl` SET `count`=ROW_COUNT() where `id`=`v_id`;
-        DEALLOCATE PREPARE s_insertIds;
+			IF `v_attId`=0 THEN
+					-- Focus concept test
+				CASE `v_valSymbol`
+						WHEN '=' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_concept` WHERE `id`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+						WHEN '^' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',IF(`v_inSource`!='',CONCAT(' AND `referencedComponentId`',`v_inSource`),''));
+						WHEN '<' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `subtypeId`',`v_inSource`),''));
+						WHEN '<<' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005))',IF(`v_inSource`!='',CONCAT(' AND `subtypeId`',`v_inSource`),''));
+						WHEN '<!' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+						WHEN '>' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `supertypeId`',`v_inSource`),''));
+						WHEN '>>' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005))',IF(`v_inSource`!='',CONCAT(' AND `supertypeId`',`v_inSource`),''));
+						WHEN '>!' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+						WHEN '*' THEN
+								SET @insertIds=CONCAT(@insertIds,'SELECT `id` FROM `snap_concept` WHERE `active`=1',IF(`v_inSource`!='',CONCAT(' AND `id`',`v_inSource`),''));
+						ELSE
+								SELECT CONCAT('ERR: Invalid focus concept symbol: ',`v_valSymbol`);
+								LEAVE proc;
+				END CASE;
+			-- Check that the attribute specified is a valid attribute or * for any attribute
+			-- Valid attributes are subtypes of 410662002 | Concept model attribute |
+			ELSEIF `v_attSymbol`='*' OR `v_attId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=410662002) THEN
+					-- General Source for Inserting Ids is same for refinements the other settings only add conditions
+					SET @insertIds=CONCAT(@insertIds,'SELECT `sourceId` FROM `snap_relationship` WHERE active=1',IF(`v_inSource`!='',CONCAT(' AND `sourceId`',`v_inSource`),''));
 
-        -- v_inSource is '' for first loop then becomes v_targetTable from previous iteration
-        SET `v_inSource`=CONCAT(' IN (SELECT `id` FROM ',`v_targetTable`,')');
+					-- ADD CONDITIONS FOR typeId
+					CASE `v_attSymbol`
+							WHEN '=' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId`=',`v_attId`);
+							WHEN '<' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_attId`,')');
+							WHEN '<<' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_attId`,' or (`subtypeId`=',`v_attId`,' and `supertypeId`=410662002)))');
+							WHEN '<!' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_attId`,')');
+							WHEN '>' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_attId`,')');
+							WHEN '>>' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_attId`,' or (`subtypeId`=',`v_attId`,' and `supertypeId`=138875005))',')');
+							WHEN '>!' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `typeId` IN (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_attId`,')');
+							ELSE
+									-- Symbol * implies any attribute type. Other symbols are errors
+									IF `v_attSymbol`!='*' THEN
+											SELECT CONCAT('ERR: Invalid attribute type symbol: ',`v_attSymbol`);
+											LEAVE proc;
+									END IF;
+					END CASE;
+					-- ADD CONDITIONS FOR destinationId
 
-    END LOOP refineLoop;
-    IF `v_clauseNum`>1 THEN
-        CASE `v_clauseRule`
-            WHEN 'o' THEN -- OR
-                INSERT IGNORE INTO `tmpResultIds` (`id`) SELECT `id` FROM `tmpClauseIds`;
-            WHEN 'a' THEN -- AND
-				ALTER TABLE `tmpResultIds` RENAME TO  `tmpSourceIds` ;
-                CREATE TEMPORARY TABLE `tmpResultIds` LIKE `tmpIds`;
-                INSERT IGNORE INTO `tmpResultIds` (`id`) SELECT `c`.`id` FROM `tmpClauseIds` `c` JOIN `tmpSourceIds` `s` ON `s`.`id`=`c`.`id` ;
-                DROP TABLE `tmpSourceIds`;
-            WHEN 'm' THEN -- MINUS
-				ALTER TABLE `tmpResultIds` RENAME TO  `tmpSourceIds` ;
-                CREATE TEMPORARY TABLE `tmpResultIds` LIKE `tmpIds`;
-                INSERT IGNORE INTO `tmpResultIds` (`id`) SELECT `s`.`id` FROM `tmpSourceIds` `s` LEFT OUTER JOIN `tmpClauseIds` `c` ON `s`.`id`=`c`.`id` 
-					WHERE ISNULL(`c`.`id`);
-                DROP TABLE `tmpSourceIds`;
-            ELSE
-                SELECT CONCAT("ERR: Invalid Clause Rule: ",`v_clauseRule`);
-                LEAVE proc;
-        END CASE;
-    END IF;
-END LOOP clauseLoop;
-IF `v_diagnostic` THEN
-    SELECT * FROM `tmpEcl`;
-END IF;
-SET @output=CONCAT('SELECT `t`.`conceptId`,`t`.`term` FROM `snap_pref` `t` JOIN `tmpResultIds` `r` ON `r`.`id`=`t`.`conceptId`');
--- SELECT @output;
-PREPARE s_output FROM @output;
-EXECUTE s_output;
-DEALLOCATE PREPARE s_output;
+					CASE `v_valSymbol`
+							WHEN '=' THEN
+									IF `v_valTestIn`='IN' THEN
+										SET @insertIds=CONCAT(@insertIds,' AND `destinationId`=',`v_valId`);
+									ELSE
+										SET @insertIds=CONCAT(@insertIds,' AND `destinationId`!=',`v_valId`);
+									END IF;
+							WHEN '<' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE `supertypeId`=',`v_valId`,')');
+							WHEN '<<' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `subtypeId` FROM `snap_transclose` WHERE (`supertypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+							WHEN '<!' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_child_fsn` WHERE `conceptId`=',`v_valId`,')');
+							WHEN '>' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE `subtypeId`=',`v_valId`,')');
+							WHEN '>>' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `supertypeId` FROM `snap_transclose` WHERE (`subtypeId`=',`v_valId`,' or (`subtypeId`=',`v_valId`,' and `supertypeId`=138875005)))');
+							WHEN '>!' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `id` FROM `snap_rel_parent_fsn` WHERE `conceptId`=',`v_valId`,')');
+							WHEN '^' THEN
+									SET @insertIds=CONCAT(@insertIds,' AND `destinationId` ',`v_valTestIn`,' (SELECT `referencedComponentId` FROM `snap_refset_simple` WHERE `refsetId`=',`v_valId`,' AND `active`=1',')');
+							ELSE
+									IF `v_valSymbol`!='*' THEN
+											-- Symbol * implies any value. Other symbols are errors
+											SELECT CONCAT('ERR: Invalid attribute value symbol: ',`v_valSymbol`);
+											LEAVE proc;
+									END IF;
+					END CASE;
+			ELSE
+					SELECT CONCAT('ERR: Invalid attributeId Specified: ',`v_attid`);
+					LEAVE proc;
+			END IF;
+			PREPARE s_insertIds FROM @insertIds;
+			EXECUTE s_insertIds;
+			UPDATE `tmpEcl` SET `count`=ROW_COUNT() where `id`=`v_id`;
+			DEALLOCATE PREPARE s_insertIds;
+
+			-- v_inSource is for first loop then becomes v_targetTable from previous iteration
+			SET `v_inSource`=CONCAT(' IN (SELECT `id` FROM ',`v_targetTable`,')');
+		END LOOP refineLoop;
+		IF `v_clauseNum`>1 THEN
+			CASE `v_clauseRule`
+				WHEN 'o' THEN -- OR
+					INSERT IGNORE INTO `ResultTable` (`id`) SELECT `id` FROM `tmpClauseIds`;
+				WHEN 'a' THEN -- AND
+					ALTER TABLE `ResultTable` RENAME TO  `tmpSourceIds` ;
+					CREATE TABLE `ResultTable` LIKE `tmpIds`;
+					INSERT IGNORE INTO `ResultTable` (`id`) SELECT `c`.`id` FROM `tmpClauseIds` `c` JOIN `tmpSourceIds` `s` ON `s`.`id`=`c`.`id` ;
+					DROP TABLE `tmpSourceIds`;
+				WHEN 'm' THEN -- MINUS
+					ALTER TABLE `ResultTable` RENAME TO  `tmpSourceIds` ;
+					CREATE TABLE `ResultTable` LIKE `tmpIds`;
+					INSERT IGNORE INTO `ResultTable` (`id`) SELECT `s`.`id` FROM `tmpSourceIds` `s` LEFT OUTER JOIN `tmpClauseIds` `c` ON `s`.`id`=`c`.`id` 
+				WHERE ISNULL(`c`.`id`);
+					DROP TABLE `tmpSourceIds`;
+				ELSE
+					SELECT CONCAT("ERR: Invalid Clause Rule: ",`v_clauseRule`);
+					LEAVE proc;
+			END CASE;
+		END IF;
+	END LOOP clauseLoop;
+	SET SQL_SAFE_UPDATES=0;
+	IF LEFT(`p_setId`,1)='!' OR LEFT(`p_setId`,1)='?' THEN 
+		-- Diagnostics
+		SELECT * FROM `tmpEcl`;
+		SET `p_setId`=MID(`p_setId`,2);
+	END IF;
+	IF LEFT(`p_setId`,1)="-" THEN
+		SET `p_setId`=MID(`p_setId`,2);
+		IF LENGTH(`p_setId`)>0 THEN
+			DELETE FROM `config_resultsets` WHERE `setId`=`p_setId` AND `conceptId` IN (SELECT `id` FROM `ResultTable`);
+		END IF;
+	ELSEIF LEFT(`p_setId`,1)="+" THEN
+		SET `p_setId`=MID(`p_setId`,2);
+		IF LENGTH(`p_setId`)>0 THEN
+			INSERT IGNORE INTO `config_resultsets` (`setId`,`conceptId`) SELECT `p_setId`,`id` FROM `ResultTable`;
+		END IF;
+	ELSE
+		IF `p_setId`="" THEN 
+			SET `p_setId`='temp';
+		END IF;
+		DELETE FROM `config_resultsets` WHERE `setId`=`p_setId`;
+		INSERT IGNORE INTO `config_resultsets` (`setId`,`conceptId`) SELECT `p_setId`,`id` FROM `ResultTable`;
+	END IF;
+	SET SQL_SAFE_UPDATES=1;
+	DROP TABLE IF EXISTS `tmpSourceIds`;
+	DROP TABLE IF EXISTS `tmpIds`;
+	DROP TABLE IF EXISTS `ResultTable`;
 END;;
 
 -- Create eclSimple() Procedure
@@ -1991,16 +2235,6 @@ DROP TABLE IF EXISTS `tmp_ref2`;
 END;;
 
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (with prefix): proc_search
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (with prefix): proc_search";
-
 DROP PROCEDURE IF EXISTS `snap_SearchPlus`;
 DELIMITER ;;
 CREATE PROCEDURE `snap_SearchPlus`(`p_search` text,`p_filter` text)
@@ -2280,16 +2514,6 @@ ELSE
 END IF;
 END;;
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (with prefix): proc_languages
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (with prefix): proc_languages";
-
 DROP PROCEDURE IF EXISTS `snap_termsInLanguages`;
 DELIMITER ;;
 CREATE PROCEDURE `snap_termsInLanguages`(`p_conceptIds` text,`p_langCodes` text)
@@ -2476,16 +2700,6 @@ CALL setLanguage(2,`v_defaultLanguage`);
 END;;
 
 DELIMITER ;
-
-
--- ===========================================
--- Add extra (no prefix): func_refsetnames
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (no prefix): func_refsetnames";
-
 DELIMITER ;;
 DROP FUNCTION IF EXISTS `snap_RefsetNames`;;
 CREATE FUNCTION `snap_RefsetNames`() RETURNS text
@@ -2519,308 +2733,38 @@ close rsname;
 RETURN CONCAT(alldata,'}');
 
 END;;
-DELIMITER ;
 
-
--- ===========================================
--- Add extra (with prefix): proc_refsetmembers
--- ===========================================
-
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"Add extra (with prefix): proc_refsetmembers";
-
-DROP PROCEDURE IF EXISTS `snap_members`;
 DELIMITER ;;
-CREATE PROCEDURE `snap_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
+DROP FUNCTION IF EXISTS `getMrcmRefsetId`;;
+CREATE FUNCTION `getMrcmRefsetId`(`p_moduleId` BIGINT,`p_refsetType` TEXT) RETURNS BIGINT
 BEGIN
--- Procedure that returns maps for a specified concept from a specified extended map reference set
--- Examples:
--- ICD-10 MAP EXAMPLE 1: SIMPLE
---  74400008|Appendicitis| 
--- CALL snap_GetMaps(447562003,74400008);
---
--- ICD-10 MAP EXAMPLE 2: TWO MAP GROUPS
---  196607008|Esophageal ulcer due to aspirin|
--- CALL snap_GetMaps(447562003,196607008);
---
--- ICD-10 MAP EXAMPLE 3: AGE BASED RULE
---  32398004|Bronchitis|
--- CALL snap_GetMaps(447562003,32398004);
---
--- ICD-10 MAP EXAMPLE 4: GENDER BASED RULE
---  8619003|Infertility|
--- CALL snap_GetMaps(447562003,8619003);
---
--- ICD-10 MAP EXAMPLE 5: EXTERNAL CAUSES
---  111613008|Closed skull fracture with intracranial injury|
--- CALL snap_GetMaps(447562003,111613008);
-DECLARE `v_refsetType` VARCHAR(60);
-	SET `v_refsetType`=(SELECT IFNULL(`refsetType`,'NONE') FROM `config_refsets` WHERE `refsetId`=`p_refsetId`);
-	CASE 
-		WHEN `v_refsetType`='extendedmap' THEN
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, 
-				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`, 
-				`mapGroup`, `mapPriority`, `mapRule`, `mapAdvice`, `mapTarget`, 
-				`correlationId`, 
-				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`correlationId`) `correlationTerm`,
-				`mapCategoryId`, 
-				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`mapCategoryId`) `mapCategoryTerm`
-				FROM `snap_refset_extendedmap` `m`
-					WHERE `refsetId`=`p_refsetId`
-					AND `referencedComponentId`=`p_referencedComponentId`
-					AND `active`=1
-					ORDER BY `referencedComponentId`,`mapGroup`,`mapPriority`;
-		WHEN `v_refsetType`='simplemap' THEN
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, 
-				(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
-				`mapTarget`
-				FROM  `snap_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='association' THEN
-			SELECT * FROM  `snap_refset_association` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
-			-- refComp = DESCRIPTION
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, (SELECT `term` FROM `snap_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
-				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
-			-- refComp = RELATIONSHIP
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, '!Relationship!'
-				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' THEN
-			-- refComp = CONCEPT
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, (SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
-				`valueId`,(SELECT `term` FROM `snap_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'descriptiontype' THEN
-			SELECT * FROM  `snap_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'language' THEN
-			SELECT * FROM  `snap_refset_language` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'moduledependency' THEN
-			SELECT * FROM  `snap_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmattributedomain' THEN
-			SELECT * FROM  `snap_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmattributerange' THEN
-			SELECT * FROM  `snap_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmdomain' THEN
-			SELECT * FROM  `snap_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmmodulescope' THEN
-			SELECT * FROM  `snap_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'owlexpression' THEN
-			SELECT * FROM  `snap_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'refsetdescriptor' THEN
-			SELECT * FROM  `snap_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'simple' THEN
-			SELECT * FROM  `snap_refset_simple` WHERE `refsetId`=`p_refsetid`;
+
+-- Return refsetId of a specified type MRCM refset for a specified module
+-- First parameter is a module Id 
+-- Second parameter is string representing the MRCM set type:
+-- Either "d" or "mrcmdomain" returns the id of the MRCM Domain Refset
+-- Either "a" or "mrcmattributedomain" returns the id of the MRCM Attribute Domain Refset
+-- Either "r" or "mrcmattributerange" returns the id of the MRCM Attribute Range Refset
+
+	DECLARE `v_refsetType` TEXT;
+	CASE LOWER(LEFT(`p_refsetType`,1))
+		WHEN 'd' THEN
+			SET `v_refsetType`='mrcmdomain';
+			WHEN 'a' THEN
+			SET `v_refsetType`='mrcmattributedomain';
+			WHEN 'r' THEN
+			SET `v_refsetType`='mrcmattributerange';
 		ELSE
-			SELECT "Reference Set NOT FOUND!";
+			SET `v_refsetType`=LOWER(`p_refsetType`);
 	END CASE;
+	RETURN (SELECT `mrcmRuleRefsetId` 
+		FROM `snap_refset_mrcmmodulescope` `m`
+			JOIN `config_refsets` `r` ON `r`.`refsetId`=`m`.`mrcmRuleRefsetId`
+			WHERE `active`=1 AND `m`.`refsetId`=723563008
+			AND `r`.`refsetType`=`v_refsetType`
+			AND referencedComponentId=`p_moduleId`);
 END;;
-
 DELIMITER ;
-
-DROP PROCEDURE IF EXISTS `snap1_members`;
-DELIMITER ;;
-CREATE PROCEDURE `snap1_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
-BEGIN
--- Procedure that returns maps for a specified concept from a specified extended map reference set
--- Examples:
--- ICD-10 MAP EXAMPLE 1: SIMPLE
---  74400008|Appendicitis| 
--- CALL snap1_GetMaps(447562003,74400008);
---
--- ICD-10 MAP EXAMPLE 2: TWO MAP GROUPS
---  196607008|Esophageal ulcer due to aspirin|
--- CALL snap1_GetMaps(447562003,196607008);
---
--- ICD-10 MAP EXAMPLE 3: AGE BASED RULE
---  32398004|Bronchitis|
--- CALL snap1_GetMaps(447562003,32398004);
---
--- ICD-10 MAP EXAMPLE 4: GENDER BASED RULE
---  8619003|Infertility|
--- CALL snap1_GetMaps(447562003,8619003);
---
--- ICD-10 MAP EXAMPLE 5: EXTERNAL CAUSES
---  111613008|Closed skull fracture with intracranial injury|
--- CALL snap1_GetMaps(447562003,111613008);
-DECLARE `v_refsetType` VARCHAR(60);
-	SET `v_refsetType`=(SELECT IFNULL(`refsetType`,'NONE') FROM `config_refsets` WHERE `refsetId`=`p_refsetId`);
-	CASE 
-		WHEN `v_refsetType`='extendedmap' THEN
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, 
-				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`, 
-				`mapGroup`, `mapPriority`, `mapRule`, `mapAdvice`, `mapTarget`, 
-				`correlationId`, 
-				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`correlationId`) `correlationTerm`,
-				`mapCategoryId`, 
-				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`mapCategoryId`) `mapCategoryTerm`
-				FROM `snap1_refset_extendedmap` `m`
-					WHERE `refsetId`=`p_refsetId`
-					AND `referencedComponentId`=`p_referencedComponentId`
-					AND `active`=1
-					ORDER BY `referencedComponentId`,`mapGroup`,`mapPriority`;
-		WHEN `v_refsetType`='simplemap' THEN
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, 
-				(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
-				`mapTarget`
-				FROM  `snap1_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='association' THEN
-			SELECT * FROM  `snap1_refset_association` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
-			-- refComp = DESCRIPTION
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, (SELECT `term` FROM `snap1_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
-				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
-			-- refComp = RELATIONSHIP
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, '!Relationship!'
-				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' THEN
-			-- refComp = CONCEPT
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, (SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
-				`valueId`,(SELECT `term` FROM `snap1_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap1_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'descriptiontype' THEN
-			SELECT * FROM  `snap1_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'language' THEN
-			SELECT * FROM  `snap1_refset_language` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'moduledependency' THEN
-			SELECT * FROM  `snap1_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmattributedomain' THEN
-			SELECT * FROM  `snap1_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmattributerange' THEN
-			SELECT * FROM  `snap1_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmdomain' THEN
-			SELECT * FROM  `snap1_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmmodulescope' THEN
-			SELECT * FROM  `snap1_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'owlexpression' THEN
-			SELECT * FROM  `snap1_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'refsetdescriptor' THEN
-			SELECT * FROM  `snap1_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'simple' THEN
-			SELECT * FROM  `snap1_refset_simple` WHERE `refsetId`=`p_refsetid`;
-		ELSE
-			SELECT "Reference Set NOT FOUND!";
-	END CASE;
-END;;
-
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS `snap2_members`;
-DELIMITER ;;
-CREATE PROCEDURE `snap2_members`(`p_refsetId` BIGINT,`p_referencedComponentId` BIGINT)
-BEGIN
--- Procedure that returns maps for a specified concept from a specified extended map reference set
--- Examples:
--- ICD-10 MAP EXAMPLE 1: SIMPLE
---  74400008|Appendicitis| 
--- CALL snap2_GetMaps(447562003,74400008);
---
--- ICD-10 MAP EXAMPLE 2: TWO MAP GROUPS
---  196607008|Esophageal ulcer due to aspirin|
--- CALL snap2_GetMaps(447562003,196607008);
---
--- ICD-10 MAP EXAMPLE 3: AGE BASED RULE
---  32398004|Bronchitis|
--- CALL snap2_GetMaps(447562003,32398004);
---
--- ICD-10 MAP EXAMPLE 4: GENDER BASED RULE
---  8619003|Infertility|
--- CALL snap2_GetMaps(447562003,8619003);
---
--- ICD-10 MAP EXAMPLE 5: EXTERNAL CAUSES
---  111613008|Closed skull fracture with intracranial injury|
--- CALL snap2_GetMaps(447562003,111613008);
-DECLARE `v_refsetType` VARCHAR(60);
-	SET `v_refsetType`=(SELECT IFNULL(`refsetType`,'NONE') FROM `config_refsets` WHERE `refsetId`=`p_refsetId`);
-	CASE 
-		WHEN `v_refsetType`='extendedmap' THEN
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, 
-				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`, 
-				`mapGroup`, `mapPriority`, `mapRule`, `mapAdvice`, `mapTarget`, 
-				`correlationId`, 
-				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`correlationId`) `correlationTerm`,
-				`mapCategoryId`, 
-				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`mapCategoryId`) `mapCategoryTerm`
-				FROM `snap2_refset_extendedmap` `m`
-					WHERE `refsetId`=`p_refsetId`
-					AND `referencedComponentId`=`p_referencedComponentId`
-					AND `active`=1
-					ORDER BY `referencedComponentId`,`mapGroup`,`mapPriority`;
-		WHEN `v_refsetType`='simplemap' THEN
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, 
-				(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`) `term`,
-				`mapTarget`
-				FROM  `snap2_refset_simplemap` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='association' THEN
-			SELECT * FROM  `snap2_refset_association` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' AND `p_refsetId`= 900000000000490003 THEN
-			-- refComp = DESCRIPTION
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, (SELECT `term` FROM `snap2_description` WHERE `id`=`m`.`referencedComponentId`)	`term`, 
-				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' AND `p_refsetId` IN (900000000000547002,900000000000488004) THEN 
-			-- refComp = RELATIONSHIP
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, '!Relationship!'
-				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN `v_refsetType`='attributevalue' THEN
-			-- refComp = CONCEPT
-			SELECT `id`, `effectiveTime`, `active`, `moduleId`, `refsetId`, 
-				`referencedComponentId`, (SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`referencedComponentId`)	`term`, 
-				`valueId`,(SELECT `term` FROM `snap2_pref` WHERE `conceptId`=`m`.`valueId`)	`valueTerm`
-			FROM  `snap2_refset_attributevalue` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'descriptiontype' THEN
-			SELECT * FROM  `snap2_refset_DescriptionType` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'language' THEN
-			SELECT * FROM  `snap2_refset_language` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'moduledependency' THEN
-			SELECT * FROM  `snap2_refset_moduledependency` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmattributedomain' THEN
-			SELECT * FROM  `snap2_refset_mrcmattributedomain` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmattributerange' THEN
-			SELECT * FROM  `snap2_refset_mrcmattributerange` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmdomain' THEN
-			SELECT * FROM  `snap2_refset_mrcmdomain` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'mrcmmodulescope' THEN
-			SELECT * FROM  `snap2_refset_mrcmmodulescope` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'owlexpression' THEN
-			SELECT * FROM  `snap2_refset_owlexpression` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'refsetdescriptor' THEN
-			SELECT * FROM  `snap2_refset_refsetdescriptor` WHERE `refsetId`=`p_refsetid`;
-		WHEN 'simple' THEN
-			SELECT * FROM  `snap2_refset_simple` WHERE `refsetId`=`p_refsetid`;
-		ELSE
-			SELECT "Reference Set NOT FOUND!";
-	END CASE;
-END;;
-
-DELIMITER ;
-
-
--- END EXTRAS --
-DELIMITER ;
-USE `$DBNAME`;
-SELECT Now() `--`,"END EXTRAS";
-
 
 
 -- ===========================================
@@ -2890,22 +2834,29 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Indexes for Prefix: full";
 
 
--- Index full_refset_SimpleMap --
+-- Index full_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_SimpleMap";
+SELECT Now() `--`,"Index full_refset_simple";
 
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
+CALL CreateIndexIfNotExists('full_refset_simple','sct_refset_simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_simple','sct_refset_simple_rc','refsetId,referencedComponentId');
 
--- Index full_refset_ModuleDependency --
+-- Index full_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index full_refset_ModuleDependency";
+SELECT Now() `--`,"Index full_refset_refsetdescriptor";
 
-CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
-CALL CreateIndexIfNotExists('full_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_refsetdescriptor','sct_refset_refsetdescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_refsetdescriptor','sct_refset_refsetdescriptor_rc','refsetId,referencedComponentId');
+
+-- Index full_refset_moduledependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index full_refset_moduledependency";
+
+CALL CreateIndexIfNotExists('full_refset_moduledependency','sct_refset_moduledependency_c','referencedComponentId');
+CALL CreateIndexIfNotExists('full_refset_moduledependency','sct_refset_moduledependency_rc','refsetId,referencedComponentId');
 ;
 
 
@@ -2915,22 +2866,29 @@ USE `$DBNAME`;
 SELECT Now() `--`,"Create Indexes for Prefix: snap";
 
 
--- Index snap_refset_SimpleMap --
+-- Index snap_refset_simple --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_SimpleMap";
+SELECT Now() `--`,"Index snap_refset_simple";
 
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_rc','refsetId,referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_SimpleMap','sct_refset_SimpleMap_map','mapTarget');
+CALL CreateIndexIfNotExists('snap_refset_simple','sct_refset_simple_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_simple','sct_refset_simple_rc','refsetId,referencedComponentId');
 
--- Index snap_refset_ModuleDependency --
+-- Index snap_refset_refsetdescriptor --
 DELIMITER ;
 USE `$DBNAME`;
-SELECT Now() `--`,"Index snap_refset_ModuleDependency";
+SELECT Now() `--`,"Index snap_refset_refsetdescriptor";
 
-CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_c','referencedComponentId');
-CALL CreateIndexIfNotExists('snap_refset_ModuleDependency','sct_refset_ModuleDependency_rc','refsetId,referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_refsetdescriptor','sct_refset_refsetdescriptor_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_refsetdescriptor','sct_refset_refsetdescriptor_rc','refsetId,referencedComponentId');
+
+-- Index snap_refset_moduledependency --
+DELIMITER ;
+USE `$DBNAME`;
+SELECT Now() `--`,"Index snap_refset_moduledependency";
+
+CALL CreateIndexIfNotExists('snap_refset_moduledependency','sct_refset_moduledependency_c','referencedComponentId');
+CALL CreateIndexIfNotExists('snap_refset_moduledependency','sct_refset_moduledependency_rc','refsetId,referencedComponentId');
 ;
 
 

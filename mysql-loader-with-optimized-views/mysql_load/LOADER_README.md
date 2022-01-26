@@ -1,9 +1,5 @@
-# SNOMED CT MySQL Release Files Loader with Optimized Views
+# SNOMED CT MySQL Loader Scripts Information
 ## SnomedRfsMySql 2022-01-26
-
-## INSTRUCTION ON USE
-
-See http://snomed.org/snomedmysql for detailed instruction on use of this package.
 
 ## IMPORTANT NOTES
 
@@ -11,9 +7,45 @@ This loader has been tested to work with MySQL 8.x and with the earlier version 
 
 Use with MySQL version 8.x requires the server to reference a copy of the file *cnf/my_snomedserver.cnf* as an additional configuration file.
 
-# Support for Use on Mac Systems
+# Scripts and Subfolders
 
-The package includes two bash scripts for use on a Mac.
+Files in this folder with the .sql suffix are used to import SNOMED CT release files.
+
+NOTES:
+	- The subfolders contain additional scripts that may be of interest
+	- mysql_create: Scripts used to create SNOMED CT database.
+		- The essential first step in creating a database is to use a create script.
+		- This subfolder typically contains:
+			- A copy of scripts that can be used to build the database for the current release (e.g. sct_mysql_load_create_InternationalRF2_2021.sql).
+			- A copy of scripts that can be used to build the database for an earlier release that may include a different set of release files (e.g. sct_mysql_load_create_InternationalRF2_2020.sql). 
+	- mysql_extend: Scripts used extend a SNOMED CT database by adding files from a specific extension release.
+		- These scripts can only be used to extend an existing release including the SNOMED CT International core modules is already installed.
+	- mysql_update: Scripts used to update an existing SNOMED CT database with newer versions of views and procedures that are used to optimise or simplify access to data, without requiring a complete reinstallation of the data.
+	- mysql_index: Scripts that can be used to reindex data in an existing SNOMED CT database, without requiring a complete reinstallation of the data.
+
+# Summarised Instructions for Use
+
+Full instructions for running these scripts is provided on the following web document:
+   https://confluence.ihtsdotools.org/display/DOCSQLPG/Appendix+A%3A+Building+the+SNOMED+CT+Example+Database
+
+If the initial configuration steps shown on that page have already been done, the release data can be imported using the following steps:   
+1. Open the appropriate command line shell
+	- On a Mac or Unix system open Terminal
+	- On a Windows system open the command shell
+2. Change directory to the parent folder SnomedRfsMySql
+	- For example if this folder is in you user home folder on Mac/Unix the command would be:
+		Mac/Unix: cd ~/SnomedRfsMySql
+		Windows : cd \SnomedRfsMySql
+3. Run the following command
+		Mac/Unix: bash/mysql_load
+		Windows : win\snomed_wload_mysql
+4. Respond to prompts for additional information
+	- Including specifying the relevant import script.
+	- For example to load the latest SNOMED CT International Release: 
+		sct_mysql_load_create_InternationalRF2
+5. NOTE: The import process may take a long time to run
+	- During the process a report on the steps being undertaken and completed will be shown
+	- When the process completes you should have a fully installed MySql schema populated with the chosen release data
 
 ## bash/snomed_config_mysql
 
