@@ -31,17 +31,19 @@ RETURN 'Removing defining-relationships (DRs) edges for DRs which changed role-g
 RETURN 'A CREATE operation later in the update will insert the replacement edge.';
 RETURN 'Note: Cant simply modify the endpoint of the existing edge to point to a';
 RETURN 'different role-group.  An edge removal+recreation is required by NEO4J.';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>defining_rel_edge_rem.csv" as line
-MATCH (rg:RoleGroup { sctid: line.sourceId, rolegroup: line.rolegroup })-[r {id: line.id}]->(c:ObjectConcept { sctid: line.destinationId })
-DELETE r;
+CALL {
+    MATCH (rg:RoleGroup { sctid: line.sourceId, rolegroup: line.rolegroup })-[r {id: line.id}]->(c:ObjectConcept { sctid: line.destinationId })
+    DELETE r
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 // NEXT STEP -- Concept modifications -- new and updated
 
 RETURN 'Creating NEW ObjectConcept nodes';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>concept_new.csv" as line
-CREATE (:ObjectConcept
+CALL {
+    CREATE (:ObjectConcept
         { nodetype:           'concept',
           id:                 line.id,
           sctid:              line.id,
@@ -50,13 +52,14 @@ CREATE (:ObjectConcept
           moduleId:           line.moduleId,
           definitionStatusId: line.definitionStatusId,
           FSN:                line.FSN,
-          history:            line.history} );
+          history:            line.history} )
+      } IN TRANSACTIONS OF 200 ROWS;
 
 RETURN 'Modifying existing ObjectConcept nodes which were updated';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>concept_chg.csv" as line
-MATCH (n:ObjectConcept { sctid:line.id })
-set n = { nodetype:           'concept',
+CALL {
+    MATCH (n:ObjectConcept { sctid:line.id })
+    set n = { nodetype:           'concept',
           id:                 line.id,
           sctid:              line.id,
           active:             line.active,
@@ -64,13 +67,15 @@ set n = { nodetype:           'concept',
           moduleId:           line.moduleId,
           definitionStatusId: line.definitionStatusId,
           FSN:                line.FSN,
-          history:            line.history};
+          history:            line.history}
+    } IN TRANSACTIONS OF 200 ROWS;
+
 
 // Combined Language+Description file ==> defines Descriptions
 RETURN 'Creating NEW Description nodes';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_new.csv" as line
-CREATE (:Description
+CALL {
+    CREATE (:Description
         { nodetype:'description',
           id: line.id,
           sctid: line.sctid,
@@ -85,13 +90,15 @@ CREATE (:Description
           refsetId: line.refsetId,
           caseSignificanceId: line.caseSignificanceId,
           languageCode: line.languageCode,
-          history: line.history} );
+          history: line.history} )
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 RETURN 'Modifying existing Description nodes which were updated';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_chg.csv" as line
-MATCH (n:Description { id:line.id })
-SET n = { nodetype:'description',
+CALL {
+    MATCH (n:Description { id:line.id })
+    SET n = { nodetype:'description',  
           id: line.id,
           sctid: line.sctid,
           active: line.active,
@@ -105,30 +112,36 @@ SET n = { nodetype:'description',
           refsetId: line.refsetId,
           caseSignificanceId: line.caseSignificanceId,
           languageCode: line.languageCode,
-          history: line.history };
+          history: line.history }
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 // Description edges for new and modified descriptions
 RETURN 'Creating HAS_DESCRIPTION edges for new Description nodes related to ObjectConcept nodes';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_new.csv" as line
-MATCH (c:ObjectConcept { sctid: line.sctid }), (f:Description { id: line.id })
-MERGE (c)-[:HAS_DESCRIPTION]->(f);
+CALL {
+    MATCH (c:ObjectConcept { sctid: line.sctid }), (f:Description { id: line.id })
+    MERGE (c)-[:HAS_DESCRIPTION]->(f)
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 RETURN 'Updating existing HAS_DESCRIPTION edges for updated Description nodes related to ObjectConcept nodes';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>descrip_chg.csv" as line
-MATCH (c:ObjectConcept { sctid: line.sctid }), (f:Description { id: line.id })
-MERGE (c)-[:HAS_DESCRIPTION]->(f);
+CALL {
+    MATCH (c:ObjectConcept { sctid: line.sctid }), (f:Description { id: line.id })
+    MERGE (c)-[:HAS_DESCRIPTION]->(f)
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- ISA relationships
 // --------------------------------------------------------------------------------------
 
 RETURN 'Creating NEW ISA edges';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>isa_rel_new.csv" as line
-MATCH (c1:ObjectConcept { id: line.sourceId }), (c2:ObjectConcept { id: line.destinationId })
-MERGE (c1)-[:ISA
+CALL {
+    MATCH (c1:ObjectConcept { id: line.sourceId }), (c2:ObjectConcept { id: line.destinationId })
+    MERGE (c1)-[:ISA
             { id: line.id,
               active: line.active,
               effectiveTime: line.effectiveTime,
@@ -138,17 +151,18 @@ MERGE (c1)-[:ISA
               characteristicTypeId: line.characteristicTypeId,
               sourceId: line.sourceId,
               destinationId: line.destinationId,
-              history: line.history  }]->(c2);
+              history: line.history  }]->(c2)
+  } IN TRANSACTIONS OF 200 ROWS;
 
 RETURN 'Modifying existing ISA edges which were updated';
 
 MATCH (a:SNOMED_G_ISA_UPDATE_ISSUE) delete a;
 
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>isa_rel_chg.csv" as line
-OPTIONAL MATCH (c1:ObjectConcept { id: line.sourceId })-[r:ISA { id: line.id }]->(c2:ObjectConcept { id: line.destinationId })
-FOREACH (o IN (CASE WHEN r IS NOT NULL THEN [1] ELSE [] END) | 
-set r = { id: line.id,
+CALL {
+    OPTIONAL MATCH (c1:ObjectConcept { id: line.sourceId })-[r:ISA { id: line.id }]->(c2:ObjectConcept { id: line.destinationId })
+    FOREACH (o IN (CASE WHEN r IS NOT NULL THEN [1] ELSE [] END) | 
+    set r = { id: line.id,
           active: line.active,
           effectiveTime: line.effectiveTime,
           moduleId: line.moduleId,
@@ -158,9 +172,9 @@ set r = { id: line.id,
           sourceId: line.sourceId,
           destinationId: line.destinationId,
           history: line.history }
-)
-FOREACH (o IN (CASE WHEN r IS NULL THEN [1] ELSE [] END) |
-CREATE (a:SNOMED_G_ISA_UPDATE_ISSUE 
+     )
+    FOREACH (o IN (CASE WHEN r IS NULL THEN [1] ELSE [] END) |
+    CREATE (a:SNOMED_G_ISA_UPDATE_ISSUE 
         { snomedct_object:"ISA",
           id: line.id,
           active: line.active,
@@ -172,32 +186,37 @@ CREATE (a:SNOMED_G_ISA_UPDATE_ISSUE
           sourceId: line.sourceId,
           destinationId: line.destinationId,
           history: line.history })
-);
+   );
 
-match(a:SNOMED_G_ISA_UPDATE_ISSUE)
-create (b:SNOMED_G_UPDATE_FAILURE);
+   match(a:SNOMED_G_ISA_UPDATE_ISSUE)
+   create (b:SNOMED_G_UPDATE_FAILURE);
 
-match(a:SNOMED_G_ISA_UPDATE_ISSUE)
-match (b:ObjectConcept)-[r:ISA {id: a.id}]->(c:ObjectConcept)
-delete a,r;
+   match(a:SNOMED_G_ISA_UPDATE_ISSUE)
+   match (b:ObjectConcept)-[r:ISA {id: a.id}]->(c:ObjectConcept)
+   delete a,r
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- Create RoleGroup nodes
 // --------------------------------------------------------------------------------------
 RETURN 'Creating RoleGroup nodes';
-USING PERIODIC COMMIT 500
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>rolegroups.csv" as line
-MERGE (rg:RoleGroup
+CALL {
+    MERGE (rg:RoleGroup
        { nodetype:'rolegroup',
          sctid: line.sctid,
-         rolegroup: line.rolegroup});
+         rolegroup: line.rolegroup})
+} IN TRANSACTIONS OF 500 ROWS;
+
 
 // Add edge in 2nd step, Java memory issue
 RETURN 'Creating HAS_ROLE_GROUP edges';
-USING PERIODIC COMMIT 500
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>rolegroups.csv" as line
-MATCH (c:ObjectConcept { sctid: line.sctid }), (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })
-MERGE (c)-[:HAS_ROLE_GROUP]->(rg);
+CALL {
+    MATCH (c:ObjectConcept { sctid: line.sctid }), (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })
+    MERGE (c)-[:HAS_ROLE_GROUP]->(rg)
+} IN TRANSACTIONS OF 200 ROWS;
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- Modify existing defining relationships
@@ -207,11 +226,11 @@ RETURN 'Modify updated Defining relationships';
 
 MATCH (a:SNOMED_G_DEFREL_UPDATE_ISSUE) delete a;
 
-USING PERIODIC COMMIT 200
 LOAD CSV with headers from "<<<file_protocol>>><<<output_dir>>>defining_rel_chg.csv" as line
-OPTIONAL MATCH (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })-[r { id: line.id} ]->(c:ObjectConcept { sctid: line.destinationId })
-FOREACH (o IN (CASE WHEN r IS NOT NULL THEN [r] ELSE [] END) | 
-SET r = { id: line.id,
+CALL {
+    OPTIONAL MATCH (rg:RoleGroup { sctid: line.sctid, rolegroup: line.rolegroup })-[r { id: line.id} ]->(c:ObjectConcept { sctid: line.destinationId })
+    FOREACH (o IN (CASE WHEN r IS NOT NULL THEN [r] ELSE [] END) | 
+    SET r = { id: line.id,
           active: line.active,
           sctid: line.sctid,
           typeId: line.typeId,
@@ -221,9 +240,9 @@ SET r = { id: line.id,
           characteristicTypeId: line.characteristicTypeId,
           modifierId: line.modifierId,
           history: line.history }
-)
-FOREACH (o IN (CASE WHEN r IS NULL THEN [1] ELSE [] END) |
-CREATE (a:SNOMED_G_DEFREL_UPDATE_ISSUE 
+    )
+    FOREACH (o IN (CASE WHEN r IS NULL THEN [1] ELSE [] END) |
+    CREATE (a:SNOMED_G_DEFREL_UPDATE_ISSUE 
         { snomedct_object:"DEFINING_REL",
           id: line.id,
           active: line.active,
@@ -235,14 +254,16 @@ CREATE (a:SNOMED_G_DEFREL_UPDATE_ISSUE
           characteristicTypeId: line.characteristicTypeId,
           modifierId: line.modifierId,
           history: line.history })
-);
+    );
 
-match(a:SNOMED_G_DEFREL_UPDATE_ISSUE)
-create (b:SNOMED_G_UPDATE_FAILURE);
+    match(a:SNOMED_G_DEFREL_UPDATE_ISSUE)
+    create (b:SNOMED_G_UPDATE_FAILURE);
 
-match(a:SNOMED_G_DEFREL_UPDATE_ISSUE)
-match (b:RoleGroup)-[r {id: a.id}]->(c:ObjectConcept)
-delete a,r;
+    match(a:SNOMED_G_DEFREL_UPDATE_ISSUE)
+    match (b:RoleGroup)-[r {id: a.id}]->(c:ObjectConcept)
+    delete a,r
+} IN TRANSACTIONS OF 200 ROWS;
+
 
 // --------------------------------------------------------------------------------------
 // NEXT STEP -- Create new defining relationships
