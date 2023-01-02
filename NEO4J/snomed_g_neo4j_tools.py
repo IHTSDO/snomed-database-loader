@@ -41,7 +41,7 @@ def run_cypher(arglist):
   opts, args = parse_command(arglist)
   n4jpw = opts.neopw
   try:
-    graph_db = py2neo.Graph(password=n4jpw) # 'http://localhost:7474/db/data/transaction/commit')
+    graph_db = py2neo.Graph("bolt://localhost:7687", auth=("neo4j", n4jpw)) # 'http://localhost:7474/db/data/transaction/commit')
   except Exception as e:
     print('*** Failed to make connection to NEO4J database ***')
     print('Exception: %s' % type(e).__name__)
