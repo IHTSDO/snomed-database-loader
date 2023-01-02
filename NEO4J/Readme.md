@@ -42,6 +42,9 @@ Requirements:
 
 NOTE: the database load will fail if these requirements are not met.
 
+#####ADDENDUM:
+In order to support python version 3.9 and neo4j version 5.x, it is necessary to install the latest version of p2neo (2021.2.3) and make sure to have a symbolic link from python to python3
+
 ##### Syntax to create the NEO4J database from an RF2 release using the python scripts from this project:
 
 ```
