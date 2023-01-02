@@ -10,9 +10,11 @@
 
 // Create edges for association refset
 RETURN 'Creating ASSOCIATION REFSET edges between ObjectConcept nodes';
-USING PERIODIC COMMIT 200
 LOAD csv with headers from "<<<file_protocol>>><<<output_dir>>>assoc_refset_new.csv" as line
-with line
-MATCH (s:ObjectConcept { sctid: line.referencedComponentId }), (d:ObjectConcept { sctid: line.targetComponentId })
-WITH s,d,line
-CREATE UNIQUE (s)-[:HAS_ASSOCIATION {association: line.association, refsetId: line.refsetId, active: line.active, effectiveTime: line.effectiveTime, referencedComponentId: line.referencedComponentId, targetComponentId: line.targetComponentId, moduleId: line.moduleId, id: line.id } ]->(d);
+CALL {
+    with line
+    MATCH (s:ObjectConcept { sctid: line.referencedComponentId }), (d:ObjectConcept { sctid: line.targetComponentId })
+    WITH s,d,line
+    CREATE UNIQUE (s)-[:HAS_ASSOCIATION {association: line.association, refsetId: line.refsetId, active: line.active, effectiveTime: line.effectiveTime, referencedComponentId: line.referencedComponentId, targetComponentId: line.targetComponentId, moduleId: line.moduleId, id: line.id } ]->(d)
+} IN TRANSACTIONS OF 200 ROWS;
+
