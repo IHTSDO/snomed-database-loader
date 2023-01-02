@@ -12,7 +12,7 @@ def db_data_prep(v):
 class Neo4j_Access:
   def __init__(self, base64pw):
     # NEO4J init
-    self.graph_db = py2neo.Graph(password=base64pw) # 'http://localhost:7474/db/data/transaction/commit'
+    self.graph_db = py2neo.Graph("bolt://localhost:7687", auth=("neo4j", base64pw))  # 'http://localhost:7474/db/data/transaction/commit'
 
   def lookup_elements_by_id(self,query_template,query_target_variable,id_field_name,id_list,chunk_size):
     matches = {}
