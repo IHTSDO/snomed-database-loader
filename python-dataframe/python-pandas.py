@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 
 if __name__ == '__main__':
-    path = '../snomed/Full/Terminology/sct2_Description_Full-en_INT_20220630.txt'
+    path = 'Snapshot/Terminology/sct2_Description_Snapshot-en_INT_20230731.txt'
 
     # full reference: https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
     df = pd.read_csv(
