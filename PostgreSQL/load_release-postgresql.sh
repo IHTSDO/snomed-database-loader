@@ -89,7 +89,7 @@ function addLoadScript() {
 
 		echo -e "COPY ${tableName}" >> ${generatedLoadScript}
 		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
-		echo -e "WITH (FORMAT csv, HEADER true, DELIMITER E'	', QUOTE E'\b');" >> ${generatedLoadScript}
+		echo -e "WITH (FORMAT csv, HEADER true, ENCODING 'UTF8', DELIMITER E'	', QUOTE E'\b');" >> ${generatedLoadScript}
 		echo -e ""  >> ${generatedLoadScript}
 	done
 }
