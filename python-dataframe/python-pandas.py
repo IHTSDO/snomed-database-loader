@@ -8,6 +8,7 @@ if __name__ == '__main__':
     df = pd.read_csv(
         path
         , sep="\t"                          # the file is tab separated
+        , encoding='utf-8'
         # -----------------------------------
         # IMPORTANT
         , quoting=csv.QUOTE_NONE            # else we loose quotes in descriptions, because 0 or csv.QUOTE_MINIMAL is the default. (csv.QUOTE_NONE=3)
