@@ -2,8 +2,8 @@
 drop table if exists concept_d;
 create table concept_d(
     id varchar(18) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     definitionstatusid varchar(18) not null,
     primary key (id, effectivetime)
@@ -11,8 +11,8 @@ create table concept_d(
 drop table if exists description_d;
 create table description_d(
     id varchar(18) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     conceptid varchar(18) not null,
     languagecode varchar(2) not null,
@@ -24,8 +24,8 @@ create table description_d(
 drop table if exists textdefinition_d;
 create table textdefinition_d(
     id varchar(18) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     conceptid varchar(18) not null,
     languagecode varchar(2) not null,
@@ -37,12 +37,12 @@ create table textdefinition_d(
 drop table if exists relationship_d;
 create table relationship_d(
     id varchar(18) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     sourceid varchar(18) not null,
     destinationid varchar(18) not null,
-    relationshipgroup bigint not null,
+    relationshipgroup int not null,
     typeid varchar(18) not null,
     characteristictypeid varchar(18) not null,
     modifierid varchar(18) not null,
@@ -51,12 +51,12 @@ create table relationship_d(
 drop table if exists stated_relationship_d;
 create table stated_relationship_d(
     id varchar(18) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     sourceid varchar(18) not null,
     destinationid varchar(18) not null,
-    relationshipgroup bigint not null,
+    relationshipgroup int not null,
     typeid varchar(18) not null,
     characteristictypeid varchar(18) not null,
     modifierid varchar(18) not null,
@@ -65,12 +65,12 @@ create table stated_relationship_d(
 drop table if exists relationship_concrete_values_d;
 create table relationship_concrete_values_d(
     id varchar(18) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     sourceid varchar(18) not null,
     value varchar(4096) not null,
-    relationshipgroup bigint not null,
+    relationshipgroup int not null,
     typeid varchar(18) not null,
     characteristictypeid varchar(18) not null,
     modifierid varchar(18) not null,
@@ -79,8 +79,8 @@ create table relationship_concrete_values_d(
 drop table if exists langrefset_d;
 create table langrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -90,8 +90,8 @@ create table langrefset_d(
 drop table if exists associationrefset_d;
 create table associationrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -101,8 +101,8 @@ create table associationrefset_d(
 drop table if exists attributevaluerefset_d;
 create table attributevaluerefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -112,8 +112,8 @@ create table attributevaluerefset_d(
 drop table if exists simplemaprefset_d;
 create table simplemaprefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -123,8 +123,8 @@ create table simplemaprefset_d(
 drop table if exists simplerefset_d;
 create table simplerefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -133,8 +133,8 @@ create table simplerefset_d(
 drop table if exists complexmaprefset_d;
 create table complexmaprefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -149,8 +149,8 @@ create table complexmaprefset_d(
 drop table if exists extendedmaprefset_d;
 create table extendedmaprefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -166,8 +166,8 @@ create table extendedmaprefset_d(
 drop table if exists expressionassociationrefset_d;
 create table expressionassociationrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -181,8 +181,8 @@ create table expressionassociationrefset_d(
 drop table if exists mapcorrelationoriginrefset_d;
 create table mapcorrelationoriginrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -195,33 +195,33 @@ create table mapcorrelationoriginrefset_d(
 drop table if exists moduledependencyrefset_d;
 create table moduledependencyrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
-    sourceeffectivetime char(8) not null,
-    targeteffectivetime char(8) not null,
+    sourceeffectivetime date not null,
+    targeteffectivetime date not null,
     primary key (id, effectivetime)
 );
 drop table if exists refsetdescriptor_d;
 create table refsetdescriptor_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
     attributedescription bigint not null,
     attributetype bigint not null,
-    attributeorder bigint not null,
+    attributeorder int not null,
     primary key (id, effectivetime)
 );
 drop table if exists owlexpressionrefset_d;
 create table owlexpressionrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -231,13 +231,13 @@ create table owlexpressionrefset_d(
 drop table if exists mrcmattributedomainrefset_d;
 create table mrcmattributedomainrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
     domainid varchar(18) not null,
-    grouped char(1) not null,
+    grouped tinyint not null,
     attributecardinality char(4) not null,
     attributeingroupcardinality char(4) not null,
     rulestrengthid varchar(18) not null,
@@ -247,8 +247,8 @@ create table mrcmattributedomainrefset_d(
 drop table if exists mrcmmodulescoperefset_d;
 create table mrcmmodulescoperefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -258,8 +258,8 @@ create table mrcmmodulescoperefset_d(
 drop table if exists mrcmattributerangerefset_d;
 create table mrcmattributerangerefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -272,8 +272,8 @@ create table mrcmattributerangerefset_d(
 drop table if exists mrcmdomainrefset_d;
 create table mrcmdomainrefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -289,8 +289,8 @@ create table mrcmdomainrefset_d(
 drop table if exists descriptiontyperefset_d;
 create table descriptiontyperefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -301,8 +301,8 @@ create table descriptiontyperefset_d(
 drop table if exists memberannotationstringvaluerefset_d;
 create table memberannotationstringvaluerefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -315,8 +315,8 @@ create table memberannotationstringvaluerefset_d(
 drop table if exists componentannotationstringvaluerefset_d;
 create table componentannotationstringvaluerefset_d(
     id varchar(36) not null unique,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
@@ -328,8 +328,8 @@ create table componentannotationstringvaluerefset_d(
 drop table if exists identifier_d;
 create table identifier_d(
     alternateidentifier text not null,
-    effectivetime char(8) not null,
-    active char(1) not null,
+    effectivetime date not null,
+    active tinyint not null,
     moduleid varchar(18) not null,
     identifierschemeid varchar(18) not null,
     referencedcomponentid varchar(18) not null,

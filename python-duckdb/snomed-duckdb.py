@@ -208,7 +208,7 @@ class DuckDBClient:
         """
         self.conn.execute(
             f"""
-        COPY {table_name} from '{rf2_file}' (HEADER, DELIMITER '\t');
+        COPY {table_name} from '{rf2_file}' (HEADER, DELIMITER '\t', DATEFORMAT '%Y%m%d');
         """
         )
         print(
