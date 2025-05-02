@@ -122,7 +122,7 @@ def get_table_names(release_dir, release_type: ReleaseType):
     ]
 
     # Walk through the release directory and process matching files
-    dir_tree = os.walk(release_dir + "/" + release_type.full_name)
+    dir_tree = os.walk(os.path.join(release_dir, release_type.full_name))
 
     for root, _, files in dir_tree:
         for file in files:
@@ -191,8 +191,9 @@ class DuckDBClient:
         Args:
             sql_file (str): Path to the SQL DDL file.
         """
+        current_dir = os.path.abspath(os.path.dirname(__file__))
         ddl_file = f"create_{release_type.full_name.lower()}_tables.sql"
-        ddl_path = os.path.join(".", "resources", "sql", ddl_file)
+        ddl_path = os.path.join(current_dir, "resources", "sql", ddl_file)
 
         self.execute_sql_file(ddl_path)
 
@@ -225,7 +226,7 @@ if __name__ == "__main__":
     # define the Release folder path
     release_dir = PACKAGE_FOLDER
 
-    if not os.path.isdir(release_dir):
+    if not release_dir or not os.path.isdir(release_dir):
         print("ERROR: Please make sure PACKAGE_FOLDER is correct")
         quit()
 
