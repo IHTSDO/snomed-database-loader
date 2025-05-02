@@ -5,6 +5,9 @@ This script imports SNOMED-CT RF2 files from an Edition package into [DuckDB](ht
 The script also launches a [DuckDB UI](https://duckdb.org/docs/stable/extensions/ui) for interactive queries. Query results can be converted to a [Numpy array](https://duckdb.org/docs/stable/guides/python/export_numpy) or [Pandas DataFrame](https://duckdb.org/docs/stable/guides/python/export_pandas), and exported to various formats, including CSV, Parquet, Arrow, and Excel (with additional [extensions](https://duckdb.org/docs/stable/extensions/overview) enabled).
 
 
+![Screenshot of DuckDB UI](./resources/docs/example.gif)
+
+
 ## Requirements
 
 - Python 3.8+
