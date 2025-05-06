@@ -2,12 +2,18 @@ import duckdb
 import argparse
 import re
 import os
+import sys
 import time
 from enum import Enum
 
 
 # Parse command-line arguments
-parser = argparse.ArgumentParser(description="SNOMED-CT DuckDB Loader")
+parser = argparse.ArgumentParser(
+    description="""SNOMED-CT DuckDB Loader.
+    This script imports SNOMED-CT RF2 files from an Edition package into DuckDB and
+    launches a web-based UI for interactive queries.
+"""
+)
 parser.add_argument(
     "--package",
     type=str,
@@ -226,8 +232,13 @@ if __name__ == "__main__":
     # define the Release folder path
     release_dir = PACKAGE_FOLDER
 
-    if not release_dir or not os.path.isdir(release_dir):
-        print("ERROR: Please make sure PACKAGE_FOLDER is correct")
+    if not release_dir:
+        # Display help message if called without any arguments
+        parser.print_help(sys.stderr)
+        quit()
+    elif not os.path.isdir(release_dir):
+        # Display error message if the path to the package is not a directory
+        print("ERROR: Please ensure that PACKAGE_FOLDER is a valid directory")
         quit()
 
     duckdb_client = DuckDBClient(DB_FILE)
