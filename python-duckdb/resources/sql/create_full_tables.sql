@@ -320,7 +320,7 @@ create table componentannotationstringvaluerefset_f(
     moduleid varchar(18) not null,
     refsetid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
-    languagedialectcode varchar(2),
+    languagedialectcode varchar(2) not null,
     typeid varchar(18) not null,
     value text not null,
     primary key (id, effectivetime)
