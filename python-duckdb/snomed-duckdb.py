@@ -78,7 +78,7 @@ def get_table_names(release_dir, release_type: ReleaseType):
     refset_id = r"(?:\d{6,18})?"
     summary = r"(\w+)?"  # match group 3
     rt = rf"{release_type.full_name}"
-    language_code = r"(-[a-z]{2})?"
+    language_code = r"(-[a-z-]{2,8})?"
     content_sub_type = rf"{refset_id}{summary}{rt}{language_code}"
 
     country_namespace = r"(?:INT|[A-Z]{2}\d{7})"
