@@ -110,8 +110,7 @@ create table langrefset_s(
 );
 drop table if exists associationrefset_s;
 create table associationrefset_s(
-    id varchar(36) not null,
-    -- TODO restore unique constraint
+    id varchar(36) not null primary key,
     effectivetime date not null,
     active tinyint not null,
     moduleid varchar(18) not null,
@@ -120,7 +119,8 @@ create table associationrefset_s(
     targetcomponentid varchar(18) not null,
     foreign key (moduleid) references concept_s (id),
     foreign key (refsetid) references concept_s (id),
-    foreign key (targetcomponentid) references concept_s (id)
+    -- foreign key (targetcomponentid) references concept_s (id)
+    -- TODO FK can refer to either concept or description IDs
 );
 drop table if exists attributevaluerefset_s;
 create table attributevaluerefset_s(
@@ -411,4 +411,74 @@ create table identifier_s(
     foreign key (moduleid) references concept_s (id),
     foreign key (identifierschemeid) references concept_s (id),
     foreign key (referencedcomponentid) references concept_s (id),
+);
+-- AU-specific
+drop table if exists attributevaluemaprefset_s;
+create table attributevaluemaprefset_s(
+    id varchar(36) not null primary key,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapType varchar(18) not null,
+    targetSnomedCtSubstance varchar(18) not null,
+    foreign key (moduleid) references concept_s (id),
+    foreign key (refsetid) references concept_s (id),
+    foreign key (referencedcomponentid) references concept_s (id),
+    foreign key (mapType) references concept_s (id),
+    foreign key (targetSnomedCtSubstance) references concept_s (id),
+);
+-- AU-specific
+drop table if exists extendedassociationrefset_s;
+create table extendedassociationrefset_s(
+    id varchar(36) not null primary key,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    targetAdministeredForm varchar(18) not null,
+    targetManufacturedForm varchar(18) not null,
+    foreign key (moduleid) references concept_s (id),
+    foreign key (refsetid) references concept_s (id),
+    foreign key (referencedcomponentid) references concept_s (id),
+    foreign key (targetAdministeredForm) references concept_s (id),
+    foreign key (targetManufacturedForm) references concept_s (id),
+);
+-- NL-specific
+drop table if exists correlatedmaptypereferencesetrefset_s;
+create table correlatedmaptypereferencesetrefset_s(
+    id varchar(36) not null primary key,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapTarget varchar(32),
+    correlationId varchar(18) not null,
+    foreign key (moduleid) references concept_s (id),
+    foreign key (refsetid) references concept_s (id),
+    foreign key (referencedcomponentid) references concept_s (id),
+    foreign key (correlationId) references concept_s (id),
+);
+-- NL-specific
+drop table if exists correlatedextendedmaptypereferencesetrefset_s;
+create table correlatedextendedmaptypereferencesetrefset_s(
+    id varchar(36) not null primary key,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapTarget varchar(32),
+    snomedCtSourceCodeToTargetMapCodeCorrelationValue varchar(18) not null,
+    mapTargetQualifier varchar(18) not null,
+    foreign key (moduleid) references concept_s (id),
+    foreign key (refsetid) references concept_s (id),
+    foreign key (referencedcomponentid) references concept_s (id),
+    foreign key (
+        snomedCtSourceCodeToTargetMapCodeCorrelationValue
+    ) references concept_s (id),
+    foreign key (mapTargetQualifier) references concept_s (id),
 );

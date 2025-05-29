@@ -335,3 +335,56 @@ create table identifier_d(
     referencedcomponentid varchar(18) not null,
     primary key (alternateidentifier, effectivetime, identifierschemeid)
 );
+-- AU-specific
+drop table if exists attributevaluemaprefset_d;
+create table attributevaluemaprefset_d(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapType varchar(18) not null,
+    targetSnomedCtSubstance varchar(18) not null,
+    primary key (id, effectivetime),
+);
+-- AU-specific
+drop table if exists extendedassociationrefset_d;
+create table extendedassociationrefset_d(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    targetAdministeredForm varchar(18) not null,
+    targetManufacturedForm varchar(18) not null,
+    primary key (id, effectivetime),
+);
+-- NL-specific
+drop table if exists correlatedmaptypereferencesetrefset_d;
+create table correlatedmaptypereferencesetrefset_d(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapTarget varchar(32),
+    correlationId varchar(18) not null,
+    primary key (id, effectivetime)
+);
+-- NL-specific
+drop table if exists correlatedextendedmaptypereferencesetrefset_d;
+create table correlatedextendedmaptypereferencesetrefset_d(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapTarget varchar(32),
+    snomedCtSourceCodeToTargetMapCodeCorrelationValue varchar(18) not null,
+    mapTargetQualifier varchar(18) not null,
+    primary key (id, effectivetime)
+);

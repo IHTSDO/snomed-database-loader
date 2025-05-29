@@ -339,3 +339,56 @@ create table identifier_f(
         identifierschemeid
     )
 );
+-- AU-specific
+drop table if exists attributevaluemaprefset_f;
+create table attributevaluemaprefset_f(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapType varchar(18) not null,
+    targetSnomedCtSubstance varchar(18) not null,
+    primary key (id, effectivetime),
+);
+-- AU-specific
+drop table if exists extendedassociationrefset_f;
+create table extendedassociationrefset_f(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    targetAdministeredForm varchar(18) not null,
+    targetManufacturedForm varchar(18) not null,
+    primary key (id, effectivetime),
+);
+-- NL-specific
+drop table if exists correlatedmaptypereferencesetrefset_f;
+create table correlatedmaptypereferencesetrefset_f(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapTarget varchar(32),
+    correlationId varchar(18) not null,
+    primary key (id, effectivetime)
+);
+-- NL-specific
+drop table if exists correlatedextendedmaptypereferencesetrefset_f;
+create table correlatedextendedmaptypereferencesetrefset_f(
+    id varchar(36) not null,
+    effectivetime date not null,
+    active tinyint not null,
+    moduleid varchar(18) not null,
+    refsetid varchar(18) not null,
+    referencedcomponentid varchar(18) not null,
+    mapTarget varchar(32),
+    snomedCtSourceCodeToTargetMapCodeCorrelationValue varchar(18) not null,
+    mapTargetQualifier varchar(18) not null,
+    primary key (id, effectivetime)
+);
