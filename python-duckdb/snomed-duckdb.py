@@ -4,7 +4,10 @@ import re
 import os
 import sys
 import time
+import tempfile
+import zipfile
 from enum import Enum
+from typing import List, Tuple, Callable
 
 
 # Parse command-line arguments
@@ -29,7 +32,23 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Path to the folder containing the SNOMED-CT release package
-PACKAGE_FOLDER = args.package
+PACKAGE_LOCATION = args.package
+
+# Handle zip file extraction if --package points to a zip file
+if PACKAGE_LOCATION.endswith(".zip"):
+    if not os.path.isfile(PACKAGE_LOCATION):
+        print("ERROR: The specified zip file does not exist.")
+        quit()
+    temp_dir = tempfile.TemporaryDirectory()  # Create a temporary directory
+
+    print(f"Extracting package into {temp_dir.name}")
+    with zipfile.ZipFile(PACKAGE_LOCATION, "r") as zip_ref:
+        zip_ref.extractall(
+            temp_dir.name
+        )  # Extract the zip file into the temp directory
+    PACKAGE_LOCATION = os.path.join(
+        temp_dir.name, os.listdir(temp_dir.name)[0]
+    )  # Update PACKAGE_FOLDER to the first extracted folder inside the temp directory
 
 # Path to the DuckDB database file
 DB_FILE = args.db
@@ -117,7 +136,7 @@ def get_table_names(release_dir, release_type: ReleaseType):
     )
     add_underscore_to_stated_relationship = (r"(Stated)(Relationship)", r"\1_\2")
 
-    regex_transformations = [
+    regex_transformations: List[Tuple[str, str | Callable]] = [
         extract_content_or_summary,
         drop_suffix_from_refsetdescriptor,
         drop_suffix_from_simplerefset,
@@ -230,7 +249,7 @@ class DuckDBClient:
 
 if __name__ == "__main__":
     # define the Release folder path
-    release_dir = PACKAGE_FOLDER
+    release_dir = PACKAGE_LOCATION
 
     if not release_dir:
         # Display help message if called without any arguments
@@ -265,3 +284,7 @@ if __name__ == "__main__":
 
     input(closing_text + persistence_warning_text if not DB_FILE else closing_text)
     duckdb_client.close()
+
+    # Clean up the temporary directory if it was created
+    if "temp_dir" in locals():
+        temp_dir.cleanup()
