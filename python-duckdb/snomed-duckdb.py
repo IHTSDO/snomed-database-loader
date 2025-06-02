@@ -227,6 +227,7 @@ if __name__ == "__main__":
                 for table_name, dirname, filename in table_details:
                     duckdb_client.import_text_file(table_name, dirname, filename)
 
+            duckdb_client.start_ui()
             logging.info(f"UI running at http://localhost:{UI_PORT}")
             input("Press <ENTER> to close")
         finally:
