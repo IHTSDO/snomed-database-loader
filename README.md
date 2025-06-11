@@ -10,5 +10,6 @@ Please see the relevant sub-directories for each of the different database load 
 - [PostgreSQL](PostgreSQL/)
 - [MSSQL](MSSQL/)
 - [Python DataFrame](python-dataframe/)
+- [Python DuckDB](python-duckdb)
 
 If you have any scripts for other databases, please fork this repository and create the pull request to submit any contributions.
