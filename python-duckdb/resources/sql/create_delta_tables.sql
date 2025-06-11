@@ -333,7 +333,11 @@ create table identifier_d(
     moduleid varchar(18) not null,
     identifierschemeid varchar(18) not null,
     referencedcomponentid varchar(18) not null,
-    primary key (alternateidentifier, effectivetime, identifierschemeid)
+    primary key (
+        alternateidentifier,
+        effectivetime,
+        identifierschemeid
+    )
 );
 -- AU-specific
 drop table if exists attributevaluemaprefset_d;

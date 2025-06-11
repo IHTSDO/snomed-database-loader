@@ -18,13 +18,22 @@ UI_START_COMMAND = "CALL start_ui();"
 COPY_OPTIONS = "HEADER, DELIMITER '\t', DATEFORMAT '%Y%m%d', NULL '\n'"
 
 # Constants for logging messages
-ERROR_INVALID_PACKAGE = "Invalid package directory"
-ERROR_ZIP_NOT_FOUND = "Zip file not found"
-INFO_EXTRACTING_PACKAGE = "Extracting package to {}"
-WARNING_NO_MATCHING_FILES = "No matching files"
-INFO_IMPORT_SUCCESS = "Imported '{}'"
-ERROR_IMPORT_FAILURE = "Failed to import '{}': {}"
+DEBUG_CONNECTION_CLOSED = "Connection closed"
 DEBUG_FAILED_SQL = "SQL failed: COPY {} FROM '{}' ({})"
+DEBUG_UI_EXT_LOADED = "UI extension loaded"
+ERROR_IMPORT_FAILURE = "Failed to import '{}': {}"
+ERROR_INVALID_PACKAGE = "Invalid package directory"
+ERROR_SQL_EXEC_FAILED = "SQL execution failed: {}, {}"
+ERROR_UI_INIT_FAILED = "UI initialization failed: {}"
+ERROR_UI_START_FAILED = "UI start failed: {}"
+ERROR_ZIP_NOT_FOUND = "Zip file not found"
+INFO_EXTRACTING_PACKAGE = "Extracting package '{}'"
+INFO_IMPORT_SUCCESS = "Imported '{}'"
+INFO_SQL_EXEC_SUCCESS = "Executed SQL: '{}'"
+INFO_UI_RUNNING = "UI running at http://localhost:{}"
+WARNING_NO_MATCHING_FILES = "No matching files"
+PROMPT_CLOSE = "Press <ENTER> to close"
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -49,6 +58,11 @@ args = parser.parse_args()
 
 PACKAGE_LOCATION = args.package
 DB_FILE = args.db
+SQL_RESOURCES_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "resources",
+    "sql",
+)
 
 
 class ReleaseType(Enum):
@@ -158,45 +172,57 @@ class DuckDBClient:
         try:
             self.conn.execute(UI_INSTALL_COMMAND)
             self.conn.execute(UI_LOAD_COMMAND)
-            logging.debug("UI extension loaded")
+            logging.debug(DEBUG_UI_EXT_LOADED)
         except Exception as e:
-            logging.error(f"UI initialization failed: {e}")
+            logging.error(ERROR_UI_INIT_FAILED.format(e))
 
-    def execute_sql_file(self, sql_file):
+    def execute_sql_file(self, dirname, sql_filename):
+        sql_filepath = os.path.join(dirname, sql_filename)
         try:
-            with open(sql_file, "r") as file:
-                self.conn.execute(file.read())
-                logging.info(f"Executed SQL: {sql_file}")
+            with open(sql_filepath, "r") as file:
+                output = self.conn.execute(file.read())
+                logging.info(INFO_SQL_EXEC_SUCCESS.format(sql_filename))
+                return output.fetchall()
         except Exception as e:
-            logging.error(f"SQL execution failed: {sql_file}, {e}")
+            logging.error(ERROR_SQL_EXEC_FAILED.format(sql_filepath, e))
 
     def execute_ddl(self, release_type: ReleaseType):
-        ddl_path = os.path.join(
-            os.path.dirname(__file__),
-            "resources",
-            "sql",
-            f"create_{release_type.value.lower()}_tables.sql",
-        )
-        self.execute_sql_file(ddl_path)
+        ddl_filename = f"create_{release_type.value.lower()}_tables.sql"
+        self.execute_sql_file(SQL_RESOURCES_PATH, ddl_filename)
 
     def start_ui(self):
         try:
             self.conn.execute(UI_START_COMMAND)
         except Exception as e:
-            logging.error(f"UI start failed: {e}")
+            logging.error(ERROR_UI_START_FAILED.format(e))
 
     def import_text_file(self, table_name, dirname, rf2_filename):
-        filepath = os.path.join(dirname, rf2_filename)
+        rf2_filepath = os.path.join(dirname, rf2_filename)
         try:
-            self.conn.execute(f"COPY {table_name} FROM '{filepath}' ({COPY_OPTIONS});")
+            self.conn.execute(
+                f"COPY {table_name} FROM '{rf2_filepath}' ({COPY_OPTIONS});"
+            )
             logging.info(INFO_IMPORT_SUCCESS.format(rf2_filename))
         except Exception as e:
             logging.error(ERROR_IMPORT_FAILURE.format(rf2_filename, e))
-            logging.debug(DEBUG_FAILED_SQL.format(table_name, filepath, COPY_OPTIONS))
+            logging.debug(
+                DEBUG_FAILED_SQL.format(table_name, rf2_filepath, COPY_OPTIONS)
+            )
 
     def close(self):
         self.conn.close()
-        logging.debug("Connection closed")
+        logging.debug(DEBUG_CONNECTION_CLOSED)
+
+
+def validate_targetcomponentid(client: DuckDBClient, release_type: ReleaseType):
+    sql_filename = f"validate_{release_type.value.lower()}_targetcomponentid.sql"
+
+    result = client.execute_sql_file(SQL_RESOURCES_PATH, sql_filename)
+
+    if len(result):
+        raise Exception(
+            f"Found {len(result)} invalid targetComponentIds in the Association Refset {release_type} file"
+        )
 
 
 if __name__ == "__main__":
@@ -212,7 +238,7 @@ if __name__ == "__main__":
             if not os.path.isfile(PACKAGE_LOCATION):
                 logging.error(ERROR_ZIP_NOT_FOUND)
                 quit()
-            logging.debug(INFO_EXTRACTING_PACKAGE.format(temp_dir))
+            logging.info(INFO_EXTRACTING_PACKAGE.format(PACKAGE_LOCATION))
             with zipfile.ZipFile(PACKAGE_LOCATION, "r") as zip_ref:
                 zip_ref.extractall(temp_dir)
             PACKAGE_LOCATION = os.path.join(temp_dir, os.listdir(temp_dir)[0])
@@ -224,11 +250,13 @@ if __name__ == "__main__":
                 table_details = get_table_details(PACKAGE_LOCATION, release_type)
                 if not table_details:
                     logging.warning(WARNING_NO_MATCHING_FILES)
-                for table_name, dirname, filename in table_details:
-                    duckdb_client.import_text_file(table_name, dirname, filename)
+                else:
+                    for table_name, dirname, filename in table_details:
+                        duckdb_client.import_text_file(table_name, dirname, filename)
+                    validate_targetcomponentid(duckdb_client, release_type)
 
             duckdb_client.start_ui()
-            logging.info(f"UI running at http://localhost:{UI_PORT}")
-            input("Press <ENTER> to close")
+            logging.info(INFO_UI_RUNNING.format(UI_PORT))
+            input(PROMPT_CLOSE)
         finally:
             duckdb_client.close()

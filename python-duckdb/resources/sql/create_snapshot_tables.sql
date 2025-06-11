@@ -119,8 +119,8 @@ create table associationrefset_s(
     targetcomponentid varchar(18) not null,
     foreign key (moduleid) references concept_s (id),
     foreign key (refsetid) references concept_s (id),
-    -- foreign key (targetcomponentid) references concept_s (id)
-    -- TODO FK can refer to either concept or description IDs
+    -- note: targetcomponentid can refer to either concept_s.id or description_s.id
+    -- since DuckDB does not support triggers, targetcomponetid is validated after import
 );
 drop table if exists attributevaluerefset_s;
 create table attributevaluerefset_s(
