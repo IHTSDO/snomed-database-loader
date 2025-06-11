@@ -31,7 +31,7 @@ INFO_EXTRACTING_PACKAGE = "Extracting package '{}'"
 INFO_IMPORT_SUCCESS = "Imported '{}'"
 INFO_SQL_EXEC_SUCCESS = "Executed SQL: '{}'"
 INFO_UI_RUNNING = "UI running at http://localhost:{}"
-WARNING_NO_MATCHING_FILES = "No matching files"
+WARNING_NO_MATCHING_FILES = "No matching files for release type {}"
 PROMPT_CLOSE = "Press <ENTER> to close"
 
 
@@ -244,19 +244,22 @@ if __name__ == "__main__":
             PACKAGE_LOCATION = os.path.join(temp_dir, os.listdir(temp_dir)[0])
 
         duckdb_client = DuckDBClient(DB_FILE)
+        file_imported = False
         try:
             for release_type in [ReleaseType.FULL, ReleaseType.SNAPSHOT]:
-                duckdb_client.execute_ddl(release_type)
                 table_details = get_table_details(PACKAGE_LOCATION, release_type)
                 if not table_details:
-                    logging.warning(WARNING_NO_MATCHING_FILES)
+                    logging.warning(WARNING_NO_MATCHING_FILES.format(release_type.name))
                 else:
+                    duckdb_client.execute_ddl(release_type)
                     for table_name, dirname, filename in table_details:
                         duckdb_client.import_text_file(table_name, dirname, filename)
+                    file_imported = True
                     validate_targetcomponentid(duckdb_client, release_type)
 
-            duckdb_client.start_ui()
-            logging.info(INFO_UI_RUNNING.format(UI_PORT))
-            input(PROMPT_CLOSE)
+            if file_imported:
+                duckdb_client.start_ui()
+                logging.info(INFO_UI_RUNNING.format(UI_PORT))
+                input(PROMPT_CLOSE)
         finally:
             duckdb_client.close()
