@@ -19,7 +19,7 @@ The script also launches a [DuckDB UI](https://duckdb.org/docs/stable/extensions
 * Clone the repository:
     ```bash
     $ git clone https://github.com/IHTSDO/snomed-database-loader.git
-    $ cd snomed-database-loader/snomed-duckdb
+    $ cd snomed-database-loader/python-duckdb
     ```
 * Install dependencies:
     ```bash
@@ -39,12 +39,12 @@ The script also launches a [DuckDB UI](https://duckdb.org/docs/stable/extensions
         $ python snomed-duckdb.py --package ./releases/SnomedCT_InternationalRF2_PRODUCTION_20250501T120000Z.zip
         ```
 
-5. Interact with the DuckDB UI
+4. Interact with the DuckDB UI
     * The DuckDB UI will start in your default web browser at http://localhost:4213
 
 ## Notes
 ### Database Persistence
-By default, the database runs in in-memory mode. To persist the database to a file, update the DB_FILE variable in main.py:
-```python
-DB_FILE = "./snomed_data.duckdb"
+By default, the database runs in in-memory mode. To persist the database to a file, specify it with the --db parameter
+```bash
+$ python snomed-duckdb.py --package .... --db ./snomed_data.duckdb
 ```
