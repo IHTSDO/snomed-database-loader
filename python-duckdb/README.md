@@ -28,24 +28,23 @@ The script also launches a [DuckDB UI](https://duckdb.org/docs/stable/extensions
 
 ## Usage
 1. Download SNOMED-CT
-    * Obtain an Edition package of SNOMED-CT (see https://www.snomed.org/get-snomed)
-    * If you have an Extension package, please make sure that it has been converted into an Edition package before proceeding
+    * Obtain an _Edition_ package of SNOMED-CT (see https://www.snomed.org/get-snomed)
+    * If you have an Extension package, please make sure to convert it into an _Edition_ package before proceeding
 
-2. Prepare the release package
-    * Extract the zip file in the [releases](./releases/) directory
+2. Place the zip file in the [releases](./releases/) directory
 
 3. Run the script
     * Execute the script with the path to your Edition package as an argument:
         ```bash
-        $ python snomed-duckdb.py --package ./releases/SnomedCT_InternationalRF2_PRODUCTION_20250501T120000Z
+        $ python snomed-duckdb.py --package ./releases/SnomedCT_InternationalRF2_PRODUCTION_20250501T120000Z.zip
         ```
 
-4. Interact with the DuckDB UI
+5. Interact with the DuckDB UI
     * The DuckDB UI will start in your default web browser at http://localhost:4213
 
 ## Notes
 ### Database Persistence
-To persist the database to a file, provide the `--db` argument when running the script:
-```bash
-$ python snomed-duckdb.py --package ./releases/SnomedCT_InternationalRF2_PRODUCTION_20250501T120000Z --db ./snomed_data.duckdb
+By default, the database runs in in-memory mode. To persist the database to a file, update the DB_FILE variable in main.py:
+```python
+DB_FILE = "./snomed_data.duckdb"
 ```
