@@ -220,9 +220,10 @@ def validate_targetcomponentid(client: DuckDBClient, release_type: ReleaseType):
     result = client.execute_sql_file(SQL_RESOURCES_PATH, sql_filename)
 
     if len(result):
-        raise Exception(
+        logging.error(
             f"Found {len(result)} invalid targetComponentIds in the Association Refset {release_type} file"
         )
+        quit()
 
 
 if __name__ == "__main__":
