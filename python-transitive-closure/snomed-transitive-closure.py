@@ -15,6 +15,8 @@ The script:
         conceptId
         directParents (pipe separated)
         ancestors (pipe separated)
+    - Optional --subhierarchy root id(s): only concepts under that subtree
+      (the root concept itself or anything with that root among inferred ancestors)
 
 Usage:
     python snomed_hierarchy.py \
@@ -149,6 +151,25 @@ class RF2Loader:
         return result
 
 
+def filter_subhierarchy(active_concepts, ancestors, roots):
+    """
+    Concepts that sit under any requested root inferred IS-A subhierarchy:
+    the root itself (if active) or any descendant with that root in ancestors.
+    """
+    root_set = frozenset(roots)
+    selected = set()
+    for cid in active_concepts:
+        if cid in root_set:
+            selected.add(cid)
+            continue
+        ancestor_list = ancestors.get(cid)
+        if not ancestor_list:
+            continue
+        if not root_set.isdisjoint(ancestor_list):
+            selected.add(cid)
+    return selected
+
+
 def write_output(output_path, active_concepts, parents, ancestors):
     with open(output_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, delimiter="\t")
@@ -194,6 +215,18 @@ def parse_args():
         help="Output TSV file"
     )
 
+    parser.add_argument(
+        "--subhierarchy",
+        action="append",
+        default=[],
+        metavar="CONCEPT_ID",
+        help=(
+            "Only include concepts in this subtree (repeatable; union): "
+            "active concepts whose inferred ancestors contain the root, "
+            "or equal the root (e.g. 404684003 for Clinical finding (finding))"
+        ),
+    )
+
     return parser.parse_args()
 
 
@@ -218,11 +251,35 @@ def main():
 
     ancestors = loader.compute_ancestors()
 
+    roots = []
+    for raw in args.subhierarchy:
+        sid = raw.strip()
+        if sid:
+            roots.append(sid)
+    roots = list(dict.fromkeys(roots))
+
+    concepts_out = loader.active_concepts
+    if roots:
+        concepts_out = filter_subhierarchy(
+            loader.active_concepts,
+            ancestors,
+            roots,
+        )
+        print(
+            f"Subhierarchy filter {roots}: {len(concepts_out):,} concepts",
+            file=sys.stderr,
+        )
+        if not concepts_out:
+            print(
+                "Warning: no concepts matched; check root id(s) and snapshot",
+                file=sys.stderr,
+            )
+
     print("Writing output...", file=sys.stderr)
 
     write_output(
         args.output,
-        loader.active_concepts,
+        concepts_out,
         loader.parents,
         ancestors
     )
