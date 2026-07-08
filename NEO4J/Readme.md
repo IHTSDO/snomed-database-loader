@@ -43,7 +43,7 @@ Requirements:
 NOTE: the database load will fail if these requirements are not met.
 
 ### ADDENDUM
-Tested on Mac M1 Pro, macOS 15.5 with Python version 3.9.6 and neo4j version 5.1.0 (py2neo 2021.2.4 -- currently the only version availavle on pypi)
+Tested on Mac M1 Pro, macOS 15.6.1 with Python version 3.13.9 and neo4j version 5.1.0 (py2neo 2021.2.4 -- currently the only version availavle on pypi). Tried with neo4j verion 5.5.0 and it didn't work, so reverted back to 5.1.0 (which is the earliest version supported in Neo4j Desktop 2). 
 
 In order to support python version 3.9 and neo4j version 5.x, it is necessary to install the latest version of p2neo (2021.2.3) and make sure to have a symbolic link from python to python3
 
