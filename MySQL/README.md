@@ -19,6 +19,10 @@ run load_release.sh
 
 eg ./load_release.sh ~/Backup/SnomedCT_RF2Release_INT_20150731.zip SCT_20150731 SNAP
 
+Release packages no longer include Delta files. If a package has no Concept Delta file, the script says so once and loads only Snapshot and/or Full. To load whatever Delta files a package does contain (eg a translation package, which has Delta descriptions but no Concept file), add `--force-delta`:
+
+eg ./load_release.sh ~/Backup/SnomedCT_SomeTranslation_20261001.zip TRANS_20261001 DELTA --force-delta
+
 Note that the scripted installation will now support loading other Editions. The script asks for a module identifier, which is INT by default, for the international edition. Loading the US Edition, for example, would work as follows: `Enter module string used in filenames [INT]: US1000124`
 
 ## Manual Installation

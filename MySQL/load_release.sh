@@ -1,13 +1,25 @@
 #!/bin/bash
 set -e;
 
-releasePath=$1
-dbName=$2
-loadType=$3
+#--force-delta may appear anywhere in the arguments
+forceDelta=false
+positionalArgs=()
+for arg in "$@"; do
+	if [ "${arg}" == "--force-delta" ]
+	then
+		forceDelta=true
+	else
+		positionalArgs+=("${arg}")
+	fi
+done
+
+releasePath=${positionalArgs[0]}
+dbName=${positionalArgs[1]}
+loadType=${positionalArgs[2]}
 
 if [ -z ${loadType} ]
 then
-	echo "Usage <release location> <db schema name> <DELTA|SNAP|FULL|ALL>"
+	echo "Usage <release location> <db schema name> <DELTA|SNAP|FULL|ALL> [--force-delta]"
 	exit -1
 fi
 
@@ -59,29 +71,53 @@ then
 	includeTransitiveClosure=true
 fi
 
-#Unzip the files here, junking the structure
+#Working files and directory
 localExtract="tmp_extracted"
 generatedLoadScript="tmp_loader.sql"
 generatedEnvScript="tmp_environment-mysql.sql"
 
 #What types of files are we loading - delta, snapshot, full or all?
-case "${loadType}" in 
+case "${loadType}" in
 	'DELTA') fileTypes=(Delta)
-		unzip -j ${releasePath} "*Delta*" -d ${localExtract}
 	;;
 	'SNAP') fileTypes=(Snapshot)
-		unzip -j ${releasePath} "*Snapshot*" -d ${localExtract}
 	;;
 	'FULL') fileTypes=(Full)
-		unzip -j ${releasePath} "*Full*" -d ${localExtract}
 	;;
-	'ALL') fileTypes=(Delta Snapshot Full)	
-		unzip -j ${releasePath} -d ${localExtract}
+	'ALL') fileTypes=(Delta Snapshot Full)
 	;;
 	*) echo "File load type ${loadType} not recognised"
 	exit -1;
 	;;
 esac
+
+#Release packages no longer include Delta files, so only load Delta when there's a Concept Delta,
+#unless forced (eg a translation package has Delta descriptions but no Concept file)
+if [[ " ${fileTypes[*]} " == *" Delta "* && "${forceDelta}" = false ]] && ! unzip -Z1 ${releasePath} | grep -q "sct2_Concept_Delta_"
+then
+	echo -e "\nNo Concept Delta file in the package, so Delta files will not be loaded (use --force-delta to load any that are present)"
+	remainingFileTypes=()
+	for fileType in ${fileTypes[@]}; do
+		if [ "${fileType}" != "Delta" ]
+		then
+			remainingFileTypes+=("${fileType}")
+		fi
+	done
+	fileTypes=(${remainingFileTypes[@]})
+	if [ ${#fileTypes[@]} -eq 0 ]
+	then
+		echo "Nothing left to load"
+		exit -1
+	fi
+fi
+
+#Unzip only the file types being loaded, junking the structure.
+#unzip exits with 11 when a pattern matches nothing, eg forcing Delta on a package without any
+unzipPatterns=()
+for fileType in ${fileTypes[@]}; do
+	unzipPatterns+=("*${fileType}*")
+done
+unzip -j ${releasePath} "${unzipPatterns[@]}" -d ${localExtract} || [ $? -eq 11 ]
 
 	
 #Determine the release date from the filenames
