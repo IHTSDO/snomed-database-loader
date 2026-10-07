@@ -4,9 +4,15 @@ MYSQL SQL Scripts to create and populate a MYSQL database with a SNOMED CT termi
 
 ## Minimum Specification
 
-- MYSQL v5.5.x
+- MYSQL v8.x
 
 ## Scripted Installation (Mac & Unix)
+
+### Before you start
+
+The server must allow loading local files (`local_infile`), which is OFF by default from MySQL 8.0. Check with `SHOW GLOBAL VARIABLES LIKE 'local_infile';` and, if it's `OFF`, run `SET PERSIST local_infile = 1;` as an admin user. The script checks this after asking for your database credentials and stops if it's not enabled. See Issues below for the error you'll get otherwise.
+
+### Running the script
 
 run load_release.sh
 
@@ -39,8 +45,14 @@ NB If you're using mysql 5.5 or above then you'll need to start that with the fo
 
 ### Issues
 
-If you see the following error: ERROR 1148 (42000) at line 2 in file: 'tmp_rf1_loader.sql': The used command is not allowed with this MySQL version
+If you see either of the following errors:
 
-This is a security feature of MYSQL to prevent local files being loaded. The load script script includes an argument of "--local-infile" when starting the client application, but this must also be permitted in the server configuration (eg /usr/local/etc/my.cnf which you may need to create. Type mysql --help for a list of expected config locations). Add the following block to your mysql config file: `[mysql] local-infile=1`
+- ERROR 1148 (42000) at line 2 in file: 'tmp_rf1_loader.sql': The used command is not allowed with this MySQL version
+- ERROR 3948 (42000) at line 3 in file: 'tmp_loader.sql': Loading local data is disabled; this must be enabled on both the client and server sides (MySQL 8 and later)
+
+This is a security feature of MYSQL to prevent local files being loaded. The load script includes an argument of "--local-infile" when starting the client application, so it is the server side that must also permit it. Check with `SHOW GLOBAL VARIABLES LIKE 'local_infile';` and, if it is `OFF`, either:
+
+- run `SET PERSIST local_infile = 1;` as a user with SYSTEM_VARIABLES_ADMIN (MySQL 8 and later, survives a restart), or
+- add the following block to the server config file and restart MySQL (eg /etc/mysql/my.cnf or /usr/local/etc/my.cnf, which you may need to create. Type `mysqld --verbose --help | grep -A1 "Default options"` for the expected config locations): `[mysqld] local_infile=1`
 
 See <http://stackoverflow.com/questions/10762239/mysql-enable-load-data-local-infile>

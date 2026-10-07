@@ -62,6 +62,15 @@ then
 	dbUserPassword="-p${newDbPassword}"
 fi
 
+#The server must allow local files to be loaded (OFF by default from MySQL 8.0), so check before doing any work
+localInfile=`mysql -u ${dbUsername} ${dbUserPassword} -N -B -e "SELECT @@GLOBAL.local_infile"`
+if [ "${localInfile}" != "1" ]
+then
+	echo "The MySQL server does not allow local files to be loaded (local_infile is OFF)."
+	echo "As an admin user, run: SET PERSIST local_infile = 1;  (see README.md, Before you start)"
+	exit -1
+fi
+
 includeTransitiveClosure=false
 echo "Calculate and store inferred transitive closure? [Y/N]:"
 read tcResponse
