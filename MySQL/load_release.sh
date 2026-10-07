@@ -136,6 +136,7 @@ for fileType in ${fileTypes[@]}; do
 	done
 done
 
+#Parameters: file name pattern, table name, language code, "optional" to skip a missing file silently
 function addLoadScript() {
 	for fileType in ${fileTypes[@]}; do
 		fileName=${1/TYPE/${fileType}}
@@ -155,16 +156,12 @@ function addLoadScript() {
 				tableName=${2} #Files loaded outside of extract directory use own names for table
 				snapshotOnly=true
 				if [ ! -f ${parentPath}${fileName} ]; then
-					echo "Unable to find ${origFilename} or beta version, skipping..."
-					#SI are stopping producing Delta files, so don't worry about those missing
-					if [ "$fileType" == "Delta" ]
-					then 
-						echo "Checking next file type"
-						continue
-					else 
-						echo "Skipping"
-						return
+					#Move on to the next file type, as eg a Full file may exist without its Snapshot
+					if [ "${4}" != "optional" ]
+					then
+						echo "Unable to find ${origFilename} or beta version, skipping..."
 					fi
+					continue
 				fi
 			fi
 		fi
@@ -201,7 +198,8 @@ addLoadScript sct2_sRefset_OWLExpressionTYPE_MOD_DATE.txt owlexpression
 addLoadScript der2_cRefset_AttributeValueTYPE_MOD_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_AssociationTYPE_MOD_DATE.txt associationrefset
 addLoadScript der2_sRefset_SimpleMapTYPE_MOD_DATE.txt simplemaprefset
-addLoadScript der2_iissscRefset_ComplexMapTYPE_MOD_DATE.txt complexmaprefset
+#ComplexMap is no longer published, but may be present in historical releases
+addLoadScript der2_iissscRefset_ComplexMapTYPE_MOD_DATE.txt complexmaprefset "" optional
 addLoadScript der2_iisssccRefset_ExtendedMapTYPE_MOD_DATE.txt extendedmaprefset
 
 mysql -u ${dbUsername} ${dbUserPassword}  --local-infile << EOF
